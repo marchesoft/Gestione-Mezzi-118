@@ -782,7 +782,6 @@ window.saveVehicleMileageMonth = async function (id, text) {
         if (vehicle) {
             vehicle.mileage_month = text;
             await store.updateVehicle(vehicle);
-            console.log('Mileage month saved');
             loadVehicles(); // Refresh the grid to show the new month immediately
         }
     } catch (e) {
@@ -799,7 +798,6 @@ window.saveVehicleNote = async function (id, text) {
             vehicle.notes = text;
             await store.updateVehicle(vehicle);
             // Optional: show a small "Saved" toast or indicator, but for now silent is fine
-            console.log('Note saved');
             // loadVehicles(); // Notes are not shown on card, so strictly not needed, but good for consistency if we add an indicator later
         }
     } catch (e) {
