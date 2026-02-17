@@ -704,9 +704,9 @@ window.openVehicleModal = async function (id) {
                         <span style="color: var(--text-secondary); font-weight: 500; font-size: 0.9rem;">${vehicle.type}</span>
                     </div>
                 </div>
-                <div style="text-align: right; display: flex; gap: 0.5rem;">
+                ${isAdmin ? `<div style="text-align: right; display: flex; gap: 0.5rem;">
                     <button class="btn btn-primary" style="padding: 0.4rem 0.8rem; font-size: 0.85rem;" onclick="openVehicleForm('${vehicle.id}')"><i class="fa-solid fa-pen"></i> Modifica</button>
-                </div>
+                </div>` : ''}
             </div>
 
             <div class="form-grid-3" style="margin-bottom: 1rem; background: #f8fafc; padding: 1rem; border-radius: 0.75rem;">
@@ -750,9 +750,10 @@ window.openVehicleModal = async function (id) {
             <div style="margin-bottom: 1.5rem;">
                 <label style="font-size: 0.75rem; text-transform: uppercase; color: black; font-weight: 600; margin-bottom: 0.25rem; display: block;">Note</label>
                 <textarea 
-                    style="width: 100%; padding: 0.75rem; border: 1px solid var(--border-color); border-radius: 0.5rem; font-family: inherit; font-size: 0.95rem; resize: vertical; min-height: 80px; color: black;"
-                    placeholder="Scrivi qui le note del mezzo..."
-                    onblur="saveVehicleNote('${vehicle.id}', this.value)"
+                    style="width: 100%; padding: 0.75rem; border: 1px solid var(--border-color); border-radius: 0.5rem; font-family: inherit; font-size: 0.95rem; resize: vertical; min-height: 80px; color: black; ${!isAdmin ? 'background-color: #f8fafc; cursor: not-allowed;' : ''}"
+                    placeholder="${isAdmin ? 'Scrivi qui le note del mezzo...' : 'Nessuna nota'}"
+                    ${!isAdmin ? 'readonly' : ''}
+                    ${isAdmin ? `onblur="saveVehicleNote('${vehicle.id}', this.value)"` : ''}
                 >${vehicle.notes || ''}</textarea>
             </div>
 
