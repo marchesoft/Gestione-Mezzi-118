@@ -464,6 +464,8 @@ function setupEventListeners() {
                 isAdmin = true;
                 document.body.classList.add('is-admin');
                 document.getElementById('admin-lock-icon').className = 'fa-solid fa-lock-open';
+                const hintText = document.getElementById('admin-hint-text');
+                if (hintText) hintText.textContent = 'Modalita amministratore';
                 document.getElementById('admin-login-modal').classList.add('hidden');
                 document.getElementById('admin-password-input').value = '';
                 alert("Modalità Amministratore Attiva!");
