@@ -132,7 +132,7 @@ async function renderVehicleGrid(vehicles) {
             `;
         } else {
             statusHtml = `
-            <div class="status-full-bar status-${vehicle.status}" style="cursor: default;">
+            <div class="status-full-bar status-${vehicle.status}" style="cursor: default; font-size: 1.1rem; font-weight: 700;">
                 ${statusLabels[vehicle.status] || vehicle.status}
             </div>
             `;
@@ -159,7 +159,7 @@ async function renderVehicleGrid(vehicles) {
             locationHtml = `
             <div class="location-select-container" style="cursor: default; background: transparent; border: none; padding: 0;">
                 <i class="fa-solid fa-location-dot location-icon"></i>
-                <span style="font-weight: 700; font-size: 1.2rem;">${vehicle.station}</span>
+                <span style="font-weight: 700; font-size: 1.2rem; color: black;">${vehicle.station}</span>
             </div>
             `;
         }
