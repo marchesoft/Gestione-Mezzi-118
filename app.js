@@ -73,8 +73,11 @@ async function renderVehicleGrid(vehicles) {
         `;
 
         card.innerHTML = `
-            <div class="card-header">
+            <div class="card-header" style="position: relative;">
                 <img src="${vehicle.image}" alt="${vehicle.model}" onerror="this.src='https://placehold.co/600x400?text=No+Immagine'">
+                <div class="view-details-overlay" onclick="openVehicleModal('${vehicle.id}')" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.3); opacity: 0; transition: opacity 0.2s; display: flex; align-items: center; justify-content: center; cursor: pointer;">
+                    <span style="color: white; font-weight: 700; font-size: 1.2rem; text-transform: uppercase; border: 2px solid white; padding: 0.5rem 1rem;">Dettagli</span>
+                </div>
             </div>
             ${statusSelect}
             <div class="card-body">
@@ -92,11 +95,8 @@ async function renderVehicleGrid(vehicles) {
                         </span>
                     </div>
                 </div>
-                <div class="card-actions">
+                <div class="card-actions" style="justify-content: center;">
                     ${locationSelect}
-                    <a href="#" class="view-btn" onclick="openVehicleModal('${vehicle.id}')">
-                        Dettagli <i class="fa-solid fa-arrow-right"></i>
-                    </a>
                 </div>
             </div>
         `;
