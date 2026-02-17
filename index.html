@@ -20,28 +20,28 @@
         <!-- Main Content -->
         <main class="main-content">
             <!-- Simplified Control Bar -->
-            <div class="inline-controls"
-                style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; position: relative;">
-                <div class="search-bar"
-                    style="background: white; padding: 0.5rem 1rem; border-radius: 0.5rem; border: 1px solid var(--border-color); display: flex; align-items: center; gap: 0.5rem; width: 300px;">
-                    <i class="fa-solid fa-search" style="color: var(--text-secondary);"></i>
-                    <input type="text" id="search-input" placeholder="Cerca targa, modello..."
-                        style="border: none; outline: none; width: 100%;">
+            <!-- Simplified Control Bar -->
+            <div class="header-container">
+                <div class="header-row-title">
+                    <h1>GESTIONE AUTOMEZZI 118 FERRARA</h1>
                 </div>
 
-                <h1
-                    style="position: absolute; left: 50%; transform: translateX(-50%); font-size: 1.5rem; font-weight: 800; color: #1e3a8a; margin: 0; white-space: nowrap;">
-                    GESTIONE AUTOMEZZI 118 FERRARA
-                </h1>
+                <div class="header-row-controls">
+                    <div class="search-bar">
+                        <i class="fa-solid fa-search" style="color: var(--text-secondary);"></i>
+                        <input type="text" id="search-input" placeholder="Cerca targa, modello..."
+                            style="border: none; outline: none; width: 100%;">
+                    </div>
 
-                <div style="display: flex; gap: 0.5rem; align-items: center;">
-                    <button class="btn btn-primary" id="add-vehicle-btn">
-                        <i class="fa-solid fa-plus"></i> Nuovo Mezzo
-                    </button>
-                    <button class="btn" id="btn-manage-data" onclick="openDataManagement()"
-                        style="background: var(--secondary-color); color: white;" title="Gestione Dati Database">
-                        <i class="fa-solid fa-database"></i> VIEW DB
-                    </button>
+                    <div class="action-buttons">
+                        <button class="btn btn-primary" id="add-vehicle-btn">
+                            <i class="fa-solid fa-plus"></i> Nuovo Mezzo
+                        </button>
+                        <button class="btn" id="btn-manage-data" onclick="openDataManagement()"
+                            style="background: var(--secondary-color); color: white;" title="Gestione Dati Database">
+                            <i class="fa-solid fa-database"></i> VIEW DB
+                        </button>
+                    </div>
                 </div>
             </div>
 
@@ -122,7 +122,7 @@
                         <form id="vehicle-form">
                             <input type="hidden" id="vehicle-id">
 
-                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                            <div class="form-grid-2">
                                 <div class="form-group" style="margin-bottom: 1rem;">
                                     <label
                                         style="display: block; margin-bottom: 0.5rem; font-weight: 500; font-size: 0.9rem;">Modello</label>
@@ -144,7 +144,7 @@
                                 </div>
                             </div>
 
-                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                            <div class="form-grid-2">
                                 <!-- Vehicle Type removed as per request -->
                                 <div class="form-group" style="margin-bottom: 1rem;">
                                     <label
@@ -159,7 +159,7 @@
                                 </div>
                             </div>
 
-                            <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem;">
+                            <div class="form-grid-3">
                                 <div class="form-group" style="margin-bottom: 1rem;">
                                     <div
                                         style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
@@ -196,7 +196,7 @@
                                 <h4
                                     style="font-size: 0.9rem; font-weight: 600; margin-bottom: 0.8rem; color: var(--text-secondary);">
                                     Dotazioni</h4>
-                                <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 0.5rem;">
+                                <div class="form-grid-3 small-gap">
                                     <div class="form-group">
                                         <label
                                             style="display: block; margin-bottom: 0.3rem; font-size: 0.8rem;">Barella</label>
@@ -224,7 +224,7 @@
                                 <h4
                                     style="font-size: 0.9rem; font-weight: 600; margin-bottom: 0.8rem; color: var(--text-secondary);">
                                     Scadenze</h4>
-                                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                                <div class="form-grid-2">
                                     <div class="form-group">
                                         <label
                                             style="display: block; margin-bottom: 0.3rem; font-size: 0.8rem;">Scadenza
@@ -295,7 +295,7 @@
                                     style="width: 100%; padding: 0.6rem; border: 1px solid var(--border-color); border-radius: 0.5rem; background-color: #f1f5f9; color: var(--text-secondary); font-weight: 600;">
                             </div>
 
-                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
+                            <div class="form-grid-2 mb-1">
                                 <div class="form-group">
                                     <label
                                         style="display: block; margin-bottom: 0.5rem; font-weight: 500; font-size: 0.9rem;">Data

@@ -568,3 +568,226 @@ body {
 ::-webkit-scrollbar-thumb:hover {
     background: #94a3b8;
 }
+
+/* --- NEW HEADER LAYOUT --- */
+.header-container {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+}
+
+.header-row-title {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.header-row-title h1 {
+    font-size: 1.75rem;
+    font-weight: 800;
+    color: #1e3a8a;
+    margin: 0;
+    text-align: center;
+}
+
+.header-row-controls {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1rem;
+}
+
+.search-bar {
+    background: white;
+    padding: 0.5rem 1rem;
+    border-radius: 0.5rem;
+    border: 1px solid var(--border-color);
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    width: 300px;
+}
+
+.search-bar input {
+    border: none;
+    outline: none;
+    width: 100%;
+}
+
+.action-buttons {
+    display: flex;
+    gap: 0.5rem;
+}
+
+/* Stats Grid - Auto Resize */
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(145px, 1fr));
+    /* Auto resize with smaller min-width */
+    gap: 1.5rem;
+    margin-bottom: 2.5rem;
+}
+
+/* --- HELPER CLASSES --- */
+.mb-1 {
+    margin-bottom: 1rem;
+}
+
+.form-grid-2 {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+}
+
+.form-grid-3 {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 1rem;
+}
+
+.form-grid-3.small-gap {
+    gap: 0.5rem;
+}
+
+/* --- MOBILE OPTIMIZATION --- */
+
+@media (max-width: 768px) {
+    .main-content {
+        padding: 1rem;
+    }
+
+    /* Stats Card Mobile adjustments */
+    .stat-card {
+        padding: 0.75rem;
+        /* Reduce padding */
+        gap: 0.5rem;
+    }
+
+    .stat-icon {
+        width: 40px;
+        /* Smaller icon */
+        height: 40px;
+        font-size: 1rem;
+    }
+
+    .stat-info h3 {
+        font-size: 0.8rem;
+        /* Smaller label text */
+        white-space: nowrap;
+        /* Prevent wrapping if possible */
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .stat-value {
+        font-size: 1.25rem;
+        /* Smaller value */
+    }
+
+    .header-row-controls {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .search-bar {
+        width: 100%;
+    }
+
+    .action-buttons {
+        width: 100%;
+        display: flex;
+        gap: 0.5rem;
+    }
+
+    .action-buttons .btn {
+        flex: 1;
+        justify-content: center;
+    }
+
+    .header-row-title h1 {
+        font-size: 1.5rem;
+    }
+
+    /* Filters - Horizontal Scroll */
+    .section-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.75rem;
+    }
+
+    .filters {
+        width: 100%;
+        overflow-x: auto;
+        white-space: nowrap;
+        padding-bottom: 0.5rem;
+        /* Space for scrollbar if needed */
+        display: -webkit-box;
+        /* iOS smooth scroll trick */
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .filter-btn {
+        flex: 0 0 auto;
+        /* Prevent shrinking */
+    }
+
+    /* Vehicle Grid */
+    .vehicle-grid {
+        grid-template-columns: repeat(auto-fill, minmax(100%, 1fr));
+        /* Full width cards on mobile */
+        gap: 1rem;
+    }
+
+    /* Prevents zoom on focus on iOS */
+    input,
+    select,
+    textarea {
+        font-size: 16px !important;
+    }
+
+    /* Modals */
+    .modal-content {
+        width: 95%;
+        height: 90vh;
+        max-height: 90vh;
+        border-radius: var(--radius-lg);
+    }
+
+    /* Ensure forms inside modals are scrollable and readable */
+    .form-grid-2,
+    .form-grid-3 {
+        grid-template-columns: 1fr !important;
+    }
+
+    .vehicle-details-container {
+        padding: 1rem;
+    }
+
+    /* Data Management Table - Horizontal Scroll */
+    #data-management-modal .modal-content {
+        width: 100%;
+        height: 100%;
+        border-radius: 0;
+    }
+
+    #data-table-container {
+        overflow-x: auto;
+    }
+
+    table {
+        min-width: 600px;
+        /* Force scroll on small screens */
+    }
+}
+
+@media (max-width: 480px) {
+    .stats-grid {
+        grid-template-columns: 1fr;
+        /* Stack stats vertically on very small screens */
+    }
+
+    .view-title {
+        font-size: 1.5rem;
+    }
+}

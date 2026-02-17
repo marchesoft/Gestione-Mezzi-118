@@ -6,6 +6,36 @@ document.addEventListener('DOMContentLoaded', () => {
 async function initApp() {
     await renderDashboard();
     setupEventListeners();
+    setupRealtimeSubscription();
+}
+
+function setupRealtimeSubscription() {
+    // To be safe, we'll try to use the one from store.js if exported, or assume global.
+    // Based on previous file reads, implicit global 'supabase' or initialized in store.js
+
+    // We will assume store.js instantiates the client. 
+    // If not, we might need to peek at store.js again. 
+    // But `store.js` usually encapsulates logic. 
+    // Best way: Subscribe using the same client/credentials.
+    // However, since `store.js` is opaque here, let's look at `store.js` content first to be sure.
+    // Wait, I have `store.js` in file list but haven't read it fully in this turn.
+    // I recall `supabase` global from HTML script tag.
+
+    // Let's implement a generic subscriber assuming `store.supabase` or `window.supabase` is available.
+    // Actually, looking at `app.js` lines 387, it loads supabase-js.
+
+    // Implementation:
+    if (window.store && window.store.supabase) {
+        window.store.supabase
+            .channel('public:vehicles')
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'vehicles' }, (payload) => {
+                console.log('Change received!', payload);
+                renderDashboard();
+            })
+            .subscribe();
+    } else {
+        console.warn("Supabase client not found in store. Realtime updates may not work.");
+    }
 }
 
 async function renderDashboard() {
@@ -603,7 +633,7 @@ window.openVehicleModal = async function (id) {
                 </div>
             </div>
 
-            <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; margin-bottom: 1rem; background: #f8fafc; padding: 1rem; border-radius: 0.75rem;">
+            <div class="form-grid-3" style="margin-bottom: 1rem; background: #f8fafc; padding: 1rem; border-radius: 0.75rem;">
                 <div>
                     <div style="font-size: 0.75rem; text-transform: uppercase; color: black; font-weight: 600; margin-bottom: 0.25rem;">Stazione Attuale</div>
                     <div style="font-size: 1.1rem; font-weight: 600; color: black;">${vehicle.station}</div>
@@ -618,7 +648,7 @@ window.openVehicleModal = async function (id) {
                 </div>
             </div>
 
-            <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; margin-bottom: 1rem; background: #f1f5f9; padding: 1rem; border-radius: 0.75rem;">
+            <div class="form-grid-3" style="margin-bottom: 1rem; background: #f1f5f9; padding: 1rem; border-radius: 0.75rem;">
                 <div>
                     <div style="font-size: 0.75rem; text-transform: uppercase; color: black; font-weight: 600; margin-bottom: 0.25rem;">Barella</div>
                     <div style="font-size: 0.95rem; font-weight: 600; color: black;">${vehicle.barella_data || '-'}</div>
@@ -657,7 +687,7 @@ window.openVehicleModal = async function (id) {
                 </button>
             </div>
             
-            <div style="background: white; border: 1px solid var(--border-color); border-radius: 1rem; overflow: hidden;">
+            <div style="background: white; border: 1px solid var(--border-color); border-radius: 1rem; overflow-x: auto;">
                 ${vehicle.maintenanceHistory && vehicle.maintenanceHistory.length > 0 ? `
                     <table style="width: 100%; border-collapse: collapse;">
                         <thead style="background: #f8fafc; border-bottom: 1px solid var(--border-color);">
