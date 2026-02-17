@@ -159,7 +159,7 @@ async function renderVehicleGrid(vehicles) {
             locationHtml = `
             <div class="location-select-container" style="cursor: default; background: transparent; border: none; padding: 0;">
                 <i class="fa-solid fa-location-dot location-icon"></i>
-                <span style="font-weight: 500; font-size: 1.2rem;">${vehicle.station}</span>
+                <span style="font-weight: 700; font-size: 1.2rem;">${vehicle.station}</span>
             </div>
             `;
         }
