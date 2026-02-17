@@ -4,6 +4,17 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 async function initApp() {
+    // Check if user was logged in as admin
+    const savedAdminState = localStorage.getItem('isAdmin');
+    if (savedAdminState === 'true') {
+        isAdmin = true;
+        document.body.classList.add('is-admin');
+        const lockIcon = document.getElementById('admin-lock-icon');
+        if (lockIcon) lockIcon.className = 'fa-solid fa-lock-open';
+        const hintText = document.getElementById('admin-hint-text');
+        if (hintText) hintText.textContent = 'Modalita amministratore';
+    }
+
     await renderDashboard();
     setupEventListeners();
     setupRealtimeSubscription();
@@ -384,6 +395,7 @@ window.toggleAdminMode = function () {
     if (isAdmin) {
         // Logout
         isAdmin = false;
+        localStorage.removeItem('isAdmin'); // Remove from localStorage
         document.body.classList.remove('is-admin');
         document.getElementById('admin-lock-icon').className = 'fa-solid fa-lock';
         if (hintText) hintText.textContent = 'Modalita visualizzazione,';
@@ -462,6 +474,7 @@ function setupEventListeners() {
             const password = document.getElementById('admin-password-input').value;
             if (password === 'admin118') { // Simple shared password
                 isAdmin = true;
+                localStorage.setItem('isAdmin', 'true'); // Save to localStorage
                 document.body.classList.add('is-admin');
                 document.getElementById('admin-lock-icon').className = 'fa-solid fa-lock-open';
                 const hintText = document.getElementById('admin-hint-text');
