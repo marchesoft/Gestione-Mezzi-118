@@ -159,7 +159,7 @@ async function renderVehicleGrid(vehicles) {
             locationHtml = `
             <div class="location-select-container" style="cursor: default; background: transparent; border: none; padding: 0;">
                 <i class="fa-solid fa-location-dot location-icon"></i>
-                <span style="font-weight: 500;">${vehicle.station}</span>
+                <span style="font-weight: 500; font-size: 1rem;">${vehicle.station}</span>
             </div>
             `;
         }
@@ -379,11 +379,14 @@ window.editLocation = async function (oldName) {
 let isAdmin = false;
 
 window.toggleAdminMode = function () {
+    const hintText = document.getElementById('admin-hint-text');
+
     if (isAdmin) {
         // Logout
         isAdmin = false;
         document.body.classList.remove('is-admin');
         document.getElementById('admin-lock-icon').className = 'fa-solid fa-lock';
+        if (hintText) hintText.textContent = 'Modalita visualizzazione,';
         alert("Modalità Amministratore Disattivata.");
         renderDashboard();
     } else {
