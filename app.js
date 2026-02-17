@@ -754,9 +754,9 @@ window.openVehicleModal = async function (id) {
 
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
                 <h3 style="font-size: 1.1rem; margin: 0; color: black;">Storico Manutenzione</h3>
-                <button class="btn btn-primary" style="font-size: 0.9rem; padding: 0.5rem 1rem;" onclick="openMaintenanceForm('${vehicle.id}', '${vehicle.sigla || vehicle.plate}')">
+                ${isAdmin ? `<button class="btn btn-primary" style="font-size: 0.9rem; padding: 0.5rem 1rem;" onclick="openMaintenanceForm('${vehicle.id}', '${vehicle.sigla || vehicle.plate}')">
                     <i class="fa-solid fa-plus"></i> Aggiungi Record
-                </button>
+                </button>` : ''}
             </div>
             
             <div style="background: white; border: 1px solid var(--border-color); border-radius: 1rem; overflow-x: auto;">
