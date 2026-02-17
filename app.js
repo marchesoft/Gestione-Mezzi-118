@@ -908,40 +908,35 @@ window.switchDataTable = async function (type) {
                 </table>`;
         } else if (type === 'interventions') {
             data = await store.getInterventions();
-            html = `
-                <div style="overflow-x: auto;">
-                    <table style="width: 100%; border-collapse: collapse;">
-                        <thead>
-                            <tr style="background: #f8fafc; border-bottom: 2px solid var(--border-color);">
-                                <th style="padding: 0.75rem; text-align: left;">Sigla Mezzo</th>
-                                <th style="padding: 0.75rem; text-align: left;">Data Entrata</th>
-                                <th style="padding: 0.75rem; text-align: left;">Data Uscita</th>
-                                <th style="padding: 0.75rem; text-align: left;">Tipo (DB)</th>
-                                <th style="padding: 0.75rem; text-align: left;">Descrizione</th>
-                                <th style="padding: 0.75rem; text-align: right;">Costo (DB)</th>
-                                <th style="padding: 0.75rem; text-align: right;">Azioni</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            ${data.map(i => `
+            <div style="overflow-x: auto;">
+                <table style="width: 100%; border-collapse: collapse;">
+                    <thead>
+                        <tr style="background: #f8fafc; border-bottom: 2px solid var(--border-color);">
+                            <th style="padding: 0.75rem; text-align: left;">Sigla Mezzo</th>
+                            <th style="padding: 0.75rem; text-align: left;">Data Entrata</th>
+                            <th style="padding: 0.75rem; text-align: left;">Data Uscita</th>
+                            <th style="padding: 0.75rem; text-align: left;">Descrizione</th>
+                            <th style="padding: 0.75rem; text-align: right;">Azioni</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${data.map(i => `
                                 <tr style="border-bottom: 1px solid var(--border-color);">
                                     <td style="padding: 0.75rem; font-weight: bold;">${i.sigla || '-'}</td>
                                     <td style="padding: 0.75rem;">${i.date}</td>
                                     <td style="padding: 0.75rem;">${i.date_out || '-'}</td>
-                                    <td style="padding: 0.75rem; font-family:monospace; font-size:0.8rem;">${i.type}</td>
                                     <td style="padding: 0.75rem;">${i.description}</td>
-                                    <td style="padding: 0.75rem; text-align: right; font-family:monospace;">€${i.cost}</td>
                                     <td style="padding: 0.75rem; text-align: right;">
                                         <button onclick="store.deleteIntervention('${i.id}').then(() => switchDataTable('interventions'))" style="cursor:pointer; background:none; border:none; color:var(--status-to-repair);"><i class="fa-solid fa-trash"></i></button>
                                     </td>
                                 </tr>
                             `).join('')}
-                        </tbody>
-                    </table>
-                </div>`;
+                    </tbody>
+                </table>
+            </div>`;
         }
     } catch (e) {
-        html = `<p style="color:red;">Errore caricamento dati: ${e.message}</p>`;
+        html = `< p style = "color:red;" > Errore caricamento dati: ${ e.message }</p > `;
     }
 
     container.innerHTML = html;
