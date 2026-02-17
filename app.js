@@ -38,23 +38,59 @@ function getStatusLabel(status) {
 
 async function renderVehicleGrid(vehicles) {
     const grid = document.getElementById('vehicle-grid');
+
+    // Sort vehicles based on localStorage order if available
+    const savedOrder = JSON.parse(localStorage.getItem('vehicleOrder') || '[]');
+    if (savedOrder.length > 0) {
+        vehicles.sort((a, b) => {
+            const indexA = savedOrder.indexOf(a.id);
+            const indexB = savedOrder.indexOf(b.id);
+            // If both are found, sort by index
+            if (indexA !== -1 && indexB !== -1) return indexA - indexB;
+            // If only A is found, it comes first
+            if (indexA !== -1) return -1;
+            // If only B is found, it comes first
+            if (indexB !== -1) return 1;
+            // If neither is found, keep original order (or sort by ID/something else)
+            return 0;
+        });
+    }
+
     grid.innerHTML = '';
+
+    if (vehicles.length === 0) {
+        grid.innerHTML = '<p style="grid-column: 1/-1; text-align: center; padding: 2rem;">Nessun veicolo trovato.</p>';
+        return;
+    }
 
     const savedLocations = await store.getLocations();
 
     vehicles.forEach(vehicle => {
         const card = document.createElement('div');
         card.className = 'vehicle-card';
+        card.draggable = true; // Enable Drag
+        card.dataset.id = vehicle.id; // Store ID for drag logic
 
-        // Status select dropdown
-        const statusSelect = `
+        // Drag Events
+        card.addEventListener('dragstart', handleDragStart);
+        card.addEventListener('dragover', handleDragOver);
+        card.addEventListener('drop', handleDrop);
+        card.addEventListener('dragenter', handleDragEnter);
+        card.addEventListener('dragleave', handleDragLeave);
+        card.addEventListener('dragend', handleDragEnd);
+
+        // Determine status display
+        let statusSelect = '';
+        if (true) { // Always show full bar as per new design
+            statusSelect = `
             <select class="status-full-bar status-${vehicle.status}" onchange="quickUpdateStatus(event, '${vehicle.id}')" onclick="event.stopPropagation()">
                 <option value="operative" ${vehicle.status === 'operative' ? 'selected' : ''}>In Servizio</option>
                 <option value="available" ${vehicle.status === 'available' ? 'selected' : ''}>Disponibile</option>
                 <option value="maintenance" ${vehicle.status === 'maintenance' ? 'selected' : ''}>In Officina</option>
                 <option value="to-repair" ${vehicle.status === 'to-repair' ? 'selected' : ''}>Da Riparare</option>
             </select>
-        `;
+            `;
+        }
 
         // Location Select Dropdown
         const locationOptions = savedLocations.map(loc =>
@@ -102,6 +138,68 @@ async function renderVehicleGrid(vehicles) {
         `;
         grid.appendChild(card);
     });
+}
+
+// Drag & Drop Handlers
+let dragSrcEl = null;
+
+function handleDragStart(e) {
+    dragSrcEl = this;
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('text/html', this.innerHTML);
+    this.classList.add('dragging');
+}
+
+function handleDragOver(e) {
+    if (e.preventDefault) {
+        e.preventDefault();
+    }
+    e.dataTransfer.dropEffect = 'move';
+    return false;
+}
+
+function handleDragEnter(e) {
+    this.classList.add('over');
+}
+
+function handleDragLeave(e) {
+    this.classList.remove('over');
+}
+
+function handleDragEnd(e) {
+    this.classList.remove('dragging');
+    let items = document.querySelectorAll('.vehicle-grid .vehicle-card');
+    items.forEach(function (item) {
+        item.classList.remove('over');
+    });
+}
+
+function handleDrop(e) {
+    if (e.stopPropagation) {
+        e.stopPropagation();
+    }
+
+    if (dragSrcEl !== this) {
+        // Swap DOM elements
+        // Actually, renaming innerHTML is weak for complex elements with events.
+        // Better to swap the nodes or use `insertBefore`.
+
+        const grid = document.getElementById('vehicle-grid');
+        const allCards = [...grid.querySelectorAll('.vehicle-card')];
+        const srcIndex = allCards.indexOf(dragSrcEl);
+        const targetIndex = allCards.indexOf(this);
+
+        if (srcIndex < targetIndex) {
+            this.after(dragSrcEl);
+        } else {
+            this.before(dragSrcEl);
+        }
+
+        // Save new order
+        const newOrder = [...document.querySelectorAll('.vehicle-card')].map(card => card.dataset.id);
+        localStorage.setItem('vehicleOrder', JSON.stringify(newOrder));
+    }
+    return false;
 }
 
 // Quick Actions

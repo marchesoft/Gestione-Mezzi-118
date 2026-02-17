@@ -270,6 +270,16 @@ body {
     border-color: var(--primary-color);
 }
 
+.vehicle-card.dragging {
+    opacity: 0.4;
+    border: 2px dashed var(--primary-color);
+}
+
+.vehicle-card.over {
+    border: 2px solid var(--primary-color);
+    transform: scale(1.02);
+}
+
 .card-header {
     position: relative;
     height: 130px;
