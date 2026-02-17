@@ -93,26 +93,36 @@ async function renderVehicleGrid(vehicles) {
         return;
     }
 
+
     const savedLocations = await store.getLocations();
 
     vehicles.forEach(vehicle => {
         const card = document.createElement('div');
         card.className = 'vehicle-card';
-        card.draggable = true; // Enable Drag
-        card.dataset.id = vehicle.id; // Store ID for drag logic
+        card.draggable = isAdmin; // Only draggable if admin
+        card.dataset.id = vehicle.id;
 
-        // Drag Events
-        card.addEventListener('dragstart', handleDragStart);
-        card.addEventListener('dragover', handleDragOver);
-        card.addEventListener('drop', handleDrop);
-        card.addEventListener('dragenter', handleDragEnter);
-        card.addEventListener('dragleave', handleDragLeave);
-        card.addEventListener('dragend', handleDragEnd);
+        // Drag Events - Only if admin
+        if (isAdmin) {
+            card.addEventListener('dragstart', handleDragStart);
+            card.addEventListener('dragover', handleDragOver);
+            card.addEventListener('drop', handleDrop);
+            card.addEventListener('dragenter', handleDragEnter);
+            card.addEventListener('dragleave', handleDragLeave);
+            card.addEventListener('dragend', handleDragEnd);
+        }
 
-        // Determine status display
-        let statusSelect = '';
-        if (true) { // Always show full bar as per new design
-            statusSelect = `
+        // Status Display - Admin: Dropdown, Non-Admin: Static Badge
+        let statusHtml = '';
+        const statusLabels = {
+            'operative': 'In Servizio',
+            'available': 'Disponibile',
+            'maintenance': 'In Officina',
+            'to-repair': 'Da Riparare'
+        };
+
+        if (isAdmin) {
+            statusHtml = `
             <select class="status-full-bar status-${vehicle.status}" onchange="quickUpdateStatus(event, '${vehicle.id}')" onclick="event.stopPropagation()">
                 <option value="operative" ${vehicle.status === 'operative' ? 'selected' : ''}>In Servizio</option>
                 <option value="available" ${vehicle.status === 'available' ? 'selected' : ''}>Disponibile</option>
@@ -120,14 +130,22 @@ async function renderVehicleGrid(vehicles) {
                 <option value="to-repair" ${vehicle.status === 'to-repair' ? 'selected' : ''}>Da Riparare</option>
             </select>
             `;
+        } else {
+            statusHtml = `
+            <div class="status-full-bar status-${vehicle.status}" style="cursor: default;">
+                ${statusLabels[vehicle.status] || vehicle.status}
+            </div>
+            `;
         }
 
-        // Location Select Dropdown
+        // Location Display - Admin: Dropdown, Non-Admin: Static Text
+        let locationHtml = '';
         const locationOptions = savedLocations.map(loc =>
             `<option value="${loc}" ${vehicle.station === loc ? 'selected' : ''}>${loc}</option>`
         ).join('');
 
-        const locationSelect = `
+        if (isAdmin) {
+            locationHtml = `
             <div class="location-select-container" onclick="event.stopPropagation()">
                 <i class="fa-solid fa-location-dot location-icon"></i>
                 <select class="location-select" onchange="quickUpdateStationSelect(event, '${vehicle.id}')">
@@ -136,7 +154,15 @@ async function renderVehicleGrid(vehicles) {
                     <option value="MANAGE_LOCATIONS">⚙️ Gestisci Elenco...</option>
                 </select>
             </div>
-        `;
+            `;
+        } else {
+            locationHtml = `
+            <div class="location-select-container" style="cursor: default; background: transparent; border: none; padding: 0;">
+                <i class="fa-solid fa-location-dot location-icon"></i>
+                <span style="font-weight: 500;">${vehicle.station}</span>
+            </div>
+            `;
+        }
 
         card.innerHTML = `
             <div class="card-header" style="position: relative;">
@@ -145,7 +171,7 @@ async function renderVehicleGrid(vehicles) {
                     <span style="color: white; font-weight: 700; font-size: 1.2rem; text-transform: uppercase; border: 2px solid white; padding: 0.5rem 1rem;">Dettagli</span>
                 </div>
             </div>
-            ${statusSelect}
+            ${statusHtml}
             <div class="card-body">
                 <div class="vehicle-id" style="text-align: center; margin-bottom: 1.5rem;">
                     ${vehicle.sigla ? `<div style="font-size: 1.5rem; font-weight: 900; color: #1e3a8a; margin-bottom: 0px;">${vehicle.sigla}</div>` : ''}
@@ -162,7 +188,7 @@ async function renderVehicleGrid(vehicles) {
                     </div>
                 </div>
                 <div class="card-actions" style="justify-content: center;">
-                    ${locationSelect}
+                    ${locationHtml}
                 </div>
             </div>
         `;
