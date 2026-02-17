@@ -908,19 +908,20 @@ window.switchDataTable = async function (type) {
                 </table>`;
         } else if (type === 'interventions') {
             data = await store.getInterventions();
-            <div style="overflow-x: auto;">
-                <table style="width: 100%; border-collapse: collapse;">
-                    <thead>
-                        <tr style="background: #f8fafc; border-bottom: 2px solid var(--border-color);">
-                            <th style="padding: 0.75rem; text-align: left;">Sigla Mezzo</th>
-                            <th style="padding: 0.75rem; text-align: left;">Data Entrata</th>
-                            <th style="padding: 0.75rem; text-align: left;">Data Uscita</th>
-                            <th style="padding: 0.75rem; text-align: left;">Descrizione</th>
-                            <th style="padding: 0.75rem; text-align: right;">Azioni</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        ${data.map(i => `
+            html = `
+                <div style="overflow-x: auto;">
+                    <table style="width: 100%; border-collapse: collapse;">
+                        <thead>
+                            <tr style="background: #f8fafc; border-bottom: 2px solid var(--border-color);">
+                                <th style="padding: 0.75rem; text-align: left;">Sigla Mezzo</th>
+                                <th style="padding: 0.75rem; text-align: left;">Data Entrata</th>
+                                <th style="padding: 0.75rem; text-align: left;">Data Uscita</th>
+                                <th style="padding: 0.75rem; text-align: left;">Descrizione</th>
+                                <th style="padding: 0.75rem; text-align: right;">Azioni</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${data.map(i => `
                                 <tr style="border-bottom: 1px solid var(--border-color);">
                                     <td style="padding: 0.75rem; font-weight: bold;">${i.sigla || '-'}</td>
                                     <td style="padding: 0.75rem;">${i.date}</td>
@@ -931,12 +932,12 @@ window.switchDataTable = async function (type) {
                                     </td>
                                 </tr>
                             `).join('')}
-                    </tbody>
-                </table>
-            </div>`;
+                        </tbody>
+                    </table>
+                </div>`;
         }
     } catch (e) {
-        html = `< p style = "color:red;" > Errore caricamento dati: ${ e.message }</p > `;
+        html = `< p style = "color:red;" > Errore caricamento dati: ${e.message}</p > `;
     }
 
     container.innerHTML = html;
