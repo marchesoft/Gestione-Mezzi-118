@@ -1,0 +1,4 @@
+/* Hide admin hint text when logged in */
+body.is-admin #admin-hint-text {
+    display: none;
+}
