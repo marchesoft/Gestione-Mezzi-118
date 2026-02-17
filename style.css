@@ -98,83 +98,69 @@ body {
     color: var(--text-primary);
 }
 
-/* Stats Bar Container */
-.stats-bar-container {
-    background-color: #1e3a8a;
-    /* Dark Blue */
-    padding: 1.5rem;
-    border-radius: var(--radius-xl);
-    margin-bottom: 2.5rem;
-    box-shadow: var(--shadow-md);
-}
-
 .stats-grid {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
     gap: 1.5rem;
-    margin-bottom: 0;
-    /* Margin handled by container */
+    margin-bottom: 2.5rem;
 }
 
 .stat-card {
-    background: rgba(255, 255, 255, 0.1);
-    /* Slight transparent white for glass effect */
-    border-radius: var(--radius-lg);
-    padding: 1rem 1.5rem;
+    background: white;
+    border-radius: var(--radius-xl);
+    padding: 1.5rem;
     display: flex;
     align-items: center;
     gap: 1.25rem;
-    box-shadow: none;
-    /* Remove shadow inside colored bar */
+    box-shadow: var(--shadow-md);
     transition: transform 0.2s;
-    border: 1px solid rgba(255, 255, 255, 0.2);
 }
 
 .stat-card:hover {
     transform: translateY(-2px);
-    background: rgba(255, 255, 255, 0.2);
 }
 
 .stat-icon {
-    width: 48px;
-    height: 48px;
+    width: 56px;
+    height: 56px;
     border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 1.25rem;
-    background: rgba(255, 255, 255, 0.2);
-    /* Unified icon bg */
-    color: #facc15;
-    /* Yellow */
+    font-size: 1.5rem;
 }
 
-/* Override specific status colors for uniform look in bar, or keep them?
-   User said "scritte gialle". I'll make text yellow. */
+.stat-card.operative .stat-icon {
+    background-color: var(--status-operative-bg);
+    color: var(--status-operative);
+}
 
-.stat-card.operative .stat-icon,
-.stat-card.available .stat-icon,
-.stat-card.maintenance .stat-icon,
+.stat-card.available .stat-icon {
+    background-color: var(--status-available-bg);
+    color: var(--status-available);
+}
+
+.stat-card.maintenance .stat-icon {
+    background-color: var(--status-maintenance-bg);
+    color: var(--status-maintenance);
+}
+
 .stat-card.to-repair .stat-icon {
-    background-color: rgba(255, 255, 255, 0.2);
-    color: #facc15;
+    background-color: var(--status-to-repair-bg);
+    color: var(--status-to-repair);
 }
 
 .stat-info h3 {
     font-size: 0.9rem;
-    font-weight: 600;
-    color: #facc15;
-    /* Yellow */
+    font-weight: 500;
+    color: var(--text-secondary);
     margin-bottom: 0.25rem;
-    text-transform: uppercase;
-    opacity: 0.9;
 }
 
 .stat-value {
     font-size: 1.75rem;
     font-weight: 700;
-    color: #facc15;
-    /* Yellow */
+    color: var(--text-primary);
 }
 
 /* Filter Section */
