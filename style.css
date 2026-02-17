@@ -248,7 +248,7 @@ body {
 /* Vehicle Grid */
 .vehicle-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
     /* 320px -> 260px */
     gap: 1rem;
     /* 1.5rem -> 1rem */
@@ -256,7 +256,6 @@ body {
 }
 
 .vehicle-card {
-    background: white;
     background: white;
     border-radius: 0;
     overflow: hidden;
@@ -273,7 +272,7 @@ body {
 
 .card-header {
     position: relative;
-    height: 180px;
+    height: 160px;
 }
 
 .card-header img {
