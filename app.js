@@ -700,7 +700,6 @@ window.openVehicleModal = async function (id) {
                     </div>
                 </div>
                 <div style="text-align: right; display: flex; gap: 0.5rem;">
-                     <button class="btn" style="border: 1px solid var(--status-to-repair); color: var(--status-to-repair); background: white; padding: 0.4rem 0.8rem; font-size: 0.85rem;" onclick="deleteVehicleHandler('${vehicle.id}')"><i class="fa-solid fa-trash"></i> Elimina</button>
                     <button class="btn btn-primary" style="padding: 0.4rem 0.8rem; font-size: 0.85rem;" onclick="openVehicleForm('${vehicle.id}')"><i class="fa-solid fa-pen"></i> Modifica</button>
                 </div>
             </div>
