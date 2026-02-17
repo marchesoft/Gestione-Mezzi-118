@@ -34,12 +34,17 @@
                     </div>
 
                     <div class="action-buttons">
-                        <button class="btn btn-primary" id="add-vehicle-btn">
+                        <button class="btn btn-primary admin-only" id="add-vehicle-btn">
                             <i class="fa-solid fa-plus"></i> Nuovo Mezzo
                         </button>
-                        <button class="btn" id="btn-manage-data" onclick="openDataManagement()"
+                        <button class="btn admin-only" id="btn-manage-data" onclick="openDataManagement()"
                             style="background: var(--secondary-color); color: white;" title="Gestione Dati Database">
                             <i class="fa-solid fa-database"></i> VIEW DB
+                        </button>
+                        <button class="btn" id="admin-login-btn" onclick="toggleAdminMode()"
+                            style="background: white; border: 1px solid var(--border-color); color: var(--text-secondary);"
+                            title="Admin Login">
+                            <i class="fa-solid fa-lock" id="admin-lock-icon"></i>
                         </button>
                     </div>
                 </div>
@@ -377,6 +382,28 @@
                     <div id="data-table-container">
                         <!-- Dynamic Table -->
                     </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Admin Login Modal -->
+        <div id="admin-login-modal" class="modal hidden">
+            <div class="modal-content" style="max-width: 400px; height: auto;">
+                <div
+                    style="padding: 1.5rem; border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center;">
+                    <h3 style="font-size: 1.25rem; font-weight: 600;">Admin Login</h3>
+                    <span onclick="document.getElementById('admin-login-modal').classList.add('hidden')"
+                        style="font-size: 1.5rem; cursor: pointer;">&times;</span>
+                </div>
+                <div style="padding: 1.5rem;">
+                    <form id="admin-login-form">
+                        <div class="form-group" style="margin-bottom: 1rem;">
+                            <label style="display: block; margin-bottom: 0.5rem; font-weight: 500;">Password</label>
+                            <input type="password" id="admin-password-input" required
+                                style="width: 100%; padding: 0.6rem; border: 1px solid var(--border-color); border-radius: 0.5rem;">
+                        </div>
+                        <button type="submit" class="btn btn-primary" style="width: 100%;">Accedi</button>
+                    </form>
                 </div>
             </div>
         </div>

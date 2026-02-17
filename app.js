@@ -349,7 +349,102 @@ window.editLocation = async function (oldName) {
     }
 }
 
+// Global Admin State
+let isAdmin = false;
+
+window.toggleAdminMode = function () {
+    if (isAdmin) {
+        // Logout
+        isAdmin = false;
+        document.body.classList.remove('is-admin');
+        document.getElementById('admin-lock-icon').className = 'fa-solid fa-lock';
+        alert("Modalità Amministratore Disattivata.");
+        renderDashboard();
+    } else {
+        // Open Login Modal
+        document.getElementById('admin-login-modal').classList.remove('hidden');
+        document.getElementById('admin-password-input').focus();
+    }
+}
+
+// Global functions attached to window for HTML event handlers
+
+window.openVehicleForm = async function (vehicleId = null) {
+    if (!isAdmin) return; // double check protection
+    // ... existing logic ...
+    const modal = document.getElementById('vehicle-form-modal');
+    const title = document.getElementById('form-modal-title');
+    const form = document.getElementById('vehicle-form');
+    const stationSelect = document.getElementById('vehicle-station');
+
+    // Populate Station Dropdown
+    stationSelect.innerHTML = '<option value="" disabled selected>Seleziona Stazione...</option>';
+    const locations = await store.getLocations();
+    locations.forEach(loc => {
+        const option = document.createElement('option');
+        option.value = loc;
+        option.textContent = loc;
+        stationSelect.appendChild(option);
+    });
+
+    form.reset();
+    document.getElementById('vehicle-id').value = '';
+    document.getElementById('vehicle-image-upload').value = '';
+
+    if (vehicleId) {
+        title.textContent = 'Modifica Mezzo';
+        const vehicle = await store.getVehicleById(vehicleId);
+        if (vehicle) {
+            document.getElementById('vehicle-id').value = vehicle.id;
+            document.getElementById('vehicle-model').value = vehicle.model;
+            document.getElementById('vehicle-plate').value = vehicle.plate;
+            document.getElementById('vehicle-sigla').value = vehicle.sigla || '';
+            // Type preserved automagically on backend/store if strictly using model
+            document.getElementById('vehicle-status').value = vehicle.status;
+            document.getElementById('vehicle-station').value = vehicle.station;
+            document.getElementById('vehicle-mileage').value = vehicle.mileage;
+            document.getElementById('vehicle-image').value = vehicle.image;
+
+            // Extended Fields
+            document.getElementById('vehicle-mileage-month').value = vehicle.mileage_month || ''; // Populate new field
+            document.getElementById('vehicle-barella').value = vehicle.barella_data || '';
+            document.getElementById('vehicle-radio').value = vehicle.radio_id || '';
+            document.getElementById('vehicle-aspirator').value = vehicle.aspirator_id || '';
+            document.getElementById('vehicle-inspection').value = vehicle.inspection_expiry || '';
+            document.getElementById('vehicle-testing').value = vehicle.testing_expiry || '';
+            document.getElementById('vehicle-notes').value = vehicle.notes || '';
+        }
+    } else {
+        title.textContent = 'Aggiungi Nuovo Mezzo';
+        document.getElementById('vehicle-mileage-month').value = ''; // Reset
+    }
+
+    modal.classList.remove('hidden');
+}
+
 function setupEventListeners() {
+    // ... existing listeners ...
+
+    // Admin Login Form
+    const adminLoginForm = document.getElementById('admin-login-form');
+    if (adminLoginForm) {
+        adminLoginForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const password = document.getElementById('admin-password-input').value;
+            if (password === 'admin118') { // Simple shared password
+                isAdmin = true;
+                document.body.classList.add('is-admin');
+                document.getElementById('admin-lock-icon').className = 'fa-solid fa-lock-open';
+                document.getElementById('admin-login-modal').classList.add('hidden');
+                document.getElementById('admin-password-input').value = '';
+                alert("Modalità Amministratore Attiva!");
+                renderDashboard();
+            } else {
+                alert("Password Errata!");
+            }
+        });
+    }
+
     // Filter Buttons
     document.querySelectorAll('.filter-btn').forEach(btn => {
         btn.addEventListener('click', async (e) => {
@@ -461,66 +556,17 @@ function setupEventListeners() {
         const formModal = document.getElementById('vehicle-form-modal');
         const maintModal = document.getElementById('maintenance-form-modal');
         const locModal = document.getElementById('location-modal');
+        const adminModal = document.getElementById('admin-login-modal');
 
         if (event.target === modal) modal.classList.add('hidden');
         if (event.target === formModal) formModal.classList.add('hidden');
         if (event.target === maintModal) maintModal.classList.add('hidden');
         if (event.target === locModal) locModal.classList.add('hidden');
+        if (event.target === adminModal) adminModal.classList.add('hidden');
     }
 }
 
-// Global functions attached to window for HTML event handlers
-
-window.openVehicleForm = async function (vehicleId = null) {
-    const modal = document.getElementById('vehicle-form-modal');
-    const title = document.getElementById('form-modal-title');
-    const form = document.getElementById('vehicle-form');
-    const stationSelect = document.getElementById('vehicle-station');
-
-    // Populate Station Dropdown
-    stationSelect.innerHTML = '<option value="" disabled selected>Seleziona Stazione...</option>';
-    const locations = await store.getLocations();
-    locations.forEach(loc => {
-        const option = document.createElement('option');
-        option.value = loc;
-        option.textContent = loc;
-        stationSelect.appendChild(option);
-    });
-
-    form.reset();
-    document.getElementById('vehicle-id').value = '';
-    document.getElementById('vehicle-image-upload').value = '';
-
-    if (vehicleId) {
-        title.textContent = 'Modifica Mezzo';
-        const vehicle = await store.getVehicleById(vehicleId);
-        if (vehicle) {
-            document.getElementById('vehicle-id').value = vehicle.id;
-            document.getElementById('vehicle-model').value = vehicle.model;
-            document.getElementById('vehicle-plate').value = vehicle.plate;
-            document.getElementById('vehicle-sigla').value = vehicle.sigla || '';
-            // Type preserved automagically on backend/store if strictly using model
-            document.getElementById('vehicle-status').value = vehicle.status;
-            document.getElementById('vehicle-station').value = vehicle.station;
-            document.getElementById('vehicle-mileage').value = vehicle.mileage;
-            document.getElementById('vehicle-image').value = vehicle.image;
-
-            // Extended Fields
-            document.getElementById('vehicle-mileage-month').value = vehicle.mileage_month || ''; // Populate new field
-            document.getElementById('vehicle-barella').value = vehicle.barella_data || '';
-            document.getElementById('vehicle-radio').value = vehicle.radio_id || '';
-            document.getElementById('vehicle-aspirator').value = vehicle.aspirator_id || '';
-            document.getElementById('vehicle-inspection').value = vehicle.inspection_expiry || '';
-            document.getElementById('vehicle-testing').value = vehicle.testing_expiry || '';
-            document.getElementById('vehicle-notes').value = vehicle.notes || '';
-        }
-    } else {
-        title.textContent = 'Aggiungi Nuovo Mezzo';
-        document.getElementById('vehicle-mileage-month').value = ''; // Reset
-    }
-
-    modal.classList.remove('hidden');
-}
+// ... existing code ...
 
 window.saveVehicleForm = async function () {
     const id = document.getElementById('vehicle-id').value;
@@ -619,7 +665,7 @@ window.openVehicleModal = async function (id) {
             <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1rem;">
                 <div>
                     <div style="display: flex; flex-direction: column; gap: 0.1rem;">
-                        ${vehicle.sigla ? `<h1 style="font-size: 2.25rem; font-weight: 800; color: var(--primary-color); margin: 0;">${vehicle.sigla}</h1>` : ''}
+                        ${vehicle.sigla ? `<h1 style="font-size: 1.5rem; font-weight: 800; color: var(--primary-color); margin: 0;">${vehicle.sigla}</h1>` : ''}
                         <h2 style="font-size: 1.25rem; margin-bottom: 0.25rem; color: var(--text-primary);">${vehicle.model}</h2>
                     </div>
                     <div style="display: flex; gap: 0.75rem; align-items: center;">
@@ -681,7 +727,7 @@ window.openVehicleModal = async function (id) {
             </div>
 
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
-                <h3 style="font-size: 1.5rem; margin: 0; color: black;">Storico Manutenzione</h3>
+                <h3 style="font-size: 1.1rem; margin: 0; color: black;">Storico Manutenzione</h3>
                 <button class="btn btn-primary" style="font-size: 0.9rem; padding: 0.5rem 1rem;" onclick="openMaintenanceForm('${vehicle.id}', '${vehicle.sigla || vehicle.plate}')">
                     <i class="fa-solid fa-plus"></i> Aggiungi Record
                 </button>
