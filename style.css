@@ -589,6 +589,10 @@ body.is-admin #admin-login-btn {
     color: var(--status-available);
 }
 
+body.is-admin #admin-hint-text {
+    display: none;
+}
+
 /* --- NEW HEADER LAYOUT --- */
 .header-container {
     display: flex;
