@@ -821,7 +821,7 @@ window.switchDataTable = async function (type) {
 }
 
 // Location Handlers
-async function createNewLocation() {
+window.createNewLocation = async function () {
     const nameInput = document.getElementById('new-location-name');
     const colorInput = document.getElementById('new-location-color');
     const name = nameInput.value.trim();
@@ -842,7 +842,7 @@ async function createNewLocation() {
     }
 }
 
-async function deleteLocationHandler(id) {
+window.deleteLocationHandler = async function (id) {
     if (confirm("Sei sicuro di voler eliminare questo luogo?")) {
         try {
             await store.deleteLocation(id);
