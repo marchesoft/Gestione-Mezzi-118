@@ -163,6 +163,8 @@ async function renderVehicleGrid(vehicles) {
         card.draggable = isAdmin; // Only draggable if admin
         card.dataset.id = vehicle.id;
 
+        const { statusText, locationColor } = window.getVehicleStatusInfo(vehicle);
+
         // Drag Events - Only if admin
         if (isAdmin) {
             card.addEventListener('dragstart', handleDragStart);
@@ -170,16 +172,10 @@ async function renderVehicleGrid(vehicles) {
             card.addEventListener('drop', handleDrop);
             card.addEventListener('dragenter', handleDragEnter);
             card.addEventListener('dragleave', handleDragLeave);
-            const { statusText, locationColor } = window.getVehicleStatusInfo(vehicle);
-
-            // Make draggable
-            card.setAttribute('draggable', 'true');
-            card.addEventListener('dragstart', handleDragStart);
-            card.addEventListener('dragover', handleDragOver);
-            card.addEventListener('drop', handleDrop);
             card.addEventListener('dragend', handleDragEnd);
+        }
 
-            card.innerHTML = `
+        card.innerHTML = `
             <div class="card-header" style="position: relative;">
                 <img src="${vehicle.image}" alt="${vehicle.model}" onerror="this.src='https://placehold.co/600x400?text=No+Immagine'">
                 <div style="height: 30px; width: 100%; background-color: ${locationColor}; display: flex; align-items: center; justify-content: center; 
@@ -211,8 +207,8 @@ async function renderVehicleGrid(vehicles) {
                 </div>
             </div>
         `;
-            grid.appendChild(card);
-        });
+        grid.appendChild(card);
+    });
 }
 
 // Drag & Drop Handlers
