@@ -62,6 +62,7 @@ async function renderDashboard() {
 
 async function renderVehicleGrid(vehicles) {
     const grid = document.getElementById('vehicle-grid');
+    const locations = await store.getLocations(); // Fetch locations for the dropdown
 
     // Sort vehicles based on localStorage order if available
     const savedOrder = JSON.parse(localStorage.getItem('vehicleOrder') || '[]');
@@ -69,13 +70,9 @@ async function renderVehicleGrid(vehicles) {
         vehicles.sort((a, b) => {
             const indexA = savedOrder.indexOf(a.id);
             const indexB = savedOrder.indexOf(b.id);
-            // If both are found, sort by index
             if (indexA !== -1 && indexB !== -1) return indexA - indexB;
-            // If only A is found, it comes first
             if (indexA !== -1) return -1;
-            // If only B is found, it comes first
             if (indexB !== -1) return 1;
-            // If neither is found, keep original order (or sort by ID/something else)
             return 0;
         });
     }
@@ -86,9 +83,6 @@ async function renderVehicleGrid(vehicles) {
         grid.innerHTML = '<p style="grid-column: 1/-1; text-align: center; padding: 2rem;">Nessun veicolo trovato.</p>';
         return;
     }
-
-
-    // savedLocations REMOVED
 
     vehicles.forEach(vehicle => {
         const card = document.createElement('div');
@@ -106,26 +100,35 @@ async function renderVehicleGrid(vehicles) {
             card.addEventListener('dragend', handleDragEnd);
         }
 
-
+        const locationColor = vehicle.luoghi?.colore || '#ccc';
 
         card.innerHTML = `
             <div class="card-header" style="position: relative;">
                 <img src="${vehicle.image}" alt="${vehicle.model}" onerror="this.src='https://placehold.co/600x400?text=No+Immagine'">
-                <div class="view-details-overlay" onclick="openVehicleModal('${vehicle.id}')" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.3); opacity: 0; transition: opacity 0.2s; display: flex; align-items: center; justify-content: center; cursor: pointer;">
-                    <span style="color: white; font-weight: 700; font-size: 1.2rem; text-transform: uppercase; border: 2px solid white; padding: 0.5rem 1rem;">Dettagli</span>
-                </div>
+                <div style="height: 8px; width: 100%; background-color: ${locationColor};"></div>
             </div>
-            <div style="background-color: ${vehicle.luoghi?.colore || '#f1f5f9'}; color: ${vehicle.luoghi ? 'white' : '#64748b'}; padding: 0.5rem; text-align: center; font-weight: 700; text-transform: uppercase; font-size: 0.9rem; letter-spacing: 0.05em;">
-                ${vehicle.luoghi?.luogo || 'NESSUNA SEDE'}
-            </div>
-            <!-- statusHtml REMOVED -->
+            
             <div class="card-body">
-                <div class="vehicle-id" style="text-align: center; margin-bottom: 1.5rem;">
+                <div class="vehicle-id" style="text-align: center; margin-bottom: 1rem;">
                     ${vehicle.sigla ? `<div style="font-size: 1.5rem; font-weight: 900; color: #1e3a8a; margin-bottom: 0px;">${vehicle.sigla}</div>` : ''}
                     <h4 style="font-size: 1rem; color: var(--text-secondary); margin-bottom: 0px; font-weight: 500;">${vehicle.model}</h4>
-                    <span class="plate-number" style="font-size: 1.5rem; color: var(--text-primary); font-weight: 800;">${vehicle.plate}</span>
+                    <span class="plate-number" style="font-size: 1.5rem; color: var(--text-primary); font-weight: 800; display:block;">${vehicle.plate}</span>
+                    
+                    <button onclick="openVehicleForm('${vehicle.id}')" style="margin-top: 0.5rem; padding: 0.25rem 0.75rem; background: transparent; border: 1px solid var(--primary-color); color: var(--primary-color); border-radius: 4px; cursor: pointer; font-size: 0.8rem;">
+                        <i class="fa-solid fa-pen"></i> Dettagli
+                    </button>
                 </div>
+
                 <div class="vehicle-details">
+                    <div class="detail-item" style="justify-content: center; margin-bottom: 1rem;">
+                        <select onchange="updateVehicleLocation('${vehicle.id}', this.value)" style="width: 100%; padding: 0.5rem; border: 1px solid #e2e8f0; border-radius: 6px; background-color: #f8fafc; font-weight: 600; color: #334155;">
+                            <option value="">SELEZIONA SEDE</option>
+                            ${locations.map(loc => `
+                                <option value="${loc.id}" ${vehicle.location_id === loc.id ? 'selected' : ''}>${loc.luogo}</option>
+                            `).join('')}
+                        </select>
+                    </div>
+
                     <div class="detail-item">
                         <span class="detail-label">Chilometri</span>
                         <span class="detail-value">
@@ -133,9 +136,6 @@ async function renderVehicleGrid(vehicles) {
                             ${vehicle.mileage_month ? `<span style="font-size: 0.8rem; color: var(--text-secondary); font-weight: 400; margin-left: 0.25rem;">(${vehicle.mileage_month})</span>` : ''}
                         </span>
                     </div>
-                </div>
-                <div class="card-actions" style="justify-content: center;">
-                    <!-- locationHtml REMOVED -->
                 </div>
             </div>
         `;
@@ -656,12 +656,26 @@ window.saveVehicleNote = async function (id, text) {
         if (vehicle) {
             vehicle.notes = text;
             await store.updateVehicle(vehicle);
-            // Optional: show a small "Saved" toast or indicator, but for now silent is fine
-            // loadVehicles(); // Notes are not shown on card, so strictly not needed, but good for consistency if we add an indicator later
         }
     } catch (e) {
         console.error('Error saving note:', e);
         alert('Errore nel salvataggio della nota');
+    }
+}
+
+// Location Auto-Update from Card
+window.updateVehicleLocation = async function (vehicleId, locationId) {
+    try {
+        // Optimistic UI update or simple reload? Reload is safer for color sync.
+        const vehicle = await store.getVehicleById(vehicleId);
+        if (vehicle) {
+            vehicle.location_id = locationId || null;
+            await store.updateVehicle(vehicle);
+            await renderDashboard(); // Refresh grid to show new color
+        }
+    } catch (e) {
+        console.error('Error updating location:', e);
+        alert("Errore aggiornamento sede: " + e.message);
     }
 }
 
