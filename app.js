@@ -550,10 +550,14 @@ window.filterVehicles = function (status) {
 }
 
 
-const modal = document.getElementById('vehicle-modal');
-const content = document.getElementById('vehicle-details-content');
+window.openVehicleModal = function (id) {
+    const vehicle = vehicles.find(v => v.id == id);
+    if (!vehicle) return;
 
-content.innerHTML = `
+    const modal = document.getElementById('vehicle-modal');
+    const content = document.getElementById('vehicle-details-content');
+
+    content.innerHTML = `
         <div style="position: relative;">
             <button onclick="document.getElementById('vehicle-modal').classList.add('hidden')" style="position: absolute; top: 1rem; right: 1rem; background: rgba(0,0,0,0.5); border: none; color: white; width: 32px; height: 32px; border-radius: 50%; cursor: pointer; font-size: 1.2rem; display: flex; align-items: center; justify-content: center; z-index: 10;">&times;</button>
             <img src="${vehicle.image}" style="width: 100%; height: 300px; object-fit: cover; border-top-left-radius: 1rem; border-top-right-radius: 1rem;" onerror="this.src='https://placehold.co/600x400?text=No+Immagine'">
@@ -655,7 +659,7 @@ content.innerHTML = `
         </div>
     `;
 
-modal.classList.remove('hidden');
+    modal.classList.remove('hidden');
 }
 
 window.deleteVehicleHandler = async function (id) {
