@@ -233,6 +233,8 @@ window.openVehicleForm = async function (vehicleId = null) {
 
             // Extended Fields
             document.getElementById('vehicle-mileage-month').value = vehicle.mileage_month || ''; // Populate new field
+            document.getElementById('vehicle-tel1').value = vehicle.tel1 || '';
+            document.getElementById('vehicle-tel2').value = vehicle.tel2 || '';
             document.getElementById('vehicle-inspection').value = vehicle.inspection_expiry || '';
             document.getElementById('vehicle-testing').value = vehicle.testing_expiry || '';
             document.getElementById('vehicle-notes').value = vehicle.notes || '';
@@ -240,6 +242,8 @@ window.openVehicleForm = async function (vehicleId = null) {
     } else {
         title.textContent = 'Aggiungi Nuovo Mezzo';
         document.getElementById('vehicle-mileage-month').value = ''; // Reset
+        document.getElementById('vehicle-tel1').value = '';
+        document.getElementById('vehicle-tel2').value = '';
     }
 
     modal.classList.remove('hidden');
@@ -376,6 +380,8 @@ window.saveVehicleForm = async function () {
         mileage: parseInt(mileage),
         mileage_month: document.getElementById('vehicle-mileage-month').value,
         image,
+        tel1: document.getElementById('vehicle-tel1').value,
+        tel2: document.getElementById('vehicle-tel2').value,
         // Extended fields
         // Removed barella, aspirator
         radio_id: document.getElementById('vehicle-radio') ? document.getElementById('vehicle-radio').value : '', // Radio left? User said remove barella/aspiratore but didn't mention radio. Keeping it if present in HTML, but I think I removed it from HTML too. Wait, radio was in HTML.
@@ -463,7 +469,11 @@ window.openVehicleModal = async function (id) {
 
             <div class="form-grid-3" style="margin-bottom: 1rem; background: #f1f5f9; padding: 1rem; border-radius: 0.75rem;">
                 <div>
-                    <!-- Barella / Radio / Aspirator Removed -->
+                    <div style="font-size: 0.75rem; text-transform: uppercase; color: black; font-weight: 600; margin-bottom: 0.25rem;">Contatti</div>
+                    <div style="display: flex; flex-direction: column; gap: 0.2rem;">
+                         ${vehicle.tel1 ? `<a href="tel:${vehicle.tel1}" style="font-size: 0.95rem; font-weight: 600; color: var(--primary-color); text-decoration: none;"><i class="fa-solid fa-phone"></i> ${vehicle.tel1}</a>` : '<span style="color: #94a3b8;">-</span>'}
+                         ${vehicle.tel2 ? `<a href="tel:${vehicle.tel2}" style="font-size: 0.95rem; font-weight: 600; color: var(--primary-color); text-decoration: none;"><i class="fa-solid fa-phone"></i> ${vehicle.tel2}</a>` : ''}
+                    </div>
                 </div>
                 <div>
                     <div style="font-size: 0.75rem; text-transform: uppercase; color: black; font-weight: 600; margin-bottom: 0.25rem;">Scadenza Revisione</div>
@@ -676,6 +686,7 @@ window.switchDataTable = async function (type) {
                             <th style="padding: 0.75rem; text-align: left;">Sigla</th>
                             <th style="padding: 0.75rem; text-align: left;">Km</th>
                             <th style="padding: 0.75rem; text-align: left;">Mese Km</th>
+                            <th style="padding: 0.75rem; text-align: left;">Contatti</th>
                             <th style="padding: 0.75rem; text-align: left;">Note</th>
                             <th style="padding: 0.75rem; text-align: left;">Rev. Scad.</th>
                             <th style="padding: 0.75rem; text-align: left;">Coll. Scad.</th>
@@ -691,6 +702,10 @@ window.switchDataTable = async function (type) {
                                 <td style="padding: 0.75rem; font-weight: bold; color: var(--primary-color);">${v.sigla || '-'}</td>
                                 <td style="padding: 0.75rem;">${v.mileage}</td>
                                 <td style="padding: 0.75rem;">${v.mileage_month || '-'}</td>
+                                <td style="padding: 0.75rem;">
+                                    ${v.tel1 ? `<div><a href="tel:${v.tel1}" style="color: var(--primary-color);">${v.tel1}</a></div>` : ''}
+                                    ${v.tel2 ? `<div><a href="tel:${v.tel2}" style="color: var(--primary-color);">${v.tel2}</a></div>` : ''}
+                                </td>
                                 <td style="padding: 0.75rem; max-width: 150px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${v.notes || ''}">${v.notes || '-'}</td>
                                 <td style="padding: 0.75rem;">${v.inspection_expiry || '-'}</td>
                                 <td style="padding: 0.75rem;">${v.testing_expiry || '-'}</td>

@@ -1,0 +1,2 @@
+ALTER TABLE vehicles ADD COLUMN IF NOT EXISTS tel1 text;
+ALTER TABLE vehicles ADD COLUMN IF NOT EXISTS tel2 text;
