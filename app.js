@@ -62,7 +62,7 @@ async function renderDashboard() {
     vehicles = await store.getVehicles();
     // updateStats REMOVED
 
-    renderVehicleGrid(vehicles);
+    renderVehicles(vehicles);
 }
 
 
@@ -132,14 +132,14 @@ window.getVehicleStatusInfo = function (vehicle) {
     return { statusText, locationColor };
 };
 
-async function renderVehicleGrid(vehicles) {
+async function renderVehicles(vehiclesToRender) {
     const grid = document.getElementById('vehicle-grid');
     // locations is global now
 
-    // Sort vehicles based on localStorage order if available (using global vehicles if passed, but typically we invoke with global)
+    // Sort vehicles based on localStorage order if available
     const savedOrder = JSON.parse(localStorage.getItem('vehicleOrder') || '[]');
     if (savedOrder.length > 0) {
-        vehicles.sort((a, b) => {
+        vehiclesToRender.sort((a, b) => {
             const indexA = savedOrder.indexOf(a.id);
             const indexB = savedOrder.indexOf(b.id);
             if (indexA !== -1 && indexB !== -1) return indexA - indexB;
@@ -151,16 +151,18 @@ async function renderVehicleGrid(vehicles) {
 
     grid.innerHTML = '';
 
-    // Update counts whenever we render (assuming render is called on data change)
+    // Update counts whenever we render
     if (window.updateFilterCounts) window.updateFilterCounts();
 
-    if (vehicles.length === 0) {
+    if (vehiclesToRender.length === 0) {
         grid.innerHTML = '<p style="grid-column: 1/-1; text-align: center; padding: 2rem;">Nessun veicolo trovato.</p>';
         return;
     }
 
-    vehicles.forEach(vehicle => {
+    vehiclesToRender.forEach(vehicle => {
         const card = document.createElement('div');
+        // ... rest of loop uses 'vehicle'
+
         card.className = 'vehicle-card';
         card.draggable = isAdmin; // Only draggable if admin
         card.dataset.id = vehicle.id;
@@ -526,11 +528,11 @@ window.callFromInput = function (inputId) {
 }
 // Filter Vehicles
 window.filterVehicles = function (status) {
+    console.log("Filtering for status:", status);
+
     // 1. Update active UI
     document.querySelectorAll('.filter-card').forEach(btn => btn.classList.remove('active', 'ring-2', 'ring-offset-2', 'ring-blue-500'));
-    // Find button with onclick containing the status and add active style (or use event.target if passed, but simpler to match text)
-    // Actually, I'll specificy ID or just loop.
-    // Simpler: iterate and check attribute.
+    // active logic...
     const buttons = document.querySelectorAll('.filter-card');
     buttons.forEach(btn => {
         if (btn.getAttribute('onclick').includes(`'${status}'`)) {
@@ -545,12 +547,14 @@ window.filterVehicles = function (status) {
 
     // 2. Filter
     if (status === 'ALL') {
+        console.log("Showing all vehicles:", vehicles.length);
         renderVehicles(vehicles);
     } else {
         const filtered = vehicles.filter(v => {
             const info = window.getVehicleStatusInfo(v);
             return info.statusText === status;
         });
+        console.log("Filtered vehicles:", filtered.length);
         renderVehicles(filtered);
     }
 }
