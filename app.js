@@ -387,25 +387,22 @@ window.saveVehicleForm = async function () {
     const id = document.getElementById('vehicle-id').value;
     const model = document.getElementById('vehicle-model').value;
     const plate = document.getElementById('vehicle-plate').value;
+    const sigla = document.getElementById('vehicle-sigla').value;
+    const mileage = document.getElementById('vehicle-mileage').value;
+    const image = document.getElementById('vehicle-image').value;
+
     const vehicleData = {
         model,
         plate,
         sigla,
-        // Removed status, station
-        mileage: parseInt(mileage),
+        mileage: parseInt(mileage) || 0,
         mileage_month: document.getElementById('vehicle-mileage-month').value,
         location_id: document.getElementById('vehicle-location').value || null,
         image,
         tel1: document.getElementById('vehicle-tel1').value,
         tel2: document.getElementById('vehicle-tel2').value,
-        // Extended fields
-        // Removed barella, aspirator
-        radio_id: document.getElementById('vehicle-radio') ? document.getElementById('vehicle-radio').value : '', // Radio left? User said remove barella/aspiratore but didn't mention radio. Keeping it if present in HTML, but I think I removed it from HTML too. Wait, radio was in HTML.
-        // I removed barella and aspirator from HTML in previous step. Radio was in the same block. Did I remove radio too? 
-        // Let's check my previous HTML edit.
-        // I replaced lines 219-237 which contained Barella, Radio, Aspirator.
-        // So Radio IS REMOVED from HTML.
-        // So I should remove it here too.
+
+        radio_id: document.getElementById('vehicle-radio') ? document.getElementById('vehicle-radio').value : '',
 
         inspection_expiry: document.getElementById('vehicle-inspection').value || null,
         testing_expiry: document.getElementById('vehicle-testing').value || null,
