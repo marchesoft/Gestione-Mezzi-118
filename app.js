@@ -130,10 +130,16 @@ async function renderVehicleGrid(vehicles) {
                 // BLUE -> IN SERVIZIO
                 if (c.includes('2563eb') || c.includes('0ea5e9') || c.includes('3b82f6') || c.includes('blue')) return "IN SERVIZIO";
 
+                // Specific check for "FUORI USO" in location name if color check failed
+                if (vehicle.luoghi && vehicle.luoghi.luogo && vehicle.luoghi.luogo.toUpperCase().includes('FUORI USO')) return "FUORI USO";
+
                 // Fallback: Location Name
                 if (vehicle.luoghi && vehicle.luoghi.luogo) return vehicle.luoghi.luogo.toUpperCase();
                 const loc = locations.find(l => l.id == vehicle.location_id);
-                if (loc) return loc.luogo.toUpperCase();
+                if (loc) {
+                    if (loc.luogo.toUpperCase().includes('FUORI USO')) return "FUORI USO";
+                    return loc.luogo.toUpperCase();
+                }
 
                 return "";
             })()}
@@ -761,7 +767,7 @@ window.switchDataTable = async function (type) {
                                 <td style="padding: 0.75rem;">
                                     ${v.tel2 ? `<a href="tel:${v.tel2}" style="color: var(--primary-color);">${v.tel2}</a>` : '-'}
                                 </td>
-                                <td style="padding: 0.75rem; max-width: 150px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${v.notes || ''}">${v.notes || '-'}</td>
+                                <td style="padding: 0.75rem;">${v.notes || '-'}</td>
                                 <td style="padding: 0.75rem;">${v.inspection_expiry || '-'}</td>
                                 <td style="padding: 0.75rem;">${v.testing_expiry || '-'}</td>
                                 <td style="padding: 0.75rem; text-align: right;">
