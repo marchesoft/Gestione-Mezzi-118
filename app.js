@@ -117,7 +117,7 @@ async function renderVehicleGrid(vehicles) {
             
             <div class="card-body">
                 <div class="vehicle-id" style="text-align: center; margin-bottom: 0.5rem; margin-top: 0.25rem;">
-                    ${vehicle.sigla ? `<div style="font-size: 1.2rem; font-weight: 900; color: #1e3a8a; margin-bottom: 0px;">${vehicle.sigla}</div>` : ''}
+                    ${vehicle.sigla ? `<div style="font-size: 1.5rem; font-weight: 900; color: #1e3a8a; margin-bottom: 0px;">${vehicle.sigla}</div>` : ''}
                     <h4 style="font-size: 0.9rem; color: var(--text-secondary); margin-bottom: 0px; font-weight: 500;">${vehicle.model}</h4>
                     <span class="plate-number" style="font-size: 1.1rem; color: var(--text-primary); font-weight: 800; display:block;">${vehicle.plate}</span>
                     
