@@ -204,4 +204,5 @@ class Store {
     }
 }
 
-const store = new Store();
+// Make store available globally explicitly
+window.store = new Store();
