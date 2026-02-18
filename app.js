@@ -297,6 +297,9 @@ window.openVehicleForm = async function (vehicleId = null) {
         option.value = loc.id;
         option.textContent = loc.luogo;
         option.dataset.color = loc.colore;
+        if (loc.colore) {
+            option.style.backgroundColor = loc.colore;
+        }
         locationSelect.appendChild(option);
     });
 
