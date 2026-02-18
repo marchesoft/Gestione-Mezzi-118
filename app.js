@@ -99,22 +99,24 @@ window.getVehicleStatusInfo = function (vehicle) {
 
             if (!isNaN(r) && !isNaN(g) && !isNaN(b)) {
                 const max = Math.max(r, g, b), min = Math.min(r, g, b);
-                let h = 0;
+
+                // Only assess color if there is saturation (not gray/black/white)
                 if (max !== min) {
                     const d = max - min;
+                    let h = 0;
                     switch (max) {
                         case r: h = (g - b) / d + (g < b ? 6 : 0); break;
                         case g: h = (b - r) / d + 2; break;
                         case b: h = (r - g) / d + 4; break;
                     }
                     h /= 6;
-                }
-                h = h * 360;
+                    h = h * 360;
 
-                if ((h >= 0 && h < 15) || h >= 330) statusText = "FUORI USO"; // Red
-                else if (h >= 15 && h < 65) statusText = "IN RIPARAZIONE"; // Orange/Yellow
-                else if (h >= 65 && h < 165) statusText = "DISPONIBILE"; // Green
-                else if (h >= 165 && h < 265) statusText = "IN SERVIZIO"; // Blue
+                    if ((h >= 0 && h < 15) || h >= 330) statusText = "FUORI USO"; // Red
+                    else if (h >= 15 && h < 65) statusText = "IN RIPARAZIONE"; // Orange/Yellow
+                    else if (h >= 65 && h < 165) statusText = "DISPONIBILE"; // Green
+                    else if (h >= 165 && h < 265) statusText = "IN SERVIZIO"; // Blue
+                }
             }
         } catch (e) { console.error("Color parse error", e); }
 
