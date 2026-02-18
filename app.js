@@ -687,7 +687,8 @@ window.switchDataTable = async function (type) {
                             <th style="padding: 0.75rem; text-align: left;">Sigla</th>
                             <th style="padding: 0.75rem; text-align: left;">Km</th>
                             <th style="padding: 0.75rem; text-align: left;">Mese Km</th>
-                            <th style="padding: 0.75rem; text-align: left;">Contatti</th>
+                            <th style="padding: 0.75rem; text-align: left;">Tel1</th>
+                            <th style="padding: 0.75rem; text-align: left;">Tel2</th>
                             <th style="padding: 0.75rem; text-align: left;">Note</th>
                             <th style="padding: 0.75rem; text-align: left;">Rev. Scad.</th>
                             <th style="padding: 0.75rem; text-align: left;">Rev.O2</th>
@@ -704,8 +705,10 @@ window.switchDataTable = async function (type) {
                                 <td style="padding: 0.75rem;">${v.mileage}</td>
                                 <td style="padding: 0.75rem;">${v.mileage_month || '-'}</td>
                                 <td style="padding: 0.75rem;">
-                                    ${v.tel1 ? `<div><a href="tel:${v.tel1}" style="color: var(--primary-color);">${v.tel1}</a></div>` : ''}
-                                    ${v.tel2 ? `<div><a href="tel:${v.tel2}" style="color: var(--primary-color);">${v.tel2}</a></div>` : ''}
+                                    ${v.tel1 ? `<a href="tel:${v.tel1}" style="color: var(--primary-color);">${v.tel1}</a>` : '-'}
+                                </td>
+                                <td style="padding: 0.75rem;">
+                                    ${v.tel2 ? `<a href="tel:${v.tel2}" style="color: var(--primary-color);">${v.tel2}</a>` : '-'}
                                 </td>
                                 <td style="padding: 0.75rem; max-width: 150px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${v.notes || ''}">${v.notes || '-'}</td>
                                 <td style="padding: 0.75rem;">${v.inspection_expiry || '-'}</td>
