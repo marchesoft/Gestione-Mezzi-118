@@ -131,7 +131,15 @@
                             <!-- Status Field Removed -->
 
                             <div class="form-grid-3">
-                                <!-- Station Field Removed -->
+                                <div class="form-group" style="margin-bottom: 1rem;">
+                                    <label
+                                        style="display: block; margin-bottom: 0.5rem; font-weight: 500; font-size: 0.9rem;">Sede
+                                        Operativa</label>
+                                    <select id="vehicle-location"
+                                        style="width: 100%; padding: 0.6rem; border: 1px solid var(--border-color); border-radius: 0.5rem; background-color: white;">
+                                        <option value="">Seleziona Luogo...</option>
+                                    </select>
+                                </div>
                                 <div class="form-group" style="margin-bottom: 1rem;">
                                     <label
                                         style="display: block; margin-bottom: 0.5rem; font-weight: 500; font-size: 0.9rem;">Chilometri</label>
@@ -291,6 +299,7 @@
                 </div>
                 <div style="padding: 1rem; border-bottom: 1px solid var(--border-color); display: flex; gap: 1rem;">
                     <button class="filter-btn active" onclick="switchDataTable('vehicles')">Mezzi</button>
+                    <button class="filter-btn" onclick="switchDataTable('locations')">Luoghi</button>
 
                     <button class="filter-btn" onclick="switchDataTable('interventions')">Interventi</button>
                 </div>

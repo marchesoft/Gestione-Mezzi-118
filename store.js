@@ -12,7 +12,8 @@ class Store {
     async getVehicles() {
         const { data, error } = await this.supabase
             .from('vehicles')
-            .select('*');
+            .select('*, luoghi(*)')
+            .order('created_at', { ascending: false });
         if (error) {
             console.error('Error fetching vehicles:', error);
             return [];

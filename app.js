@@ -115,6 +115,9 @@ async function renderVehicleGrid(vehicles) {
                     <span style="color: white; font-weight: 700; font-size: 1.2rem; text-transform: uppercase; border: 2px solid white; padding: 0.5rem 1rem;">Dettagli</span>
                 </div>
             </div>
+            <div style="background-color: ${vehicle.luoghi?.colore || '#f1f5f9'}; color: ${vehicle.luoghi ? 'white' : '#64748b'}; padding: 0.5rem; text-align: center; font-weight: 700; text-transform: uppercase; font-size: 0.9rem; letter-spacing: 0.05em;">
+                ${vehicle.luoghi?.luogo || 'NESSUNA SEDE'}
+            </div>
             <!-- statusHtml REMOVED -->
             <div class="card-body">
                 <div class="vehicle-id" style="text-align: center; margin-bottom: 1.5rem;">
@@ -212,7 +215,18 @@ window.openVehicleForm = async function (vehicleId = null) {
     const modal = document.getElementById('vehicle-form-modal');
     const title = document.getElementById('form-modal-title');
     const form = document.getElementById('vehicle-form');
-    // Station Dropdown population removed
+
+    // Populate Location Dropdown
+    const locationSelect = document.getElementById('vehicle-location');
+    locationSelect.innerHTML = '<option value="">Seleziona Luogo...</option>';
+    const locations = await store.getLocations();
+    locations.forEach(loc => {
+        const option = document.createElement('option');
+        option.value = loc.id;
+        option.textContent = loc.luogo;
+        option.dataset.color = loc.colore;
+        locationSelect.appendChild(option);
+    });
 
     form.reset();
     document.getElementById('vehicle-id').value = '';
@@ -226,13 +240,13 @@ window.openVehicleForm = async function (vehicleId = null) {
             document.getElementById('vehicle-model').value = vehicle.model;
             document.getElementById('vehicle-plate').value = vehicle.plate;
             document.getElementById('vehicle-sigla').value = vehicle.sigla || '';
-            // Type preserved automagically on backend/store if strictly using model
-            // Removed fields population
+            document.getElementById('vehicle-location').value = vehicle.location_id || '';
+
             document.getElementById('vehicle-mileage').value = vehicle.mileage;
             document.getElementById('vehicle-image').value = vehicle.image;
 
             // Extended Fields
-            document.getElementById('vehicle-mileage-month').value = vehicle.mileage_month || ''; // Populate new field
+            document.getElementById('vehicle-mileage-month').value = vehicle.mileage_month || '';
             document.getElementById('vehicle-tel1').value = vehicle.tel1 || '';
             document.getElementById('vehicle-tel2').value = vehicle.tel2 || '';
             document.getElementById('vehicle-inspection').value = vehicle.inspection_expiry || '';
@@ -241,9 +255,10 @@ window.openVehicleForm = async function (vehicleId = null) {
         }
     } else {
         title.textContent = 'Aggiungi Nuovo Mezzo';
-        document.getElementById('vehicle-mileage-month').value = ''; // Reset
+        document.getElementById('vehicle-mileage-month').value = '';
         document.getElementById('vehicle-tel1').value = '';
         document.getElementById('vehicle-tel2').value = '';
+        document.getElementById('vehicle-location').value = '';
     }
 
     modal.classList.remove('hidden');
@@ -379,6 +394,7 @@ window.saveVehicleForm = async function () {
         // Removed status, station
         mileage: parseInt(mileage),
         mileage_month: document.getElementById('vehicle-mileage-month').value,
+        location_id: document.getElementById('vehicle-location').value || null,
         image,
         tel1: document.getElementById('vehicle-tel1').value,
         tel2: document.getElementById('vehicle-tel2').value,
@@ -685,6 +701,7 @@ window.switchDataTable = async function (type) {
                             <th style="padding: 0.75rem; text-align: left;">Targa</th>
                             <th style="padding: 0.75rem; text-align: left;">Modello</th>
                             <th style="padding: 0.75rem; text-align: left;">Sigla</th>
+                            <th style="padding: 0.75rem; text-align: left;">Sede</th>
                             <th style="padding: 0.75rem; text-align: left;">Km</th>
                             <th style="padding: 0.75rem; text-align: left;">Mese Km</th>
                             <th style="padding: 0.75rem; text-align: left;">Tel1</th>
@@ -702,6 +719,7 @@ window.switchDataTable = async function (type) {
                                 <td style="padding: 0.75rem;">${v.plate}</td>
                                 <td style="padding: 0.75rem;">${v.model}</td>
                                 <td style="padding: 0.75rem; font-weight: bold; color: var(--primary-color);">${v.sigla || '-'}</td>
+                                <td style="padding: 0.75rem;">${v.luoghi ? `<span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:${v.luoghi.colore};margin-right:5px;"></span>${v.luoghi.luogo}` : '-'}</td>
                                 <td style="padding: 0.75rem;">${v.mileage}</td>
                                 <td style="padding: 0.75rem;">${v.mileage_month || '-'}</td>
                                 <td style="padding: 0.75rem;">
