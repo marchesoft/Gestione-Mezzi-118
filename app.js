@@ -112,11 +112,11 @@ async function renderVehicleGrid(vehicles) {
         card.innerHTML = `
             <div class="card-header" style="position: relative;">
                 <img src="${vehicle.image}" alt="${vehicle.model}" onerror="this.src='https://placehold.co/600x400?text=No+Immagine'">
-                <div style="height: 15px; width: 100%; background-color: ${locationColor};"></div>
+                <div style="height: 30px; width: 100%; background-color: ${locationColor};"></div>
             </div>
             
             <div class="card-body">
-                <div class="vehicle-id" style="text-align: center; margin-bottom: 0.5rem; margin-top: 0.5rem;">
+                <div class="vehicle-id" style="text-align: center; margin-bottom: 0.5rem; margin-top: 1rem;">
                     ${vehicle.sigla ? `<div style="font-size: 1.2rem; font-weight: 900; color: #1e3a8a; margin-bottom: 0px;">${vehicle.sigla}</div>` : ''}
                     <h4 style="font-size: 0.9rem; color: var(--text-secondary); margin-bottom: 0px; font-weight: 500;">${vehicle.model}</h4>
                     <span class="plate-number" style="font-size: 1.1rem; color: var(--text-primary); font-weight: 800; display:block;">${vehicle.plate}</span>
