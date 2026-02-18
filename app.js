@@ -122,7 +122,7 @@ async function renderVehicleGrid(vehicles) {
                 if (c.includes('ef4444') || c.includes('ff0000') || c.includes('dc2626') || c.includes('red')) return "FUORI USO";
 
                 // YELLOW -> IN RIPARAZIONE
-                if (c.includes('f59e0b') || c.includes('yellow') || c.includes('orange') || c.includes('amber')) return "IN RIPARAZIONE";
+                if (c.includes('f59e0b') || c.includes('yellow') || c.includes('orange') || c.includes('amber') || c.includes('d97706') || c.includes('b45309') || c.includes('eab308') || c.includes('ca8a04')) return "IN RIPARAZIONE";
 
                 // GREEN -> DISPONIBILE
                 if (c.includes('22c55e') || c.includes('green') || c.includes('16a34a')) return "DISPONIBILE";
@@ -132,6 +132,10 @@ async function renderVehicleGrid(vehicles) {
 
                 // Specific check for "FUORI USO" in location name if color check failed
                 if (vehicle.luoghi && vehicle.luoghi.luogo && vehicle.luoghi.luogo.toUpperCase().includes('FUORI USO')) return "FUORI USO";
+
+                // Specific check for "IN RIPARAZIONE" / "OFFICINA"
+                const locName = (vehicle.luoghi && vehicle.luoghi.luogo) ? vehicle.luoghi.luogo.toUpperCase() : (locations.find(l => l.id == vehicle.location_id)?.luogo?.toUpperCase() || "");
+                if (locName.includes('OFFICINA') || locName.includes('RIPARAZ') || locName.includes('GUASTO') || locName.includes('MECCANICO') || locName.includes('CARROZZERIA')) return "IN RIPARAZIONE";
 
                 // Fallback: Location Name
                 if (vehicle.luoghi && vehicle.luoghi.luogo) return vehicle.luoghi.luogo.toUpperCase();
