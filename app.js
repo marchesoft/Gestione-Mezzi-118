@@ -176,10 +176,14 @@ async function renderVehicleGrid(vehicles) {
                     ${vehicle.sigla ? `<div style="font-size: 1.5rem; font-weight: 900; color: #1e3a8a; margin-bottom: 0px;">${vehicle.sigla}</div>` : ''}
                     <h4 style="font-size: 0.9rem; color: var(--text-secondary); margin-bottom: 0px; font-weight: 500;">${vehicle.model}</h4>
                     <span class="plate-number" style="font-size: 1.1rem; color: var(--text-primary); font-weight: 800; display:block;">${vehicle.plate}</span>
-                    
-                    <button onclick="openVehicleForm('${vehicle.id}')" style="margin-top: 0.25rem; padding: 0.15rem 0.5rem; background: transparent; border: 1px solid var(--primary-color); color: var(--primary-color); border-radius: 4px; cursor: pointer; font-size: 0.75rem;">
-                        <i class="fa-solid fa-pen"></i> Dettagli
-                    </button>
+                    <div style="display: flex; justify-content: center; gap: 0.5rem; margin-top: 0.5rem;">
+                        <button onclick="openVehicleForm('${vehicle.id}')" style="padding: 0.4rem 0.8rem; background: transparent; border: 2px solid var(--primary-color); color: var(--primary-color); border-radius: 4px; cursor: pointer; font-size: 1rem; font-weight: 700;">
+                            <i class="fa-solid fa-pen"></i> DETTAGLI
+                        </button>
+                        <button onclick="callVehicle('${vehicle.id}')" style="padding: 0.4rem 0.8rem; background: var(--status-available); border: 2px solid var(--status-available); color: white; border-radius: 4px; cursor: pointer; font-size: 1rem; font-weight: 700;">
+                            <i class="fa-solid fa-phone"></i> CHIAMA
+                        </button>
+                    </div>
                 </div>
 
                 <div style="margin-top: auto; padding-top: 0.5rem; border-top: 1px solid #f1f5f9;">
@@ -490,6 +494,23 @@ window.saveVehicleForm = async function () {
     }
 }
 
+window.callVehicle = function (id) {
+    const vehicle = vehicles.find(v => v.id == id);
+    if (vehicle && vehicle.tel1) {
+        window.location.href = 'tel:' + vehicle.tel1;
+    } else {
+        alert("Nessun numero di telefono disponibile per questo mezzo.");
+    }
+}
+
+window.callFromInput = function (inputId) {
+    const value = document.getElementById(inputId).value;
+    if (value) {
+        window.location.href = 'tel:' + value;
+    } else {
+        alert("Nessun numero inserito.");
+    }
+}
 window.openVehicleModal = async function (id) {
     const vehicle = await store.getVehicleById(id);
     if (!vehicle) return;
