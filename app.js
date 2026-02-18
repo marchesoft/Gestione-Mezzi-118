@@ -553,6 +553,35 @@ window.filterVehicles = function (status) {
     }
 }
 
+// Update Filter Counts
+window.updateFilterCounts = function () {
+    const counts = {
+        'ALL': vehicles.length,
+        'FUORI USO': 0,
+        'IN RIPARAZIONE': 0,
+        'DISPONIBILE': 0,
+        'IN SERVIZIO': 0
+    };
+
+    vehicles.forEach(v => {
+        const info = window.getVehicleStatusInfo(v);
+        if (counts.hasOwnProperty(info.statusText)) {
+            counts[info.statusText]++;
+        }
+    });
+
+    const setText = (id, count) => {
+        const el = document.getElementById(id);
+        if (el) el.innerText = `(${count})`;
+    };
+
+    setText('count-ALL', counts['ALL']);
+    setText('count-FUORI-USO', counts['FUORI USO']);
+    setText('count-IN-RIPARAZIONE', counts['IN RIPARAZIONE']);
+    setText('count-DISPONIBILE', counts['DISPONIBILE']);
+    setText('count-IN-SERVIZIO', counts['IN SERVIZIO']);
+}
+
 
 window.openVehicleModal = function (id) {
     const vehicle = vehicles.find(v => v.id == id);
