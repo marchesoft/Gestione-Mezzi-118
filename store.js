@@ -12,11 +12,9 @@ class Store {
     async getVehicles() {
         const { data, error } = await this.supabase
             .from('vehicles')
-            .select('*, luoghi(*)')
-            .order('created_at', { ascending: false });
+            .select('*');
         if (error) {
             console.error('Error fetching vehicles:', error);
-            alert("Errore caricamento veicoli: " + error.message);
             return [];
         }
 
@@ -102,52 +100,45 @@ class Store {
 
     async getLocations() {
         const { data, error } = await this.supabase
-            .from('luoghi')
-            .select('*')
-            .order('created_at', { ascending: false });
+            .from('locations')
+            .select('name');
 
-        if (error) {
-            console.error('Error fetching locations:', error);
-            return [];
-        }
-        return data || [];
+        if (error) return [];
+        return data.map(l => l.name);
     }
 
-    async addLocation(location) {
+    async addLocation(name) {
         const { error } = await this.supabase
-            .from('luoghi')
-            .insert([location]);
-
-        if (error) {
-            console.error('Error adding location:', error);
-            alert("Errore aggiunta luogo: " + error.message);
-        }
+            .from('locations')
+            .insert([{ name }]);
+        if (error) console.error('Error adding location:', error);
     }
 
-    async deleteLocation(id) {
+    async deleteLocation(name) {
         const { error } = await this.supabase
-            .from('luoghi')
+            .from('locations')
             .delete()
-            .eq('id', id);
-
-        if (error) {
-            console.error('Error deleting location:', error);
-            alert("Errore eliminazione luogo: " + error.message);
-        }
+            .eq('name', name);
+        if (error) console.error('Error deleting location:', error);
     }
 
-    async updateLocation(id, updates) {
+    async updateLocation(oldName, newName) {
+        // Update location table
         const { error } = await this.supabase
-            .from('luoghi')
-            .update(updates)
-            .eq('id', id);
+            .from('locations')
+            .update({ name: newName })
+            .eq('name', oldName);
 
         if (error) {
             console.error('Error updating location:', error);
-            alert("Errore aggiornamento luogo: " + error.message);
+            return;
         }
-    }
 
+        // Update vehicles (Postgres ON UPDATE CASCADE should handle this if defined in schema, 
+        // but if we used loose foreign keys or text fields, we might need manual update.
+        // My schema said: station TEXT REFERENCES locations(name) ON UPDATE CASCADE
+        // So this should be automatic!)
+    }
 
     // --- Maintenance / Interventions ---
 
@@ -202,19 +193,6 @@ class Store {
             alert("Errore aggiornamento intervento: " + error.message);
         }
     }
-
-    async updateIntervention(id, intervention) {
-        const { error } = await this.supabase
-            .from('interventions')
-            .update(intervention)
-            .eq('id', id);
-
-        if (error) {
-            console.error('Error updating intervention:', error);
-            alert("Errore aggiornamento intervento: " + error.message);
-        }
-    }
 }
 
-// Make store available globally explicitly
-window.store = new Store();
+const store = new Store();

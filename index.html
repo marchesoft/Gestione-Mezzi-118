@@ -69,65 +69,47 @@
                 <!-- Title removed from here -->
 
                 <!-- Stats Cards -->
-                <!-- Stats Cards Removed -->
+                <div class="stats-grid">
+                    <div class="stat-card all active" onclick="setDashboardFilter('all')">
+                        <div class="stat-icon"><i class="fa-solid fa-list"></i></div>
+                        <div class="stat-info">
+                            <h3>Tutti</h3>
+                            <p class="stat-value" id="stat-all">0</p>
+                        </div>
+                    </div>
+                    <div class="stat-card operative" onclick="setDashboardFilter('operative')">
+                        <div class="stat-icon"><i class="fa-solid fa-check-circle"></i></div>
+                        <div class="stat-info">
+                            <h3>In Servizio</h3>
+                            <p class="stat-value" id="stat-operative">0</p>
+                        </div>
+                    </div>
+                    <div class="stat-card available" onclick="setDashboardFilter('available')">
+                        <div class="stat-icon"><i class="fa-solid fa-user-check"></i></div>
+                        <div class="stat-info">
+                            <h3>Disponibile</h3>
+                            <p class="stat-value" id="stat-available">0</p>
+                        </div>
+                    </div>
+                    <div class="stat-card maintenance" onclick="setDashboardFilter('maintenance')">
+                        <div class="stat-icon"><i class="fa-solid fa-screwdriver-wrench"></i></div>
+                        <div class="stat-info">
+                            <h3>In Officina</h3>
+                            <p class="stat-value" id="stat-maintenance">0</p>
+                        </div>
+                    </div>
+                    <div class="stat-card to-repair" onclick="setDashboardFilter('to-repair')">
+                        <div class="stat-icon"><i class="fa-solid fa-triangle-exclamation"></i></div>
+                        <div class="stat-info">
+                            <h3>Da Riparare</h3>
+                            <p class="stat-value" id="stat-to-repair">0</p>
+                        </div>
+                    </div>
+                </div>
 
                 <!-- Recent Activity / Vehicle List -->
                 <div class="section-header">
                     <h3>Veicoli in Gestione</h3>
-                </div>
-
-                <!-- Filter Cards -->
-                <div class="filter-container"
-                    style="display: flex; gap: 0.5rem; margin-bottom: 1rem; overflow-x: auto; padding-bottom: 0.5rem;">
-                    <button onclick="filterVehicles('FUORI USO')" class="filter-card"
-                        style="flex: 1; min-width: 75px; padding: 0.4rem; border: 1px solid #fee2e2; border-radius: 20px; background: #fef2f2; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 0.25rem; transition: transform 0.2s; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
-                        <div
-                            style="width: 16px; height: 16px; background: var(--status-to-repair); border-radius: 50%;">
-                        </div>
-                        <span
-                            style="font-weight: 700; color: var(--status-to-repair); font-size: 0.8rem; text-align: center; line-height: 1;">FUORI
-                            USO</span>
-                        <span id="count-FUORI-USO"
-                            style="font-size: 1.2rem; color: var(--status-to-repair); font-weight: 800;">0</span>
-                    </button>
-                    <button onclick="filterVehicles('IN RIPARAZIONE')" class="filter-card"
-                        style="flex: 1; min-width: 75px; padding: 0.4rem; border: 1px solid #fef3c7; border-radius: 20px; background: #fffbeb; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 0.25rem; transition: transform 0.2s; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
-                        <div
-                            style="width: 16px; height: 16px; background: var(--status-maintenance); border-radius: 50%;">
-                        </div>
-                        <span
-                            style="font-weight: 700; color: #d97706; font-size: 0.8rem; text-align: center; line-height: 1;">IN
-                            RIP.</span>
-                        <span id="count-IN-RIPARAZIONE"
-                            style="font-size: 1.2rem; color: #d97706; font-weight: 800;">0</span>
-                    </button>
-                    <button onclick="filterVehicles('DISPONIBILE')" class="filter-card"
-                        style="flex: 1; min-width: 75px; padding: 0.4rem; border: 1px solid #dcfce7; border-radius: 20px; background: #f0fdf4; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 0.25rem; transition: transform 0.2s; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
-                        <div
-                            style="width: 16px; height: 16px; background: var(--status-available); border-radius: 50%;">
-                        </div>
-                        <span
-                            style="font-weight: 700; color: var(--status-available); font-size: 0.8rem; text-align: center; line-height: 1;">DISPON.</span>
-                        <span id="count-DISPONIBILE"
-                            style="font-size: 1.2rem; color: var(--status-available); font-weight: 800;">0</span>
-                    </button>
-                    <button onclick="filterVehicles('IN SERVIZIO')" class="filter-card"
-                        style="flex: 1; min-width: 75px; padding: 0.4rem; border: 1px solid #dbeafe; border-radius: 20px; background: #eff6ff; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 0.25rem; transition: transform 0.2s; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
-                        <div
-                            style="width: 16px; height: 16px; background: var(--status-operative); border-radius: 50%;">
-                        </div>
-                        <span
-                            style="font-weight: 700; color: var(--status-operative); font-size: 0.8rem; text-align: center; line-height: 1;">IN
-                            SERV.</span>
-                        <span id="count-IN-SERVIZIO"
-                            style="font-size: 1.2rem; color: var(--status-operative); font-weight: 800;">0</span>
-                    </button>
-                    <button onclick="filterVehicles('ALL')" class="filter-card active"
-                        style="flex: 1; min-width: 75px; padding: 0.4rem; border: 1px solid #e2e8f0; border-radius: 20px; background: white; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 0.25rem; transition: transform 0.2s; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
-                        <i class="fa-solid fa-list" style="font-size: 1.2rem; color: #64748b;"></i>
-                        <span style="font-weight: 700; color: #334155; font-size: 0.8rem;">TUTTI</span>
-                        <span id="count-ALL" style="font-size: 1.2rem; color: #64748b; font-weight: 800;">0</span>
-                    </button>
                 </div>
 
                 <div class="vehicle-grid" id="vehicle-grid">
@@ -172,6 +154,9 @@
                                     <input type="text" id="vehicle-plate" required
                                         style="width: 100%; padding: 0.6rem; border: 1px solid var(--border-color); border-radius: 0.5rem;">
                                 </div>
+                            </div>
+
+                            <div class="form-grid-2">
                                 <div class="form-group" style="margin-bottom: 1rem;">
                                     <label
                                         style="display: block; margin-bottom: 0.5rem; font-weight: 500; font-size: 0.9rem;">Sigla
@@ -179,20 +164,46 @@
                                     <input type="text" id="vehicle-sigla"
                                         style="width: 100%; padding: 0.6rem; border: 1px solid var(--border-color); border-radius: 0.5rem;">
                                 </div>
-                            </div>
-
-                            <!-- Status Field Removed -->
-
-                            <div class="form-grid-3">
                                 <div class="form-group" style="margin-bottom: 1rem;">
                                     <label
-                                        style="display: block; margin-bottom: 0.5rem; font-weight: 500; font-size: 0.9rem;">Sede
-                                        Operativa</label>
-                                    <select id="vehicle-location"
-                                        style="width: 100%; padding: 0.6rem; border: 1px solid var(--border-color); border-radius: 0.5rem; background-color: white;">
-                                        <option value="">Seleziona Luogo...</option>
+                                        style="display: block; margin-bottom: 0.5rem; font-weight: 500; font-size: 0.9rem;">Tipo
+                                        Mezzo</label>
+                                    <select id="vehicle-type"
+                                        style="width: 100%; padding: 0.6rem; border: 1px solid var(--border-color); border-radius: 0.5rem;">
+                                        <option value="Ambulanza">Ambulanza</option>
+                                        <option value="Automedica">Automedica</option>
+                                        <option value="Automobile">Automobile</option>
+                                        <option value="Furgone">Furgone</option>
+                                        <option value="Altro">Altro</option>
                                     </select>
                                 </div>
+                            </div>
+
+                            <div class="form-grid-2">
+                                <div class="form-group" style="margin-bottom: 1rem;">
+                                    <label
+                                        style="display: block; margin-bottom: 0.5rem; font-weight: 500; font-size: 0.9rem;">Stato</label>
+                                    <select id="vehicle-status"
+                                        style="width: 100%; padding: 0.6rem; border: 1px solid var(--border-color); border-radius: 0.5rem;">
+                                        <option value="operative">In Servizio</option>
+                                        <option value="available">Disponibile</option>
+                                        <option value="maintenance">In Officina</option>
+                                        <option value="to-repair">Da Riparare</option>
+                                    </select>
+                                </div>
+                                <div class="form-group" style="margin-bottom: 1rem;">
+                                    <label
+                                        style="display: block; margin-bottom: 0.5rem; font-weight: 500; font-size: 0.9rem;">Stazione</label>
+                                    <select id="vehicle-station"
+                                        style="width: 100%; padding: 0.6rem; border: 1px solid var(--border-color); border-radius: 0.5rem;">
+                                        <option value="">-- Seleziona --</option>
+                                        <!-- Populated via JS -->
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div class="form-grid-3">
+
                                 <div class="form-group" style="margin-bottom: 1rem;">
                                     <label
                                         style="display: block; margin-bottom: 0.5rem; font-weight: 500; font-size: 0.9rem;">Chilometri</label>
@@ -208,30 +219,30 @@
                                 </div>
                             </div>
 
-                            <!-- Extended Details: Tel Fields (No Header) -->
-                            <div class="form-grid-2" style="margin-bottom: 1rem;">
-                                <div class="form-group">
-                                    <label style="display: block; margin-bottom: 0.3rem; font-size: 0.8rem;">Tel 1
-                                        (Cellulare)</label>
-                                    <div style="display: flex; gap: 0.5rem;">
-                                        <input type="tel" id="vehicle-tel1" placeholder="Es. 333 1234567"
-                                            style="flex: 1; padding: 0.5rem; border: 1px solid var(--border-color); border-radius: 0.4rem; font-size: 0.9rem;">
-                                        <button type="button" onclick="callFromInput('vehicle-tel1')"
-                                            style="padding: 0.5rem; background: var(--status-available); color: white; border: none; border-radius: 0.4rem; cursor: pointer;">
-                                            <i class="fa-solid fa-phone"></i>
-                                        </button>
+                            <!-- Extended Details: Equipment -->
+                            <div
+                                style="background: #f8fafc; padding: 1rem; border-radius: 0.5rem; margin-bottom: 1rem;">
+                                <h4
+                                    style="font-size: 0.9rem; font-weight: 600; margin-bottom: 0.8rem; color: var(--text-secondary);">
+                                    Dotazioni</h4>
+                                <div class="form-grid-3 small-gap">
+                                    <div class="form-group">
+                                        <label
+                                            style="display: block; margin-bottom: 0.3rem; font-size: 0.8rem;">Barella</label>
+                                        <input type="text" id="vehicle-barella" placeholder="Modello/ID"
+                                            style="width: 100%; padding: 0.5rem; border: 1px solid var(--border-color); border-radius: 0.4rem; font-size: 0.9rem;">
                                     </div>
-                                </div>
-                                <div class="form-group">
-                                    <label style="display: block; margin-bottom: 0.3rem; font-size: 0.8rem;">Tel 2
-                                        (Cellulare)</label>
-                                    <div style="display: flex; gap: 0.5rem;">
-                                        <input type="tel" id="vehicle-tel2" placeholder="Es. 333 7654321"
-                                            style="flex: 1; padding: 0.5rem; border: 1px solid var(--border-color); border-radius: 0.4rem; font-size: 0.9rem;">
-                                        <button type="button" onclick="callFromInput('vehicle-tel2')"
-                                            style="padding: 0.5rem; background: var(--status-available); color: white; border: none; border-radius: 0.4rem; cursor: pointer;">
-                                            <i class="fa-solid fa-phone"></i>
-                                        </button>
+                                    <div class="form-group">
+                                        <label style="display: block; margin-bottom: 0.3rem; font-size: 0.8rem;">ID
+                                            Radio</label>
+                                        <input type="text" id="vehicle-radio" placeholder="ID Univoco"
+                                            style="width: 100%; padding: 0.5rem; border: 1px solid var(--border-color); border-radius: 0.4rem; font-size: 0.9rem;">
+                                    </div>
+                                    <div class="form-group">
+                                        <label style="display: block; margin-bottom: 0.3rem; font-size: 0.8rem;">ID
+                                            Aspiratore</label>
+                                        <input type="text" id="vehicle-aspirator" placeholder="ID Univoco"
+                                            style="width: 100%; padding: 0.5rem; border: 1px solid var(--border-color); border-radius: 0.4rem; font-size: 0.9rem;">
                                     </div>
                                 </div>
                             </div>
@@ -252,7 +263,8 @@
                                     </div>
                                     <div class="form-group">
                                         <label
-                                            style="display: block; margin-bottom: 0.3rem; font-size: 0.8rem;">Rev.O2</label>
+                                            style="display: block; margin-bottom: 0.3rem; font-size: 0.8rem;">Prossimo
+                                            Collaudo</label>
                                         <input type="date" id="vehicle-testing"
                                             style="width: 100%; padding: 0.5rem; border: 1px solid var(--border-color); border-radius: 0.4rem; font-size: 0.9rem;">
                                     </div>
@@ -268,16 +280,7 @@
                                     style="width: 100%; padding: 0.6rem; border: 1px solid var(--border-color); border-radius: 0.5rem; font-family: inherit;"></textarea>
                             </div>
 
-                            <div class="form-group" style="margin-bottom: 1.5rem;">
-                                <label
-                                    style="display: block; margin-bottom: 0.5rem; font-weight: 500; font-size: 0.9rem;">Foto
-                                    del Mezzo</label>
-                                <div style="display: flex; gap: 0.5rem; flex-direction: column;">
-                                    <input type="file" id="vehicle-image-upload" accept="image/*"
-                                        style="width: 100%; padding: 0.6rem; border: 1px solid var(--border-color); border-radius: 0.5rem;">
-                                    <input type="hidden" id="vehicle-image">
-                                </div>
-                            </div>
+
 
                             <div style="display: flex; justify-content: flex-end; gap: 1rem;">
                                 <button type="button" class="btn"
@@ -349,8 +352,7 @@
                 </div>
             </div>
         </main>
-        <!-- Location Management Modal -->
-        <!-- Location Management Modal Removed -->
+
 
         <!-- Data Management Modal -->
         <div id="data-management-modal" class="modal hidden">
@@ -365,7 +367,6 @@
                 <div style="padding: 1rem; border-bottom: 1px solid var(--border-color); display: flex; gap: 1rem;">
                     <button class="filter-btn active" onclick="switchDataTable('vehicles')">Mezzi</button>
                     <button class="filter-btn" onclick="switchDataTable('locations')">Luoghi</button>
-
                     <button class="filter-btn" onclick="switchDataTable('interventions')">Interventi</button>
                 </div>
                 <div style="flex-grow: 1; overflow-y: auto; padding: 1.5rem;">
