@@ -115,16 +115,28 @@ async function renderVehicleGrid(vehicles) {
                 <div style="height: 30px; width: 100%; background-color: ${locationColor}; display: flex; align-items: center; justify-content: center; 
                     color: ${(() => {
                 const c = locationColor.toLowerCase();
-                if (c.includes('ef4444') || c.includes('ff0000') || c.includes('dc2626') || c.includes('red') || c.includes('f59e0b') || c.includes('amber') || c.includes('yellow') || c.includes('orange')) return 'black';
+                // RED -> Black
+                if (c.includes('ef4444') || c.includes('ff0000') || c.includes('dc2626') || c.includes('red')) return 'black';
+                // YELLOW -> Black
+                if (c.includes('f59e0b') || c.includes('yellow') || c.includes('orange') || c.includes('amber')) return 'black';
+                // Default -> White
                 return 'white';
             })()}; 
                     font-weight: 800; font-size: 0.9rem; letter-spacing: 1px;">
                     ${(() => {
                 const c = locationColor.toLowerCase();
-                if (c.includes('2563eb') || c.includes('0ea5e9') || c.includes('3b82f6') || c.includes('blue')) return "IN SERVIZIO";
+
+                // RED -> FUORI USO
                 if (c.includes('ef4444') || c.includes('ff0000') || c.includes('dc2626') || c.includes('red')) return "FUORI USO";
+
+                // YELLOW -> IN RIPARAZIONE
                 if (c.includes('f59e0b') || c.includes('yellow') || c.includes('orange') || c.includes('amber')) return "IN RIPARAZIONE";
+
+                // GREEN -> DISPONIBILE
                 if (c.includes('22c55e') || c.includes('green') || c.includes('16a34a')) return "DISPONIBILE";
+
+                // BLUE -> IN SERVIZIO
+                if (c.includes('2563eb') || c.includes('0ea5e9') || c.includes('3b82f6') || c.includes('blue')) return "IN SERVIZIO";
 
                 // Fallback: Location Name
                 if (vehicle.luoghi && vehicle.luoghi.luogo) return vehicle.luoghi.luogo.toUpperCase();
