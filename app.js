@@ -148,8 +148,8 @@ async function renderVehicleGrid(vehicles) {
 
                             // Classulate based on Hue
                             if ((h >= 0 && h < 15) || h >= 330) return "FUORI USO"; // Red
-                            if (h >= 15 && h < 70) return "IN RIPARAZIONE"; // Orange/Yellow
-                            if (h >= 70 && h < 165) return "DISPONIBILE"; // Green
+                            if (h >= 15 && h < 65) return "IN RIPARAZIONE"; // Orange/Yellow (Adjusted boundary)
+                            if (h >= 65 && h < 165) return "DISPONIBILE"; // Green (Wider range)
                             if (h >= 165 && h < 265) return "IN SERVIZIO"; // Blue/Cyan
                         }
                     } catch (e) { console.error("Color parse error", e); }
@@ -160,7 +160,10 @@ async function renderVehicleGrid(vehicles) {
                     if (c.includes('22c55e') || c.includes('green')) return "DISPONIBILE";
                     if (c.includes('2563eb') || c.includes('blue')) return "IN SERVIZIO";
 
-                    // 4. Final Fallback: Location Name
+                    // 4. Final Fallback: Location Name Checks
+                    if (locName.includes('DISPONIBILE')) return "DISPONIBILE";
+                    if (locName.includes('OPERATIVO') || locName.includes('SERVIZIO')) return "IN SERVIZIO";
+
                     return locName;
                 };
                 return getStatus();
