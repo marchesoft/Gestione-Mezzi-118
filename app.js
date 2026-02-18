@@ -112,13 +112,25 @@ async function renderVehicleGrid(vehicles) {
         card.innerHTML = `
             <div class="card-header" style="position: relative;">
                 <img src="${vehicle.image}" alt="${vehicle.model}" onerror="this.src='https://placehold.co/600x400?text=No+Immagine'">
-                <div style="height: 30px; width: 100%; background-color: ${locationColor}; display: flex; align-items: center; justify-content: center; color: ${locationColor.toLowerCase().includes('ef4444') ? 'black' : 'white'}; font-weight: 800; font-size: 0.9rem; letter-spacing: 1px;">
+                <div style="height: 30px; width: 100%; background-color: ${locationColor}; display: flex; align-items: center; justify-content: center; 
+                    color: ${(() => {
+                const c = locationColor.toLowerCase();
+                if (c.includes('ef4444') || c.includes('ff0000') || c.includes('dc2626') || c.includes('red') || c.includes('f59e0b') || c.includes('amber') || c.includes('yellow') || c.includes('orange')) return 'black';
+                return 'white';
+            })()}; 
+                    font-weight: 800; font-size: 0.9rem; letter-spacing: 1px;">
                     ${(() => {
                 const c = locationColor.toLowerCase();
-                if (c.includes('2563eb') || c.includes('0ea5e9') || c.includes('3b82f6')) return "IN SERVIZIO";
-                if (c.includes('ef4444')) return "FUORI USO";
-                if (c.includes('f59e0b')) return "IN OFFICINA";
-                if (c.includes('22c55e')) return "DISPONIBILE";
+                if (c.includes('2563eb') || c.includes('0ea5e9') || c.includes('3b82f6') || c.includes('blue')) return "IN SERVIZIO";
+                if (c.includes('ef4444') || c.includes('ff0000') || c.includes('dc2626') || c.includes('red')) return "FUORI USO";
+                if (c.includes('f59e0b') || c.includes('yellow') || c.includes('orange') || c.includes('amber')) return "IN OFFICINA";
+                if (c.includes('22c55e') || c.includes('green') || c.includes('16a34a')) return "DISPONIBILE";
+
+                // Fallback: Location Name
+                if (vehicle.luoghi && vehicle.luoghi.luogo) return vehicle.luoghi.luogo.toUpperCase();
+                const loc = locations.find(l => l.id == vehicle.location_id);
+                if (loc) return loc.luogo.toUpperCase();
+
                 return "";
             })()}
                 </div>
