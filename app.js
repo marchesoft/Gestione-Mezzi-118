@@ -101,7 +101,7 @@ async function renderVehicleGrid(vehicles) {
         }
 
         // Robust color lookup: try joined data first, then fallback to finding it in the locations list
-        let locationColor = '#ccc';
+        let locationColor = '#FAF8F3'; // Default card background
         if (vehicle.luoghi && vehicle.luoghi.colore) {
             locationColor = vehicle.luoghi.colore;
         } else if (vehicle.location_id) {
@@ -109,14 +109,16 @@ async function renderVehicleGrid(vehicles) {
             if (loc) locationColor = loc.colore;
         }
 
+        // APPLY BACKGROUND COLOR TO CARD
+        card.style.backgroundColor = locationColor;
+
         card.innerHTML = `
             <div class="card-header" style="position: relative;">
                 <img src="${vehicle.image}" alt="${vehicle.model}" onerror="this.src='https://placehold.co/600x400?text=No+Immagine'">
-                <div style="height: 30px; width: 100%; background-color: ${locationColor};"></div>
             </div>
             
             <div class="card-body">
-                <div class="vehicle-id" style="text-align: center; margin-bottom: 0.5rem; margin-top: 1rem;">
+                <div class="vehicle-id" style="text-align: center; margin-bottom: 0.5rem; margin-top: 0.5rem;">
                     ${vehicle.sigla ? `<div style="font-size: 1.2rem; font-weight: 900; color: #1e3a8a; margin-bottom: 0px;">${vehicle.sigla}</div>` : ''}
                     <h4 style="font-size: 0.9rem; color: var(--text-secondary); margin-bottom: 0px; font-weight: 500;">${vehicle.model}</h4>
                     <span class="plate-number" style="font-size: 1.1rem; color: var(--text-primary); font-weight: 800; display:block;">${vehicle.plate}</span>
@@ -136,8 +138,8 @@ async function renderVehicleGrid(vehicles) {
                     </div>
                 </div>
 
-                <div style="margin-top: auto; padding-top: 0.5rem; border-top: 1px solid #f1f5f9;">
-                    <select onchange="updateVehicleLocation('${vehicle.id}', this.value)" style="width: 100%; padding: 0.25rem; border: 1px solid #e2e8f0; border-radius: 4px; background-color: #f8fafc; font-weight: 600; color: #334155; cursor: pointer; font-size: 0.85rem;">
+                <div style="margin-top: auto; padding-top: 0.5rem; border-top: 1px solid rgba(0,0,0,0.1);">
+                    <select onchange="updateVehicleLocation('${vehicle.id}', this.value)" style="width: 100%; padding: 0.25rem; border: 1px solid rgba(0,0,0,0.1); border-radius: 4px; background-color: rgba(255,255,255,0.5); font-weight: 600; color: #334155; cursor: pointer; font-size: 0.85rem;">
                         <option value="">SELEZIONA SEDE</option>
                         ${locations.map(loc => `
                             <option value="${loc.id}" ${vehicle.location_id === loc.id ? 'selected' : ''}>${loc.luogo}</option>
