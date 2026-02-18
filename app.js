@@ -51,31 +51,14 @@ function setupRealtimeSubscription() {
 
 async function renderDashboard() {
     const vehicles = await store.getVehicles();
-    updateStats(vehicles);
+    // updateStats REMOVED
+
     renderVehicleGrid(vehicles);
 }
 
-function updateStats(vehicles) {
-    const operative = vehicles.filter(v => v.status === 'operative').length;
-    const available = vehicles.filter(v => v.status === 'available').length;
-    const maintenance = vehicles.filter(v => v.status === 'maintenance').length;
-    const toRepair = vehicles.filter(v => v.status === 'to-repair').length;
 
-    document.getElementById('stat-operative').textContent = operative;
-    document.getElementById('stat-available').textContent = available;
-    document.getElementById('stat-maintenance').textContent = maintenance;
-    document.getElementById('stat-to-repair').textContent = toRepair;
-}
 
-function getStatusLabel(status) {
-    const labels = {
-        'operative': 'Operativa',
-        'available': 'Disponibile',
-        'maintenance': 'In Officina',
-        'to-repair': 'Da Riparare'
-    };
-    return labels[status] || status;
-}
+
 
 async function renderVehicleGrid(vehicles) {
     const grid = document.getElementById('vehicle-grid');
@@ -105,7 +88,7 @@ async function renderVehicleGrid(vehicles) {
     }
 
 
-    const savedLocations = await store.getLocations();
+    // savedLocations REMOVED
 
     vehicles.forEach(vehicle => {
         const card = document.createElement('div');
@@ -123,57 +106,7 @@ async function renderVehicleGrid(vehicles) {
             card.addEventListener('dragend', handleDragEnd);
         }
 
-        // Status Display - Admin: Dropdown, Non-Admin: Static Badge
-        let statusHtml = '';
-        const statusLabels = {
-            'operative': 'In Servizio',
-            'available': 'Disponibile',
-            'maintenance': 'In Officina',
-            'to-repair': 'Da Riparare'
-        };
 
-        if (isAdmin) {
-            statusHtml = `
-            <select class="status-full-bar status-${vehicle.status}" onchange="quickUpdateStatus(event, '${vehicle.id}')" onclick="event.stopPropagation()">
-                <option value="operative" ${vehicle.status === 'operative' ? 'selected' : ''}>In Servizio</option>
-                <option value="available" ${vehicle.status === 'available' ? 'selected' : ''}>Disponibile</option>
-                <option value="maintenance" ${vehicle.status === 'maintenance' ? 'selected' : ''}>In Officina</option>
-                <option value="to-repair" ${vehicle.status === 'to-repair' ? 'selected' : ''}>Da Riparare</option>
-            </select>
-            `;
-        } else {
-            statusHtml = `
-            <div class="status-full-bar status-${vehicle.status}" style="cursor: default; font-size: 1.1rem; font-weight: 700;">
-                ${statusLabels[vehicle.status] || vehicle.status}
-            </div>
-            `;
-        }
-
-        // Location Display - Admin: Dropdown, Non-Admin: Static Text
-        let locationHtml = '';
-        const locationOptions = savedLocations.map(loc =>
-            `<option value="${loc}" ${vehicle.station === loc ? 'selected' : ''}>${loc}</option>`
-        ).join('');
-
-        if (isAdmin) {
-            locationHtml = `
-            <div class="location-select-container" onclick="event.stopPropagation()">
-                <i class="fa-solid fa-location-dot location-icon"></i>
-                <select class="location-select" onchange="quickUpdateStationSelect(event, '${vehicle.id}')">
-                    ${locationOptions}
-                    <option value="" disabled>──────────</option>
-                    <option value="MANAGE_LOCATIONS">⚙️ Gestisci Elenco...</option>
-                </select>
-            </div>
-            `;
-        } else {
-            locationHtml = `
-            <div class="location-select-container" style="cursor: default; background: transparent; border: none; padding: 0;">
-                <i class="fa-solid fa-location-dot location-icon"></i>
-                <span style="font-weight: 700; font-size: 1.2rem; color: black;">${vehicle.station}</span>
-            </div>
-            `;
-        }
 
         card.innerHTML = `
             <div class="card-header" style="position: relative;">
@@ -182,7 +115,7 @@ async function renderVehicleGrid(vehicles) {
                     <span style="color: white; font-weight: 700; font-size: 1.2rem; text-transform: uppercase; border: 2px solid white; padding: 0.5rem 1rem;">Dettagli</span>
                 </div>
             </div>
-            ${statusHtml}
+            <!-- statusHtml REMOVED -->
             <div class="card-body">
                 <div class="vehicle-id" style="text-align: center; margin-bottom: 1.5rem;">
                     ${vehicle.sigla ? `<div style="font-size: 1.5rem; font-weight: 900; color: #1e3a8a; margin-bottom: 0px;">${vehicle.sigla}</div>` : ''}
@@ -199,7 +132,7 @@ async function renderVehicleGrid(vehicles) {
                     </div>
                 </div>
                 <div class="card-actions" style="justify-content: center;">
-                    ${locationHtml}
+                    <!-- locationHtml REMOVED -->
                 </div>
             </div>
         `;
@@ -269,144 +202,7 @@ function handleDrop(e) {
     return false;
 }
 
-// Quick Actions
-window.quickUpdateStatus = async function (event, id) {
-    event.stopPropagation();
-    const newStatus = event.target.value;
-    const vehicle = await store.getVehicleById(id);
-    if (vehicle && vehicle.status !== newStatus) {
-        vehicle.status = newStatus;
-        await store.updateVehicle(vehicle);
-        await renderDashboard();
 
-        if (!document.getElementById('vehicle-modal').classList.contains('hidden')) {
-            openVehicleModal(id);
-        }
-    }
-}
-
-window.quickUpdateStationSelect = async function (event, id) {
-    event.stopPropagation();
-    let newStation = event.target.value;
-
-    if (newStation === 'MANAGE_LOCATIONS') {
-        openLocationModal();
-        renderDashboard();
-        return;
-    }
-
-    const vehicle = await store.getVehicleById(id);
-    if (vehicle && vehicle.station !== newStation) {
-        vehicle.station = newStation;
-        await store.updateVehicle(vehicle);
-        await renderDashboard();
-
-        if (!document.getElementById('vehicle-modal').classList.contains('hidden')) {
-            openVehicleModal(id);
-        }
-    }
-}
-
-// Location Management Logic
-window.openLocationModal = async function () {
-    await renderLocationList();
-    document.getElementById('location-modal').classList.remove('hidden');
-}
-
-async function renderLocationList() {
-    const list = document.getElementById('location-list');
-    list.innerHTML = '';
-    const locations = await store.getLocations();
-
-    locations.forEach(loc => {
-        const li = document.createElement('li');
-        li.style.cssText = 'display: flex; justify-content: space-between; align-items: center; padding: 0.75rem; background: #f8fafc; margin-bottom: 0.5rem; border-radius: 0.5rem; border: 1px solid var(--border-color);';
-
-        li.innerHTML = `
-            <span style="font-weight: 500;">${loc}</span>
-            <div style="display: flex; gap: 0.5rem;">
-                <button class="btn" style="padding: 0.25rem 0.5rem; font-size: 0.8rem;" onclick="editLocation('${loc}')">
-                    <i class="fa-solid fa-pen"></i>
-                </button>
-                 <button class="btn" style="padding: 0.25rem 0.5rem; font-size: 0.8rem; color: var(--status-to-repair);" onclick="deleteLocation('${loc}')">
-                    <i class="fa-solid fa-trash"></i>
-                </button>
-            </div>
-        `;
-        list.appendChild(li);
-    });
-}
-
-window.addLocationHandler = async function (e) {
-    e.preventDefault();
-    const input = document.getElementById('new-location-input');
-    const newLoc = input.value.trim();
-    if (newLoc) {
-        await store.addLocation(newLoc);
-        input.value = '';
-        await renderLocationList();
-        await renderDashboard();
-
-        // If vehicle form is open, refresh its dropdown
-        const vehicleFormModal = document.getElementById('vehicle-form-modal');
-        if (!vehicleFormModal.classList.contains('hidden')) {
-            const stationSelect = document.getElementById('vehicle-station');
-            const currentVal = stationSelect.value;
-
-            stationSelect.innerHTML = '<option value="" disabled selected>Seleziona Stazione...</option>';
-            const locations = await store.getLocations();
-            locations.forEach(loc => {
-                const option = document.createElement('option');
-                option.value = loc;
-                option.textContent = loc;
-                stationSelect.appendChild(option);
-            });
-
-            // If the new location was just added, select it (optional but nice)
-            // Or restore previous selection
-            if (currentVal) stationSelect.value = currentVal;
-        }
-    }
-}
-
-window.deleteLocation = async function (loc) {
-    if (confirm(`Sei sicuro di voler eliminare "${loc}"?`)) {
-        await store.deleteLocation(loc);
-        await renderLocationList();
-        await renderDashboard();
-    }
-}
-
-window.editLocation = async function (oldName) {
-    const newName = prompt("Modifica nome luogo:", oldName);
-    if (newName && newName !== oldName) {
-        await store.updateLocation(oldName, newName);
-        await renderLocationList();
-        await renderDashboard();
-    }
-}
-
-// Global Admin State
-let isAdmin = false;
-
-window.toggleAdminMode = function () {
-    const hintText = document.getElementById('admin-hint-text');
-
-    if (isAdmin) {
-        // Logout
-        isAdmin = false;
-        localStorage.removeItem('isAdmin'); // Remove from localStorage
-        document.body.classList.remove('is-admin');
-        document.getElementById('admin-lock-icon').className = 'fa-solid fa-lock';
-        if (hintText) hintText.textContent = 'Modalita visualizzazione,';
-        alert("Modalità Amministratore Disattivata.");
-        renderDashboard();
-    } else {
-        // Open Login Modal
-        document.getElementById('admin-login-modal').classList.remove('hidden');
-        document.getElementById('admin-password-input').focus();
-    }
-}
 
 // Global functions attached to window for HTML event handlers
 
@@ -416,17 +212,7 @@ window.openVehicleForm = async function (vehicleId = null) {
     const modal = document.getElementById('vehicle-form-modal');
     const title = document.getElementById('form-modal-title');
     const form = document.getElementById('vehicle-form');
-    const stationSelect = document.getElementById('vehicle-station');
-
-    // Populate Station Dropdown
-    stationSelect.innerHTML = '<option value="" disabled selected>Seleziona Stazione...</option>';
-    const locations = await store.getLocations();
-    locations.forEach(loc => {
-        const option = document.createElement('option');
-        option.value = loc;
-        option.textContent = loc;
-        stationSelect.appendChild(option);
-    });
+    // Station Dropdown population removed
 
     form.reset();
     document.getElementById('vehicle-id').value = '';
@@ -441,16 +227,12 @@ window.openVehicleForm = async function (vehicleId = null) {
             document.getElementById('vehicle-plate').value = vehicle.plate;
             document.getElementById('vehicle-sigla').value = vehicle.sigla || '';
             // Type preserved automagically on backend/store if strictly using model
-            document.getElementById('vehicle-status').value = vehicle.status;
-            document.getElementById('vehicle-station').value = vehicle.station;
+            // Removed fields population
             document.getElementById('vehicle-mileage').value = vehicle.mileage;
             document.getElementById('vehicle-image').value = vehicle.image;
 
             // Extended Fields
             document.getElementById('vehicle-mileage-month').value = vehicle.mileage_month || ''; // Populate new field
-            document.getElementById('vehicle-barella').value = vehicle.barella_data || '';
-            document.getElementById('vehicle-radio').value = vehicle.radio_id || '';
-            document.getElementById('vehicle-aspirator').value = vehicle.aspirator_id || '';
             document.getElementById('vehicle-inspection').value = vehicle.inspection_expiry || '';
             document.getElementById('vehicle-testing').value = vehicle.testing_expiry || '';
             document.getElementById('vehicle-notes').value = vehicle.notes || '';
@@ -489,23 +271,7 @@ function setupEventListeners() {
         });
     }
 
-    // Filter Buttons
-    document.querySelectorAll('.filter-btn').forEach(btn => {
-        btn.addEventListener('click', async (e) => {
-            document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
-            e.target.classList.add('active');
-
-            const filter = e.target.dataset.filter;
-            const vehicles = await store.getVehicles();
-
-            if (filter === 'all') {
-                renderVehicleGrid(vehicles);
-            } else {
-                const filtered = vehicles.filter(v => v.status === filter);
-                renderVehicleGrid(filtered);
-            }
-        });
-    });
+    // Filter buttons listeners REMOVED
 
     // Modal Close handlers, same as before...
     const closeDetailModal = document.querySelector('.close-modal');
@@ -529,12 +295,7 @@ function setupEventListeners() {
         });
     }
 
-    const closeLocModal = document.querySelector('.close-location-modal');
-    if (closeLocModal) {
-        closeLocModal.addEventListener('click', () => {
-            document.getElementById('location-modal').classList.add('hidden');
-        });
-    }
+
 
     const cancelBtn = document.getElementById('cancel-vehicle-btn');
     if (cancelBtn) {
@@ -582,10 +343,7 @@ function setupEventListeners() {
         });
     }
 
-    const addLocForm = document.getElementById('add-location-form');
-    if (addLocForm) {
-        addLocForm.addEventListener('submit', window.addLocationHandler);
-    }
+
 
     const maintenanceForm = document.getElementById('maintenance-form');
     if (maintenanceForm) {
@@ -599,13 +357,7 @@ function setupEventListeners() {
         const modal = document.getElementById('vehicle-modal');
         const formModal = document.getElementById('vehicle-form-modal');
         const maintModal = document.getElementById('maintenance-form-modal');
-        const locModal = document.getElementById('location-modal');
-        const adminModal = document.getElementById('admin-login-modal');
-
-        if (event.target === modal) modal.classList.add('hidden');
-        if (event.target === formModal) formModal.classList.add('hidden');
-        if (event.target === maintModal) maintModal.classList.add('hidden');
-        if (event.target === locModal) locModal.classList.add('hidden');
+        // locModal logic removed
         if (event.target === adminModal) adminModal.classList.add('hidden');
     }
 }
@@ -616,41 +368,23 @@ window.saveVehicleForm = async function () {
     const id = document.getElementById('vehicle-id').value;
     const model = document.getElementById('vehicle-model').value;
     const plate = document.getElementById('vehicle-plate').value;
-    const status = document.getElementById('vehicle-status').value;
-    const station = document.getElementById('vehicle-station').value;
-    const mileage = document.getElementById('vehicle-mileage').value;
-    const sigla = (document.getElementById('vehicle-sigla').value || '').trim();
-
-    let image = document.getElementById('vehicle-image').value;
-    const imageFile = document.getElementById('vehicle-image-upload').files[0];
-
-    if (imageFile) {
-        try {
-            image = await convertToBase64(imageFile);
-        } catch (error) {
-            console.error(error);
-            alert("Errore immagine");
-            return;
-        }
-    }
-
-    if (!image) {
-        image = 'https://placehold.co/600x400?text=No+Immagine';
-    }
-
     const vehicleData = {
         model,
         plate,
         sigla,
-        status,
-        station,
+        // Removed status, station
         mileage: parseInt(mileage),
-        mileage_month: document.getElementById('vehicle-mileage-month').value, // Save new field
+        mileage_month: document.getElementById('vehicle-mileage-month').value,
         image,
         // Extended fields
-        barella_data: document.getElementById('vehicle-barella').value,
-        radio_id: document.getElementById('vehicle-radio').value,
-        aspirator_id: document.getElementById('vehicle-aspirator').value,
+        // Removed barella, aspirator
+        radio_id: document.getElementById('vehicle-radio') ? document.getElementById('vehicle-radio').value : '', // Radio left? User said remove barella/aspiratore but didn't mention radio. Keeping it if present in HTML, but I think I removed it from HTML too. Wait, radio was in HTML.
+        // I removed barella and aspirator from HTML in previous step. Radio was in the same block. Did I remove radio too? 
+        // Let's check my previous HTML edit.
+        // I replaced lines 219-237 which contained Barella, Radio, Aspirator.
+        // So Radio IS REMOVED from HTML.
+        // So I should remove it here too.
+
         inspection_expiry: document.getElementById('vehicle-inspection').value || null,
         testing_expiry: document.getElementById('vehicle-testing').value || null,
         notes: document.getElementById('vehicle-notes').value
@@ -691,19 +425,10 @@ window.openVehicleModal = async function (id) {
     const modal = document.getElementById('vehicle-modal');
     const content = document.getElementById('vehicle-details-content');
 
-    let statusColorClass = '';
-    if (vehicle.status === 'operative') statusColorClass = 'status-operative';
-    else if (vehicle.status === 'available') statusColorClass = 'status-available';
-    else if (vehicle.status === 'maintenance') statusColorClass = 'status-maintenance';
-    else statusColorClass = 'status-to-repair';
-
     content.innerHTML = `
         <div style="position: relative;">
             <button onclick="document.getElementById('vehicle-modal').classList.add('hidden')" style="position: absolute; top: 1rem; right: 1rem; background: rgba(0,0,0,0.5); border: none; color: white; width: 32px; height: 32px; border-radius: 50%; cursor: pointer; font-size: 1.2rem; display: flex; align-items: center; justify-content: center; z-index: 10;">&times;</button>
             <img src="${vehicle.image}" style="width: 100%; height: 300px; object-fit: cover; border-top-left-radius: 1rem; border-top-right-radius: 1rem;" onerror="this.src='https://placehold.co/600x400?text=No+Immagine'">
-             <div class="status-badge ${statusColorClass}" style="top: 20px; left: 20px; font-size: 1rem; padding: 0.5rem 1rem; right: auto;"> <!-- Moved badge to left to avoid conflict -->
-                ${getStatusLabel(vehicle.status)}
-            </div>
         </div>
         <div style="padding: 1.5rem;">
             <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1rem;">
@@ -724,8 +449,7 @@ window.openVehicleModal = async function (id) {
 
             <div class="form-grid-3" style="margin-bottom: 1rem; background: #f8fafc; padding: 1rem; border-radius: 0.75rem;">
                 <div>
-                    <div style="font-size: 0.75rem; text-transform: uppercase; color: black; font-weight: 600; margin-bottom: 0.25rem;">Stazione Attuale</div>
-                    <div style="font-size: 1.1rem; font-weight: 600; color: black;">${vehicle.station}</div>
+                    <!-- Station Removed -->
                 </div>
                 <div>
                     <div style="font-size: 0.75rem; text-transform: uppercase; color: black; font-weight: 600; margin-bottom: 0.25rem;">Chilometri</div>
@@ -739,16 +463,7 @@ window.openVehicleModal = async function (id) {
 
             <div class="form-grid-3" style="margin-bottom: 1rem; background: #f1f5f9; padding: 1rem; border-radius: 0.75rem;">
                 <div>
-                    <div style="font-size: 0.75rem; text-transform: uppercase; color: black; font-weight: 600; margin-bottom: 0.25rem;">Barella</div>
-                    <div style="font-size: 0.95rem; font-weight: 600; color: black;">${vehicle.barella_data || '-'}</div>
-                </div>
-                <div>
-                    <div style="font-size: 0.75rem; text-transform: uppercase; color: black; font-weight: 600; margin-bottom: 0.25rem;">ID Radio</div>
-                    <div style="font-size: 0.95rem; font-weight: 600; color: black;">${vehicle.radio_id || '-'}</div>
-                </div>
-                <div>
-                    <div style="font-size: 0.75rem; text-transform: uppercase; color: black; font-weight: 600; margin-bottom: 0.25rem;">ID Aspiratore</div>
-                    <div style="font-size: 0.95rem; font-weight: 600; color: black;">${vehicle.aspirator_id || '-'}</div>
+                    <!-- Barella / Radio / Aspirator Removed -->
                 </div>
                 <div>
                     <div style="font-size: 0.75rem; text-transform: uppercase; color: black; font-weight: 600; margin-bottom: 0.25rem;">Scadenza Revisione</div>
@@ -762,7 +477,7 @@ window.openVehicleModal = async function (id) {
 
             <div style="margin-bottom: 1.5rem;">
                 <label style="font-size: 0.75rem; text-transform: uppercase; color: black; font-weight: 600; margin-bottom: 0.25rem; display: block;">Note</label>
-                <textarea 
+                <textarea
                     style="width: 100%; padding: 0.75rem; border: 1px solid var(--border-color); border-radius: 0.5rem; font-family: inherit; font-size: 0.95rem; resize: vertical; min-height: 80px; color: black; ${!isAdmin ? 'background-color: #f8fafc; cursor: not-allowed;' : ''}"
                     placeholder="${isAdmin ? 'Scrivi qui le note del mezzo...' : 'Nessuna nota'}"
                     ${!isAdmin ? 'readonly' : ''}
@@ -776,7 +491,7 @@ window.openVehicleModal = async function (id) {
                     <i class="fa-solid fa-plus"></i> Aggiungi Record
                 </button>` : ''}
             </div>
-            
+
             <div style="background: white; border: 1px solid var(--border-color); border-radius: 1rem; overflow-x: auto;">
                 ${vehicle.maintenanceHistory && vehicle.maintenanceHistory.length > 0 ? `
                     <table style="width: 100%; border-collapse: collapse;">
@@ -951,111 +666,77 @@ window.switchDataTable = async function (type) {
         if (type === 'vehicles') {
             data = await store.getVehicles();
             html = `
-                <div style="overflow-x: auto;">
-                    <table style="width: 100%; border-collapse: collapse; min-width: 1200px;">
-                        <thead>
-                            <tr style="background: #f8fafc; border-bottom: 2px solid var(--border-color);">
-                                <th style="padding: 0.75rem; text-align: left;">IMG</th>
-                                <th style="padding: 0.75rem; text-align: left;">Targa</th>
-                                <th style="padding: 0.75rem; text-align: left;">Modello</th>
-                                <th style="padding: 0.75rem; text-align: left;">Sigla</th>
-                                <th style="padding: 0.75rem; text-align: left;">Stazione</th>
-                                <th style="padding: 0.75rem; text-align: left;">Stato</th>
-                                <th style="padding: 0.75rem; text-align: left;">Km</th>
-                                <th style="padding: 0.75rem; text-align: left;">Mese Km</th>
-                                <th style="padding: 0.75rem; text-align: left;">Note</th>
-                                <th style="padding: 0.75rem; text-align: left;">Barella</th>
-                                <th style="padding: 0.75rem; text-align: left;">Radio</th>
-                                <th style="padding: 0.75rem; text-align: left;">Aspiratore</th>
-                                <th style="padding: 0.75rem; text-align: left;">Rev. Scad.</th>
-                                <th style="padding: 0.75rem; text-align: left;">Coll. Scad.</th>
-                                <th style="padding: 0.75rem; text-align: right;">Azioni</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            ${data.map(v => `
-                                <tr style="border-bottom: 1px solid var(--border-color);">
-                                    <td style="padding: 0.75rem;"><img src="${v.image}" style="width: 40px; height: 30px; object-fit: cover; border-radius: 4px;" onerror="this.src='https://placehold.co/40?text=NA'"></td>
-                                    <td style="padding: 0.75rem;">${v.plate}</td>
-                                    <td style="padding: 0.75rem;">${v.model}</td>
-                                    <td style="padding: 0.75rem; font-weight: bold; color: var(--primary-color);">${v.sigla || '-'}</td>
-                                    <td style="padding: 0.75rem;">${v.station}</td>
-                                    <td style="padding: 0.75rem;">${v.status}</td>
-                                    <td style="padding: 0.75rem;">${v.mileage}</td>
-                                    <td style="padding: 0.75rem;">${v.mileage_month || '-'}</td>
-                                    <td style="padding: 0.75rem; max-width: 150px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${v.notes || ''}">${v.notes || '-'}</td>
-                                    <td style="padding: 0.75rem;">${v.barella_data || '-'}</td>
-                                    <td style="padding: 0.75rem;">${v.radio_id || '-'}</td>
-                                    <td style="padding: 0.75rem;">${v.aspirator_id || '-'}</td>
-                                    <td style="padding: 0.75rem;">${v.inspection_expiry || '-'}</td>
-                                    <td style="padding: 0.75rem;">${v.testing_expiry || '-'}</td>
-                                    <td style="padding: 0.75rem; text-align: right;">
-                                        <button onclick="openVehicleForm('${v.id}'); document.getElementById('data-management-modal').classList.add('hidden');" style="margin-right:0.5rem; cursor:pointer; background:none; border:none; color:var(--primary-color);"><i class="fa-solid fa-pen"></i></button>
-                                        <button onclick="deleteVehicleHandler('${v.id}')" style="cursor:pointer; background:none; border:none; color:var(--status-to-repair);"><i class="fa-solid fa-trash"></i></button>
-                                    </td>
-                                </tr>
-                            `).join('')}
-                        </tbody>
-                    </table>
-                </div>`;
-        } else if (type === 'locations') {
-            data = await store.getLocations(); // Returns array of strings
-            html = `
-                <div style="margin-bottom: 1rem;">
-                    <button class="btn btn-primary" onclick="document.getElementById('location-modal').classList.remove('hidden')">
-                         <i class="fa-solid fa-plus"></i> Gestisci da Menu Luoghi
-                    </button>
-                </div>
-                <table style="width: 100%; border-collapse: collapse;">
+            <div style="overflow-x: auto;">
+                <table style="width: 100%; border-collapse: collapse; min-width: 1200px;">
                     <thead>
                         <tr style="background: #f8fafc; border-bottom: 2px solid var(--border-color);">
-                            <th style="padding: 0.75rem; text-align: left;">Nome Luogo</th>
+                            <th style="padding: 0.75rem; text-align: left;">IMG</th>
+                            <th style="padding: 0.75rem; text-align: left;">Targa</th>
+                            <th style="padding: 0.75rem; text-align: left;">Modello</th>
+                            <th style="padding: 0.75rem; text-align: left;">Sigla</th>
+                            <th style="padding: 0.75rem; text-align: left;">Km</th>
+                            <th style="padding: 0.75rem; text-align: left;">Mese Km</th>
+                            <th style="padding: 0.75rem; text-align: left;">Note</th>
+                            <th style="padding: 0.75rem; text-align: left;">Rev. Scad.</th>
+                            <th style="padding: 0.75rem; text-align: left;">Coll. Scad.</th>
                             <th style="padding: 0.75rem; text-align: right;">Azioni</th>
                         </tr>
                     </thead>
                     <tbody>
-                        ${data.map(l => `
+                        ${data.map(v => `
                             <tr style="border-bottom: 1px solid var(--border-color);">
-                                <td style="padding: 0.75rem;">${l}</td>
+                                <td style="padding: 0.75rem;"><img src="${v.image}" style="width: 40px; height: 30px; object-fit: cover; border-radius: 4px;" onerror="this.src='https://placehold.co/40?text=NA'"></td>
+                                <td style="padding: 0.75rem;">${v.plate}</td>
+                                <td style="padding: 0.75rem;">${v.model}</td>
+                                <td style="padding: 0.75rem; font-weight: bold; color: var(--primary-color);">${v.sigla || '-'}</td>
+                                <td style="padding: 0.75rem;">${v.mileage}</td>
+                                <td style="padding: 0.75rem;">${v.mileage_month || '-'}</td>
+                                <td style="padding: 0.75rem; max-width: 150px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${v.notes || ''}">${v.notes || '-'}</td>
+                                <td style="padding: 0.75rem;">${v.inspection_expiry || '-'}</td>
+                                <td style="padding: 0.75rem;">${v.testing_expiry || '-'}</td>
                                 <td style="padding: 0.75rem; text-align: right;">
-                                    <button onclick="store.deleteLocation('${l}').then(() => switchDataTable('locations'))" style="cursor:pointer; background:none; border:none; color:var(--status-to-repair);"><i class="fa-solid fa-trash"></i></button>
+                                    <button onclick="openVehicleForm('${v.id}'); document.getElementById('data-management-modal').classList.add('hidden');" style="margin-right:0.5rem; cursor:pointer; background:none; border:none; color:var(--primary-color);"><i class="fa-solid fa-pen"></i></button>
+                                    <button onclick="deleteVehicleHandler('${v.id}')" style="cursor:pointer; background:none; border:none; color:var(--status-to-repair);"><i class="fa-solid fa-trash"></i></button>
                                 </td>
                             </tr>
                         `).join('')}
                     </tbody>
-                </table>`;
+                </table>
+            </div>`;
+        } else if (type === 'locations') {
+            html = '<p style="text-align:center; padding: 2rem;">Gestione Luoghi non più disponibile.</p>';
         } else if (type === 'interventions') {
             data = await store.getInterventions();
             html = `
-                <div style="overflow-x: auto;">
-                    <table style="width: 100%; border-collapse: collapse;">
-                        <thead>
-                            <tr style="background: #f8fafc; border-bottom: 2px solid var(--border-color);">
-                                <th style="padding: 0.75rem; text-align: left;">Sigla Mezzo</th>
-                                <th style="padding: 0.75rem; text-align: left;">Data Entrata</th>
-                                <th style="padding: 0.75rem; text-align: left;">Data Uscita</th>
-                                <th style="padding: 0.75rem; text-align: left;">Descrizione</th>
-                                <th style="padding: 0.75rem; text-align: right;">Azioni</th>
+            <div style="overflow-x: auto;">
+                <table style="width: 100%; border-collapse: collapse;">
+                    <thead>
+                        <tr style="background: #f8fafc; border-bottom: 2px solid var(--border-color);">
+                            <th style="padding: 0.75rem; text-align: left;">Sigla Mezzo</th>
+                            <th style="padding: 0.75rem; text-align: left;">Data Entrata</th>
+                            <th style="padding: 0.75rem; text-align: left;">Data Uscita</th>
+                            <th style="padding: 0.75rem; text-align: left;">Descrizione</th>
+                            <th style="padding: 0.75rem; text-align: right;">Azioni</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${data.map(i => `
+                            <tr style="border-bottom: 1px solid var(--border-color);">
+                                <td style="padding: 0.75rem; font-weight: bold;">${i.sigla || '-'}</td>
+                                <td style="padding: 0.75rem;">${i.date}</td>
+                                <td style="padding: 0.75rem;">${i.date_out || '-'}</td>
+                                <td style="padding: 0.75rem;">${i.description}</td>
+                                <td style="padding: 0.75rem; text-align: right;">
+                                    <button onclick="store.deleteIntervention('${i.id}').then(() => switchDataTable('interventions'))" style="cursor:pointer; background:none; border:none; color:var(--status-to-repair);"><i class="fa-solid fa-trash"></i></button>
+                                </td>
                             </tr>
-                        </thead>
-                        <tbody>
-                            ${data.map(i => `
-                                <tr style="border-bottom: 1px solid var(--border-color);">
-                                    <td style="padding: 0.75rem; font-weight: bold;">${i.sigla || '-'}</td>
-                                    <td style="padding: 0.75rem;">${i.date}</td>
-                                    <td style="padding: 0.75rem;">${i.date_out || '-'}</td>
-                                    <td style="padding: 0.75rem;">${i.description}</td>
-                                    <td style="padding: 0.75rem; text-align: right;">
-                                        <button onclick="store.deleteIntervention('${i.id}').then(() => switchDataTable('interventions'))" style="cursor:pointer; background:none; border:none; color:var(--status-to-repair);"><i class="fa-solid fa-trash"></i></button>
-                                    </td>
-                                </tr>
-                            `).join('')}
-                        </tbody>
-                    </table>
-                </div>`;
+                        `).join('')}
+                    </tbody>
+                </table>
+            </div>`;
         }
     } catch (e) {
-        html = `< p style = "color:red;" > Errore caricamento dati: ${e.message}</p > `;
+        html = `<p style="color:red;">Errore caricamento dati: ${e.message}</p>`;
     }
 
     container.innerHTML = html;

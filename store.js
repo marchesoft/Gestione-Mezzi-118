@@ -97,48 +97,8 @@ class Store {
     }
 
     // --- Locations ---
+    // Funzionalità luoghi rimossa come richiesto
 
-    async getLocations() {
-        const { data, error } = await this.supabase
-            .from('locations')
-            .select('name');
-
-        if (error) return [];
-        return data.map(l => l.name);
-    }
-
-    async addLocation(name) {
-        const { error } = await this.supabase
-            .from('locations')
-            .insert([{ name }]);
-        if (error) console.error('Error adding location:', error);
-    }
-
-    async deleteLocation(name) {
-        const { error } = await this.supabase
-            .from('locations')
-            .delete()
-            .eq('name', name);
-        if (error) console.error('Error deleting location:', error);
-    }
-
-    async updateLocation(oldName, newName) {
-        // Update location table
-        const { error } = await this.supabase
-            .from('locations')
-            .update({ name: newName })
-            .eq('name', oldName);
-
-        if (error) {
-            console.error('Error updating location:', error);
-            return;
-        }
-
-        // Update vehicles (Postgres ON UPDATE CASCADE should handle this if defined in schema, 
-        // but if we used loose foreign keys or text fields, we might need manual update.
-        // My schema said: station TEXT REFERENCES locations(name) ON UPDATE CASCADE
-        // So this should be automatic!)
-    }
 
     // --- Maintenance / Interventions ---
 

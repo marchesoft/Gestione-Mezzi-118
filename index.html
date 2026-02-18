@@ -5,6 +5,21 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dashboard Mezzi di Soccorso</title>
+
+    <!-- PWA Manifest -->
+    <link rel="manifest" href="manifest.json">
+
+    <!-- Mobile App Icons -->
+    <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+    <link rel="icon" type="image/png" sizes="512x512" href="icon-512.png">
+    <link rel="apple-touch-icon" href="icon-192.png">
+
+    <!-- Theme Color for Mobile Browsers -->
+    <meta name="theme-color" content="#DC2626">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Mezzi 118">
+
     <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <!-- Font Awesome -->
@@ -54,47 +69,12 @@
                 <!-- Title removed from here -->
 
                 <!-- Stats Cards -->
-                <div class="stats-grid">
-                    <div class="stat-card operative">
-                        <div class="stat-icon"><i class="fa-solid fa-check-circle"></i></div>
-                        <div class="stat-info">
-                            <h3>In Servizio</h3>
-                            <p class="stat-value" id="stat-operative">0</p>
-                        </div>
-                    </div>
-                    <div class="stat-card available">
-                        <div class="stat-icon"><i class="fa-solid fa-user-check"></i></div>
-                        <div class="stat-info">
-                            <h3>Disponibile</h3>
-                            <p class="stat-value" id="stat-available">0</p>
-                        </div>
-                    </div>
-                    <div class="stat-card maintenance">
-                        <div class="stat-icon"><i class="fa-solid fa-screwdriver-wrench"></i></div>
-                        <div class="stat-info">
-                            <h3>In Officina</h3>
-                            <p class="stat-value" id="stat-maintenance">0</p>
-                        </div>
-                    </div>
-                    <div class="stat-card to-repair">
-                        <div class="stat-icon"><i class="fa-solid fa-triangle-exclamation"></i></div>
-                        <div class="stat-info">
-                            <h3>Da Riparare</h3>
-                            <p class="stat-value" id="stat-to-repair">0</p>
-                        </div>
-                    </div>
-                </div>
+                <!-- Stats Cards Removed -->
 
                 <!-- Recent Activity / Vehicle List -->
                 <div class="section-header">
                     <h3>Veicoli in Gestione</h3>
-                    <div class="filters">
-                        <button class="filter-btn active" data-filter="all">Tutti</button>
-                        <button class="filter-btn" data-filter="operative">In Servizio</button>
-                        <button class="filter-btn" data-filter="available">Disponibile</button>
-                        <button class="filter-btn" data-filter="maintenance">In Officina</button>
-                        <button class="filter-btn" data-filter="to-repair">Da Riparare</button>
-                    </div>
+                    <!-- Filters Removed -->
                 </div>
 
                 <div class="vehicle-grid" id="vehicle-grid">
@@ -148,37 +128,10 @@
                                 </div>
                             </div>
 
-                            <div class="form-grid-2">
-                                <!-- Vehicle Type removed as per request -->
-                                <div class="form-group" style="margin-bottom: 1rem;">
-                                    <label
-                                        style="display: block; margin-bottom: 0.5rem; font-weight: 500; font-size: 0.9rem;">Stato</label>
-                                    <select id="vehicle-status"
-                                        style="width: 100%; padding: 0.6rem; border: 1px solid var(--border-color); border-radius: 0.5rem;">
-                                        <option value="operative">Operativa</option>
-                                        <option value="available">Disponibile</option>
-                                        <option value="maintenance">In Officina</option>
-                                        <option value="to-repair">Da Riparare</option>
-                                    </select>
-                                </div>
-                            </div>
+                            <!-- Status Field Removed -->
 
                             <div class="form-grid-3">
-                                <div class="form-group" style="margin-bottom: 1rem;">
-                                    <div
-                                        style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
-                                        <label style="font-weight: 500; font-size: 0.9rem;">Stazione</label>
-                                        <button type="button"
-                                            style="background: none; border: none; color: var(--primary-color); font-size: 0.8rem; cursor: pointer; font-weight: 500;"
-                                            onclick="window.openLocationModal()">
-                                            <i class="fa-solid fa-gear"></i> Gestisci
-                                        </button>
-                                    </div>
-                                    <select id="vehicle-station" required
-                                        style="width: 100%; padding: 0.6rem; border: 1px solid var(--border-color); border-radius: 0.5rem;">
-                                        <!-- Options populated via JS -->
-                                    </select>
-                                </div>
+                                <!-- Station Field Removed -->
                                 <div class="form-group" style="margin-bottom: 1rem;">
                                     <label
                                         style="display: block; margin-bottom: 0.5rem; font-weight: 500; font-size: 0.9rem;">Chilometri</label>
@@ -201,24 +154,6 @@
                                     style="font-size: 0.9rem; font-weight: 600; margin-bottom: 0.8rem; color: var(--text-secondary);">
                                     Dotazioni</h4>
                                 <div class="form-grid-3 small-gap">
-                                    <div class="form-group">
-                                        <label
-                                            style="display: block; margin-bottom: 0.3rem; font-size: 0.8rem;">Barella</label>
-                                        <input type="text" id="vehicle-barella" placeholder="Modello/ID"
-                                            style="width: 100%; padding: 0.5rem; border: 1px solid var(--border-color); border-radius: 0.4rem; font-size: 0.9rem;">
-                                    </div>
-                                    <div class="form-group">
-                                        <label style="display: block; margin-bottom: 0.3rem; font-size: 0.8rem;">ID
-                                            Radio</label>
-                                        <input type="text" id="vehicle-radio" placeholder="ID Univoco"
-                                            style="width: 100%; padding: 0.5rem; border: 1px solid var(--border-color); border-radius: 0.4rem; font-size: 0.9rem;">
-                                    </div>
-                                    <div class="form-group">
-                                        <label style="display: block; margin-bottom: 0.3rem; font-size: 0.8rem;">ID
-                                            Aspiratore</label>
-                                        <input type="text" id="vehicle-aspirator" placeholder="ID Univoco"
-                                            style="width: 100%; padding: 0.5rem; border: 1px solid var(--border-color); border-radius: 0.4rem; font-size: 0.9rem;">
-                                    </div>
                                 </div>
                             </div>
 
@@ -337,31 +272,7 @@
             </div>
         </main>
         <!-- Location Management Modal -->
-        <div id="location-modal" class="modal hidden">
-            <div class="modal-content" style="max-width: 500px; height: auto; max-height: 80vh;">
-                <div
-                    style="padding: 1.5rem; border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center;">
-                    <h2 id="location-modal-title" style="font-size: 1.5rem; font-weight: 700;">Gestisci Luoghi</h2>
-                    <div class="close-location-modal"
-                        style="cursor: pointer; font-size: 1.5rem; color: var(--text-secondary);">&times;</div>
-                </div>
-                <div style="padding: 1.5rem;">
-                    <form id="add-location-form" style="display: flex; gap: 0.5rem; margin-bottom: 1.5rem;">
-                        <input type="text" id="new-location-input" placeholder="Nuovo Luogo..." required
-                            style="flex-grow: 1; padding: 0.75rem; border: 1px solid var(--border-color); border-radius: 0.5rem;">
-                        <button type="submit" class="btn btn-primary">
-                            <i class="fa-solid fa-plus"></i> Aggiungi
-                        </button>
-                    </form>
-
-                    <div style="max-height: 300px; overflow-y: auto;">
-                        <ul id="location-list" style="list-style: none; padding: 0;">
-                            <!-- Locations Rendered Here -->
-                        </ul>
-                    </div>
-                </div>
-            </div>
-        </div>
+        <!-- Location Management Modal Removed -->
 
         <!-- Data Management Modal -->
         <div id="data-management-modal" class="modal hidden">
@@ -375,7 +286,7 @@
                 </div>
                 <div style="padding: 1rem; border-bottom: 1px solid var(--border-color); display: flex; gap: 1rem;">
                     <button class="filter-btn active" onclick="switchDataTable('vehicles')">Mezzi</button>
-                    <button class="filter-btn" onclick="switchDataTable('locations')">Luoghi</button>
+
                     <button class="filter-btn" onclick="switchDataTable('interventions')">Interventi</button>
                 </div>
                 <div style="flex-grow: 1; overflow-y: auto; padding: 1.5rem;">
