@@ -123,7 +123,7 @@ async function renderVehicleGrid(vehicles) {
                 const c = locationColor.toLowerCase();
                 if (c.includes('2563eb') || c.includes('0ea5e9') || c.includes('3b82f6') || c.includes('blue')) return "IN SERVIZIO";
                 if (c.includes('ef4444') || c.includes('ff0000') || c.includes('dc2626') || c.includes('red')) return "FUORI USO";
-                if (c.includes('f59e0b') || c.includes('yellow') || c.includes('orange') || c.includes('amber')) return "IN OFFICINA";
+                if (c.includes('f59e0b') || c.includes('yellow') || c.includes('orange') || c.includes('amber')) return "IN RIPARAZIONE";
                 if (c.includes('22c55e') || c.includes('green') || c.includes('16a34a')) return "DISPONIBILE";
 
                 // Fallback: Location Name
