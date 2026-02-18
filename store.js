@@ -16,6 +16,7 @@ class Store {
             .order('created_at', { ascending: false });
         if (error) {
             console.error('Error fetching vehicles:', error);
+            alert("Errore caricamento veicoli: " + error.message);
             return [];
         }
 
