@@ -97,7 +97,42 @@ class Store {
     }
 
     // --- Locations ---
-    // Funzionalità luoghi rimossa come richiesto
+
+    async getLocations() {
+        const { data, error } = await this.supabase
+            .from('luoghi')
+            .select('*')
+            .order('created_at', { ascending: false });
+
+        if (error) {
+            console.error('Error fetching locations:', error);
+            return [];
+        }
+        return data || [];
+    }
+
+    async addLocation(location) {
+        const { error } = await this.supabase
+            .from('luoghi')
+            .insert([location]);
+
+        if (error) {
+            console.error('Error adding location:', error);
+            alert("Errore aggiunta luogo: " + error.message);
+        }
+    }
+
+    async deleteLocation(id) {
+        const { error } = await this.supabase
+            .from('luoghi')
+            .delete()
+            .eq('id', id);
+
+        if (error) {
+            console.error('Error deleting location:', error);
+            alert("Errore eliminazione luogo: " + error.message);
+        }
+    }
 
 
     // --- Maintenance / Interventions ---

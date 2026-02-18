@@ -723,7 +723,48 @@ window.switchDataTable = async function (type) {
                 </table>
             </div>`;
         } else if (type === 'locations') {
-            html = '<p style="text-align:center; padding: 2rem;">Gestione Luoghi non più disponibile.</p>';
+            data = await store.getLocations();
+            html = `
+            <div style="margin-bottom: 2rem; background: #f8fafc; padding: 1.5rem; border-radius: 0.75rem;">
+                <h4 style="margin-top: 0; margin-bottom: 1rem;">Aggiungi Nuovo Luogo</h4>
+                <div style="display: flex; gap: 1rem; align-items: flex-end; flex-wrap: wrap;">
+                    <div style="flex: 1; min-width: 200px;">
+                        <label style="display: block; font-size: 0.8rem; font-weight: 600; margin-bottom: 0.5rem;">Nome Luogo</label>
+                        <input type="text" id="new-location-name" placeholder="Es. Sede Centrale, Ospedale X..." style="width: 100%; padding: 0.75rem; border: 1px solid var(--border-color); border-radius: 0.5rem;">
+                    </div>
+                    <div>
+                        <label style="display: block; font-size: 0.8rem; font-weight: 600; margin-bottom: 0.5rem;">Colore</label>
+                        <input type="color" id="new-location-color" value="#3b82f6" style="height: 42px; width: 60px; padding: 0.2rem; border: 1px solid var(--border-color); border-radius: 0.5rem; cursor: pointer;">
+                    </div>
+                    <button onclick="createNewLocation()" style="padding: 0.75rem 1.5rem; background: var(--primary-color); color: white; border: none; border-radius: 0.5rem; font-weight: 600; cursor: pointer;">Aggiungi</button>
+                </div>
+            </div>
+
+            <div style="overflow-x: auto;">
+                <table style="width: 100%; border-collapse: collapse;">
+                    <thead>
+                        <tr style="background: #f8fafc; border-bottom: 2px solid var(--border-color);">
+                            <th style="padding: 0.75rem; text-align: left;">Colore</th>
+                            <th style="padding: 0.75rem; text-align: left;">Luogo</th>
+                            <th style="padding: 0.75rem; text-align: right;">Azioni</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${data.map(l => `
+                            <tr style="border-bottom: 1px solid var(--border-color);">
+                                <td style="padding: 0.75rem;">
+                                    <div style="width: 24px; height: 24px; border-radius: 50%; background-color: ${l.colore || '#ccc'}; border: 1px solid rgba(0,0,0,0.1);"></div>
+                                </td>
+                                <td style="padding: 0.75rem; font-weight: 600;">${l.luogo}</td>
+                                <td style="padding: 0.75rem; text-align: right;">
+                                    <button onclick="deleteLocationHandler('${l.id}')" style="cursor:pointer; background:none; border:none; color:var(--status-to-repair);"><i class="fa-solid fa-trash"></i></button>
+                                </td>
+                            </tr>
+                        `).join('')}
+                        ${data.length === 0 ? '<tr><td colspan="3" style="padding: 2rem; text-align: center; color: var(--text-secondary);">Nessun luogo trovato.</td></tr>' : ''}
+                    </tbody>
+                </table>
+            </div>`;
         } else if (type === 'interventions') {
             data = await store.getInterventions();
             html = `
@@ -759,4 +800,38 @@ window.switchDataTable = async function (type) {
     }
 
     container.innerHTML = html;
+}
+
+// Location Handlers
+async function createNewLocation() {
+    const nameInput = document.getElementById('new-location-name');
+    const colorInput = document.getElementById('new-location-color');
+    const name = nameInput.value.trim();
+    const color = colorInput.value;
+
+    if (!name) {
+        alert("Inserisci il nome del luogo.");
+        return;
+    }
+
+    try {
+        await store.addLocation({ luogo: name, colore: color });
+        nameInput.value = ''; // Reset form
+        switchDataTable('locations'); // Refresh table
+    } catch (error) {
+        console.error("Error creating location:", error);
+        alert("Errore durante la creazione del luogo.");
+    }
+}
+
+async function deleteLocationHandler(id) {
+    if (confirm("Sei sicuro di voler eliminare questo luogo?")) {
+        try {
+            await store.deleteLocation(id);
+            switchDataTable('locations'); // Refresh table
+        } catch (error) {
+            console.error("Error deleting location:", error);
+            alert("Errore durante l'eliminazione del luogo.");
+        }
+    }
 }
