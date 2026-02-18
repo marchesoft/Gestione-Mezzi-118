@@ -112,7 +112,7 @@ async function renderVehicleGrid(vehicles) {
         card.innerHTML = `
             <div class="card-header" style="position: relative;">
                 <img src="${vehicle.image}" alt="${vehicle.model}" onerror="this.src='https://placehold.co/600x400?text=No+Immagine'">
-                <div style="height: 8px; width: 100%; background-color: ${locationColor};"></div>
+                <div style="height: 15px; width: 100%; background-color: ${locationColor};"></div>
             </div>
             
             <div class="card-body">
