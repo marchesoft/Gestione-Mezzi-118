@@ -116,12 +116,12 @@ async function renderVehicleGrid(vehicles) {
             </div>
             
             <div class="card-body">
-                <div class="vehicle-id" style="text-align: center; margin-bottom: 1rem;">
-                    ${vehicle.sigla ? `<div style="font-size: 1.5rem; font-weight: 900; color: #1e3a8a; margin-bottom: 0px;">${vehicle.sigla}</div>` : ''}
-                    <h4 style="font-size: 1rem; color: var(--text-secondary); margin-bottom: 0px; font-weight: 500;">${vehicle.model}</h4>
-                    <span class="plate-number" style="font-size: 1.5rem; color: var(--text-primary); font-weight: 800; display:block;">${vehicle.plate}</span>
+                <div class="vehicle-id" style="text-align: center; margin-bottom: 0.5rem; margin-top: 0.5rem;">
+                    ${vehicle.sigla ? `<div style="font-size: 1.2rem; font-weight: 900; color: #1e3a8a; margin-bottom: 0px;">${vehicle.sigla}</div>` : ''}
+                    <h4 style="font-size: 0.9rem; color: var(--text-secondary); margin-bottom: 0px; font-weight: 500;">${vehicle.model}</h4>
+                    <span class="plate-number" style="font-size: 1.1rem; color: var(--text-primary); font-weight: 800; display:block;">${vehicle.plate}</span>
                     
-                    <button onclick="openVehicleForm('${vehicle.id}')" style="margin-top: 0.5rem; padding: 0.25rem 0.75rem; background: transparent; border: 1px solid var(--primary-color); color: var(--primary-color); border-radius: 4px; cursor: pointer; font-size: 0.8rem;">
+                    <button onclick="openVehicleForm('${vehicle.id}')" style="margin-top: 0.25rem; padding: 0.15rem 0.5rem; background: transparent; border: 1px solid var(--primary-color); color: var(--primary-color); border-radius: 4px; cursor: pointer; font-size: 0.75rem;">
                         <i class="fa-solid fa-pen"></i> Dettagli
                     </button>
                 </div>
@@ -136,8 +136,8 @@ async function renderVehicleGrid(vehicles) {
                     </div>
                 </div>
 
-                <div style="margin-top: auto; padding-top: 1rem; border-top: 1px solid #f1f5f9;">
-                    <select onchange="updateVehicleLocation('${vehicle.id}', this.value)" style="width: 100%; padding: 0.5rem; border: 1px solid #e2e8f0; border-radius: 6px; background-color: #f8fafc; font-weight: 600; color: #334155; cursor: pointer;">
+                <div style="margin-top: auto; padding-top: 0.5rem; border-top: 1px solid #f1f5f9;">
+                    <select onchange="updateVehicleLocation('${vehicle.id}', this.value)" style="width: 100%; padding: 0.25rem; border: 1px solid #e2e8f0; border-radius: 4px; background-color: #f8fafc; font-weight: 600; color: #334155; cursor: pointer; font-size: 0.85rem;">
                         <option value="">SELEZIONA SEDE</option>
                         ${locations.map(loc => `
                             <option value="${loc.id}" ${vehicle.location_id === loc.id ? 'selected' : ''}>${loc.luogo}</option>
