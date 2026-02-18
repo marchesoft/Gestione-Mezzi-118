@@ -578,7 +578,7 @@ window.updateFilterCounts = function () {
 
     const setText = (id, count) => {
         const el = document.getElementById(id);
-        if (el) el.innerText = `(${count})`;
+        if (el) el.innerText = `${count}`;
     };
 
     setText('count-ALL', counts['ALL']);
