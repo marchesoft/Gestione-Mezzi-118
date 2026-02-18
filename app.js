@@ -113,15 +113,7 @@ async function renderVehicleGrid(vehicles) {
             <div class="card-header" style="position: relative;">
                 <img src="${vehicle.image}" alt="${vehicle.model}" onerror="this.src='https://placehold.co/600x400?text=No+Immagine'">
                 <div style="height: 30px; width: 100%; background-color: ${locationColor}; display: flex; align-items: center; justify-content: center; 
-                    color: ${(() => {
-                const c = locationColor.toLowerCase();
-                // RED -> Black
-                if (c.includes('ef4444') || c.includes('ff0000') || c.includes('dc2626') || c.includes('red')) return 'black';
-                // YELLOW -> Black
-                if (c.includes('f59e0b') || c.includes('yellow') || c.includes('orange') || c.includes('amber')) return 'black';
-                // Default -> White
-                return 'white';
-            })()}; 
+                    color: black; 
                     font-weight: 800; font-size: 0.9rem; letter-spacing: 1px;">
                     ${(() => {
                 const c = locationColor.toLowerCase();
