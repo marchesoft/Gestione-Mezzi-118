@@ -141,6 +141,9 @@ async function renderVehicleGrid(vehicles) {
 
     grid.innerHTML = '';
 
+    // Update counts whenever we render (assuming render is called on data change)
+    if (window.updateFilterCounts) window.updateFilterCounts();
+
     if (vehicles.length === 0) {
         grid.innerHTML = '<p style="grid-column: 1/-1; text-align: center; padding: 2rem;">Nessun veicolo trovato.</p>';
         return;
