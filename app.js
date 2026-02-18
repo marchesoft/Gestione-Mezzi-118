@@ -77,6 +77,68 @@ async function renderVehicleGrid(vehicles) {
         });
     }
 
+    // Helper to determine status and color (Refactored for reuse in filters)
+    const getVehicleStatusInfo = (vehicle) => {
+        let locationColor = '#ccc';
+        if (vehicle.luoghi && vehicle.luoghi.colore) {
+            locationColor = vehicle.luoghi.colore;
+        } else if (vehicle.location_id) {
+            const loc = locations.find(l => l.id == vehicle.location_id);
+            if (loc) locationColor = loc.colore;
+        }
+
+        const c = locationColor.toLowerCase();
+        // 1. Text fallback based on Name Check (Priority)
+        const locName = (vehicle.luoghi && vehicle.luoghi.luogo) ? vehicle.luoghi.luogo.toUpperCase() : (locations.find(l => l.id == vehicle.location_id)?.luogo?.toUpperCase() || "");
+
+        let statusText = locName;
+
+        // Specific overrides based on text
+        if (locName.includes('FUORI USO')) statusText = "FUORI USO";
+        else if (locName.includes('DISPONIBILE')) statusText = "DISPONIBILE";
+        else if (locName.includes('OPERATIVO') || locName.includes('SERVIZIO')) statusText = "IN SERVIZIO";
+        else {
+            // 2. HSL Color Detection
+            try {
+                let hex = c.replace('#', '');
+                if (hex.length === 3) hex = hex.split('').map(x => x + x).join('');
+                const r = parseInt(hex.substring(0, 2), 16) / 255;
+                const g = parseInt(hex.substring(2, 4), 16) / 255;
+                const b = parseInt(hex.substring(4, 6), 16) / 255;
+
+                if (!isNaN(r) && !isNaN(g) && !isNaN(b)) {
+                    const max = Math.max(r, g, b), min = Math.min(r, g, b);
+                    let h = 0;
+                    if (max !== min) {
+                        const d = max - min;
+                        switch (max) {
+                            case r: h = (g - b) / d + (g < b ? 6 : 0); break;
+                            case g: h = (b - r) / d + 2; break;
+                            case b: h = (r - g) / d + 4; break;
+                        }
+                        h /= 6;
+                    }
+                    h = h * 360;
+
+                    if ((h >= 0 && h < 15) || h >= 330) statusText = "FUORI USO"; // Red
+                    else if (h >= 15 && h < 65) statusText = "IN RIPARAZIONE"; // Orange/Yellow
+                    else if (h >= 65 && h < 165) statusText = "DISPONIBILE"; // Green
+                    else if (h >= 165 && h < 265) statusText = "IN SERVIZIO"; // Blue
+                }
+            } catch (e) { console.error("Color parse error", e); }
+
+            // 3. Fallback to string matching
+            if (statusText === locName) { // Only if not already set by HSL
+                if (c.includes('ef4444') || c.includes('red')) statusText = "FUORI USO";
+                if (c.includes('f59e0b') || c.includes('yellow') || c.includes('orange') || c.includes('amber')) statusText = "IN RIPARAZIONE";
+                if (c.includes('22c55e') || c.includes('green')) statusText = "DISPONIBILE";
+                if (c.includes('2563eb') || c.includes('blue')) statusText = "IN SERVIZIO";
+            }
+        }
+
+        return { statusText, locationColor };
+    };
+
     grid.innerHTML = '';
 
     if (vehicles.length === 0) {
@@ -97,77 +159,22 @@ async function renderVehicleGrid(vehicles) {
             card.addEventListener('drop', handleDrop);
             card.addEventListener('dragenter', handleDragEnter);
             card.addEventListener('dragleave', handleDragLeave);
+            const { statusText, locationColor } = getVehicleStatusInfo(vehicle);
+
+            // Make draggable
+            card.setAttribute('draggable', 'true');
+            card.addEventListener('dragstart', handleDragStart);
+            card.addEventListener('dragover', handleDragOver);
+            card.addEventListener('drop', handleDrop);
             card.addEventListener('dragend', handleDragEnd);
-        }
 
-        // Robust color lookup: try joined data first, then fallback to finding it in the locations list
-        let locationColor = '#ccc';
-        if (vehicle.luoghi && vehicle.luoghi.colore) {
-            locationColor = vehicle.luoghi.colore;
-        } else if (vehicle.location_id) {
-            const loc = locations.find(l => l.id == vehicle.location_id);
-            if (loc) locationColor = loc.colore;
-        }
-
-        card.innerHTML = `
+            card.innerHTML = `
             <div class="card-header" style="position: relative;">
                 <img src="${vehicle.image}" alt="${vehicle.model}" onerror="this.src='https://placehold.co/600x400?text=No+Immagine'">
                 <div style="height: 30px; width: 100%; background-color: ${locationColor}; display: flex; align-items: center; justify-content: center; 
                     color: black; 
                     font-weight: 800; font-size: 0.9rem; letter-spacing: 1px;">
-                ${(() => {
-                // Status Logic with HSL Color Detection
-                const getStatus = () => {
-                    const c = locationColor.toLowerCase();
-                    // 1. Text fallback based on Name Check (Priority)
-                    const locName = (vehicle.luoghi && vehicle.luoghi.luogo) ? vehicle.luoghi.luogo.toUpperCase() : (locations.find(l => l.id == vehicle.location_id)?.luogo?.toUpperCase() || "");
-                    if (locName.includes('FUORI USO')) return "FUORI USO";
-
-                    // 2. HSL Color Detection for Custom Colors
-                    try {
-                        let hex = c.replace('#', '');
-                        if (hex.length === 3) hex = hex.split('').map(x => x + x).join('');
-
-                        const r = parseInt(hex.substring(0, 2), 16) / 255;
-                        const g = parseInt(hex.substring(2, 4), 16) / 255;
-                        const b = parseInt(hex.substring(4, 6), 16) / 255;
-
-                        if (!isNaN(r) && !isNaN(g) && !isNaN(b)) {
-                            const max = Math.max(r, g, b), min = Math.min(r, g, b);
-                            let h = 0;
-                            if (max !== min) {
-                                const d = max - min;
-                                switch (max) {
-                                    case r: h = (g - b) / d + (g < b ? 6 : 0); break;
-                                    case g: h = (b - r) / d + 2; break;
-                                    case b: h = (r - g) / d + 4; break;
-                                }
-                                h /= 6;
-                            }
-                            h = h * 360;
-
-                            // Classulate based on Hue
-                            if ((h >= 0 && h < 15) || h >= 330) return "FUORI USO"; // Red
-                            if (h >= 15 && h < 65) return "IN RIPARAZIONE"; // Orange/Yellow (Adjusted boundary)
-                            if (h >= 65 && h < 165) return "DISPONIBILE"; // Green (Wider range)
-                            if (h >= 165 && h < 265) return "IN SERVIZIO"; // Blue/Cyan
-                        }
-                    } catch (e) { console.error("Color parse error", e); }
-
-                    // 3. Fallback to string matching if HSL failed or was ambiguous (though HSL covers all hue ranges)
-                    if (c.includes('ef4444') || c.includes('red')) return "FUORI USO";
-                    if (c.includes('f59e0b') || c.includes('yellow') || c.includes('orange') || c.includes('amber')) return "IN RIPARAZIONE";
-                    if (c.includes('22c55e') || c.includes('green')) return "DISPONIBILE";
-                    if (c.includes('2563eb') || c.includes('blue')) return "IN SERVIZIO";
-
-                    // 4. Final Fallback: Location Name Checks
-                    if (locName.includes('DISPONIBILE')) return "DISPONIBILE";
-                    if (locName.includes('OPERATIVO') || locName.includes('SERVIZIO')) return "IN SERVIZIO";
-
-                    return locName;
-                };
-                return getStatus();
-            })()}
+                    ${statusText}
                 </div>
             </div>
             
@@ -193,8 +200,8 @@ async function renderVehicleGrid(vehicles) {
                 </div>
             </div>
         `;
-        grid.appendChild(card);
-    });
+            grid.appendChild(card);
+        });
 }
 
 // Drag & Drop Handlers
@@ -508,14 +515,42 @@ window.callFromInput = function (inputId) {
         alert("Nessun numero inserito.");
     }
 }
-window.openVehicleModal = async function (id) {
-    const vehicle = await store.getVehicleById(id);
-    if (!vehicle) return;
+// Filter Vehicles
+window.filterVehicles = function (status) {
+    // 1. Update active UI
+    document.querySelectorAll('.filter-card').forEach(btn => btn.classList.remove('active', 'ring-2', 'ring-offset-2', 'ring-blue-500'));
+    // Find button with onclick containing the status and add active style (or use event.target if passed, but simpler to match text)
+    // Actually, I'll specificy ID or just loop.
+    // Simpler: iterate and check attribute.
+    const buttons = document.querySelectorAll('.filter-card');
+    buttons.forEach(btn => {
+        if (btn.getAttribute('onclick').includes(`'${status}'`)) {
+            btn.classList.add('active');
+            btn.style.transform = "scale(1.05)";
+            btn.style.boxShadow = "0 4px 6px rgba(0,0,0,0.1)";
+        } else {
+            btn.style.transform = "scale(1)";
+            btn.style.boxShadow = "0 2px 4px rgba(0,0,0,0.05)";
+        }
+    });
 
-    const modal = document.getElementById('vehicle-modal');
-    const content = document.getElementById('vehicle-details-content');
+    // 2. Filter
+    if (status === 'ALL') {
+        renderVehicles(vehicles);
+    } else {
+        const filtered = vehicles.filter(v => {
+            const info = window.getVehicleStatusInfo(v);
+            return info.statusText === status;
+        });
+        renderVehicles(filtered);
+    }
+}
 
-    content.innerHTML = `
+
+const modal = document.getElementById('vehicle-modal');
+const content = document.getElementById('vehicle-details-content');
+
+content.innerHTML = `
         <div style="position: relative;">
             <button onclick="document.getElementById('vehicle-modal').classList.add('hidden')" style="position: absolute; top: 1rem; right: 1rem; background: rgba(0,0,0,0.5); border: none; color: white; width: 32px; height: 32px; border-radius: 50%; cursor: pointer; font-size: 1.2rem; display: flex; align-items: center; justify-content: center; z-index: 10;">&times;</button>
             <img src="${vehicle.image}" style="width: 100%; height: 300px; object-fit: cover; border-top-left-radius: 1rem; border-top-right-radius: 1rem;" onerror="this.src='https://placehold.co/600x400?text=No+Immagine'">
@@ -617,7 +652,7 @@ window.openVehicleModal = async function (id) {
         </div>
     `;
 
-    modal.classList.remove('hidden');
+modal.classList.remove('hidden');
 }
 
 window.deleteVehicleHandler = async function (id) {
