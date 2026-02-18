@@ -469,10 +469,11 @@ window.openVehicleModal = async function (id) {
 
             <div class="form-grid-3" style="margin-bottom: 1rem; background: #f1f5f9; padding: 1rem; border-radius: 0.75rem;">
                 <div>
-                    <div style="font-size: 0.75rem; text-transform: uppercase; color: black; font-weight: 600; margin-bottom: 0.25rem;">Contatti</div>
+                    <!-- Contatti Label Removed -->
                     <div style="display: flex; flex-direction: column; gap: 0.2rem;">
-                         ${vehicle.tel1 ? `<a href="tel:${vehicle.tel1}" style="font-size: 0.95rem; font-weight: 600; color: var(--primary-color); text-decoration: none;"><i class="fa-solid fa-phone"></i> ${vehicle.tel1}</a>` : '<span style="color: #94a3b8;">-</span>'}
+                         ${vehicle.tel1 ? `<a href="tel:${vehicle.tel1}" style="font-size: 0.95rem; font-weight: 600; color: var(--primary-color); text-decoration: none;"><i class="fa-solid fa-phone"></i> ${vehicle.tel1}</a>` : ''}
                          ${vehicle.tel2 ? `<a href="tel:${vehicle.tel2}" style="font-size: 0.95rem; font-weight: 600; color: var(--primary-color); text-decoration: none;"><i class="fa-solid fa-phone"></i> ${vehicle.tel2}</a>` : ''}
+                         ${!vehicle.tel1 && !vehicle.tel2 ? '<span style="color: #94a3b8;">-</span>' : ''}
                     </div>
                 </div>
                 <div>
@@ -480,7 +481,7 @@ window.openVehicleModal = async function (id) {
                     <div style="font-size: 0.95rem; font-weight: 600; color: black;">${vehicle.inspection_expiry ? new Date(vehicle.inspection_expiry).toLocaleDateString() : '-'}</div>
                 </div>
                 <div>
-                    <div style="font-size: 0.75rem; text-transform: uppercase; color: black; font-weight: 600; margin-bottom: 0.25rem;">Ultimo Collaudo O2</div>
+                    <div style="font-size: 0.75rem; text-transform: uppercase; color: black; font-weight: 600; margin-bottom: 0.25rem;">Rev.O2</div>
                     <div style="font-size: 0.95rem; font-weight: 600; color: black;">${vehicle.testing_expiry ? new Date(vehicle.testing_expiry).toLocaleDateString() : '-'}</div>
                 </div>
             </div>
@@ -689,7 +690,7 @@ window.switchDataTable = async function (type) {
                             <th style="padding: 0.75rem; text-align: left;">Contatti</th>
                             <th style="padding: 0.75rem; text-align: left;">Note</th>
                             <th style="padding: 0.75rem; text-align: left;">Rev. Scad.</th>
-                            <th style="padding: 0.75rem; text-align: left;">Coll. Scad.</th>
+                            <th style="padding: 0.75rem; text-align: left;">Rev.O2</th>
                             <th style="padding: 0.75rem; text-align: right;">Azioni</th>
                         </tr>
                     </thead>
