@@ -100,7 +100,14 @@ async function renderVehicleGrid(vehicles) {
             card.addEventListener('dragend', handleDragEnd);
         }
 
-        const locationColor = vehicle.luoghi?.colore || '#ccc';
+        // Robust color lookup: try joined data first, then fallback to finding it in the locations list
+        let locationColor = '#ccc';
+        if (vehicle.luoghi && vehicle.luoghi.colore) {
+            locationColor = vehicle.luoghi.colore;
+        } else if (vehicle.location_id) {
+            const loc = locations.find(l => l.id == vehicle.location_id);
+            if (loc) locationColor = loc.colore;
+        }
 
         card.innerHTML = `
             <div class="card-header" style="position: relative;">
