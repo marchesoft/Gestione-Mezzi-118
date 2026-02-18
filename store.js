@@ -136,6 +136,18 @@ class Store {
         }
     }
 
+    async updateLocation(id, updates) {
+        const { error } = await this.supabase
+            .from('luoghi')
+            .update(updates)
+            .eq('id', id);
+
+        if (error) {
+            console.error('Error updating location:', error);
+            alert("Errore aggiornamento luogo: " + error.message);
+        }
+    }
+
 
     // --- Maintenance / Interventions ---
 

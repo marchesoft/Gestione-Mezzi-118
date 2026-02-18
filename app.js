@@ -761,7 +761,8 @@ window.switchDataTable = async function (type) {
             data = await store.getLocations();
             html = `
             <div style="margin-bottom: 2rem; background: #f8fafc; padding: 1.5rem; border-radius: 0.75rem;">
-                <h4 style="margin-top: 0; margin-bottom: 1rem;">Aggiungi Nuovo Luogo</h4>
+                <h4 style="margin-top: 0; margin-bottom: 1rem;">Gestisci Luogo</h4>
+                <input type="hidden" id="new-location-id">
                 <div style="display: flex; gap: 1rem; align-items: flex-end; flex-wrap: wrap;">
                     <div style="flex: 1; min-width: 200px;">
                         <label style="display: block; font-size: 0.8rem; font-weight: 600; margin-bottom: 0.5rem;">Nome Luogo</label>
@@ -771,7 +772,8 @@ window.switchDataTable = async function (type) {
                         <label style="display: block; font-size: 0.8rem; font-weight: 600; margin-bottom: 0.5rem;">Colore</label>
                         <input type="color" id="new-location-color" value="#3b82f6" style="height: 42px; width: 60px; padding: 0.2rem; border: 1px solid var(--border-color); border-radius: 0.5rem; cursor: pointer;">
                     </div>
-                    <button onclick="createNewLocation()" style="padding: 0.75rem 1.5rem; background: var(--primary-color); color: white; border: none; border-radius: 0.5rem; font-weight: 600; cursor: pointer;">Aggiungi</button>
+                    <button id="save-location-btn" onclick="handleLocationSubmit()" style="padding: 0.75rem 1.5rem; background: var(--primary-color); color: white; border: none; border-radius: 0.5rem; font-weight: 600; cursor: pointer;">Aggiungi</button>
+                    <button id="cancel-location-btn" onclick="cancelEditLocation()" style="padding: 0.75rem 1.5rem; background: #cbd5e1; color: #334155; border: none; border-radius: 0.5rem; font-weight: 600; cursor: pointer; display: none;">Annulla</button>
                 </div>
             </div>
 
@@ -792,6 +794,7 @@ window.switchDataTable = async function (type) {
                                 </td>
                                 <td style="padding: 0.75rem; font-weight: 600;">${l.luogo}</td>
                                 <td style="padding: 0.75rem; text-align: right;">
+                                    <button onclick="editLocationHandler('${l.id}', '${l.luogo.replace(/'/g, "\\'")}', '${l.colore}')" style="margin-right: 0.5rem; cursor:pointer; background:none; border:none; color:var(--primary-color);"><i class="fa-solid fa-pen"></i></button>
                                     <button onclick="deleteLocationHandler('${l.id}')" style="cursor:pointer; background:none; border:none; color:var(--status-to-repair);"><i class="fa-solid fa-trash"></i></button>
                                 </td>
                             </tr>
@@ -838,9 +841,13 @@ window.switchDataTable = async function (type) {
 }
 
 // Location Handlers
-window.createNewLocation = async function () {
+// Update or Create Location
+window.handleLocationSubmit = async function () {
+    const idInput = document.getElementById('new-location-id');
     const nameInput = document.getElementById('new-location-name');
     const colorInput = document.getElementById('new-location-color');
+
+    const id = idInput.value;
     const name = nameInput.value.trim();
     const color = colorInput.value;
 
@@ -850,13 +857,41 @@ window.createNewLocation = async function () {
     }
 
     try {
-        await store.addLocation({ luogo: name, colore: color });
-        nameInput.value = ''; // Reset form
+        if (id) {
+            // Update
+            await store.updateLocation(id, { luogo: name, colore: color });
+        } else {
+            // Create
+            await store.addLocation({ luogo: name, colore: color });
+        }
+
+        // Reset form
+        cancelEditLocation();
         switchDataTable('locations'); // Refresh table
     } catch (error) {
-        console.error("Error creating location:", error);
-        alert("Errore durante la creazione del luogo.");
+        console.error("Error saving location:", error);
+        alert("Errore durante il salvataggio.");
     }
+}
+
+window.editLocationHandler = function (id, name, color) {
+    document.getElementById('new-location-id').value = id;
+    document.getElementById('new-location-name').value = name;
+    document.getElementById('new-location-color').value = color;
+
+    document.getElementById('save-location-btn').textContent = 'Aggiorna';
+    document.getElementById('cancel-location-btn').style.display = 'inline-block';
+
+    document.querySelector('.view-title').scrollIntoView({ behavior: 'smooth' });
+}
+
+window.cancelEditLocation = function () {
+    document.getElementById('new-location-id').value = '';
+    document.getElementById('new-location-name').value = '';
+    document.getElementById('new-location-color').value = '#3b82f6';
+
+    document.getElementById('save-location-btn').textContent = 'Aggiungi';
+    document.getElementById('cancel-location-btn').style.display = 'none';
 }
 
 window.deleteLocationHandler = async function (id) {
