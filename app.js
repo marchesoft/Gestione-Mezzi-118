@@ -120,15 +120,6 @@ async function renderVehicleGrid(vehicles) {
                 </div>
 
                 <div class="vehicle-details">
-                    <div class="detail-item" style="justify-content: center; margin-bottom: 1rem;">
-                        <select onchange="updateVehicleLocation('${vehicle.id}', this.value)" style="width: 100%; padding: 0.5rem; border: 1px solid #e2e8f0; border-radius: 6px; background-color: #f8fafc; font-weight: 600; color: #334155;">
-                            <option value="">SELEZIONA SEDE</option>
-                            ${locations.map(loc => `
-                                <option value="${loc.id}" ${vehicle.location_id === loc.id ? 'selected' : ''}>${loc.luogo}</option>
-                            `).join('')}
-                        </select>
-                    </div>
-
                     <div class="detail-item">
                         <span class="detail-label">Chilometri</span>
                         <span class="detail-value">
@@ -136,6 +127,15 @@ async function renderVehicleGrid(vehicles) {
                             ${vehicle.mileage_month ? `<span style="font-size: 0.8rem; color: var(--text-secondary); font-weight: 400; margin-left: 0.25rem;">(${vehicle.mileage_month})</span>` : ''}
                         </span>
                     </div>
+                </div>
+
+                <div style="margin-top: auto; padding-top: 1rem; border-top: 1px solid #f1f5f9;">
+                    <select onchange="updateVehicleLocation('${vehicle.id}', this.value)" style="width: 100%; padding: 0.5rem; border: 1px solid #e2e8f0; border-radius: 6px; background-color: #f8fafc; font-weight: 600; color: #334155; cursor: pointer;">
+                        <option value="">SELEZIONA SEDE</option>
+                        ${locations.map(loc => `
+                            <option value="${loc.id}" ${vehicle.location_id === loc.id ? 'selected' : ''}>${loc.luogo}</option>
+                        `).join('')}
+                    </select>
                 </div>
             </div>
         `;
