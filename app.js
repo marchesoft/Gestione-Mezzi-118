@@ -115,37 +115,55 @@ async function renderVehicleGrid(vehicles) {
                 <div style="height: 30px; width: 100%; background-color: ${locationColor}; display: flex; align-items: center; justify-content: center; 
                     color: black; 
                     font-weight: 800; font-size: 0.9rem; letter-spacing: 1px;">
-                    ${(() => {
-                const c = locationColor.toLowerCase();
+                ${(() => {
+                // Status Logic with HSL Color Detection
+                const getStatus = () => {
+                    const c = locationColor.toLowerCase();
+                    // 1. Text fallback based on Name Check (Priority)
+                    const locName = (vehicle.luoghi && vehicle.luoghi.luogo) ? vehicle.luoghi.luogo.toUpperCase() : (locations.find(l => l.id == vehicle.location_id)?.luogo?.toUpperCase() || "");
+                    if (locName.includes('FUORI USO')) return "FUORI USO";
 
-                // RED -> FUORI USO
-                if (c.includes('ef4444') || c.includes('ff0000') || c.includes('dc2626') || c.includes('red')) return "FUORI USO";
+                    // 2. HSL Color Detection for Custom Colors
+                    try {
+                        let hex = c.replace('#', '');
+                        if (hex.length === 3) hex = hex.split('').map(x => x + x).join('');
 
-                // YELLOW -> IN RIPARAZIONE
-                if (c.includes('f59e0b') || c.includes('yellow') || c.includes('orange') || c.includes('amber') || c.includes('d97706') || c.includes('b45309') || c.includes('eab308') || c.includes('ca8a04')) return "IN RIPARAZIONE";
+                        const r = parseInt(hex.substring(0, 2), 16) / 255;
+                        const g = parseInt(hex.substring(2, 4), 16) / 255;
+                        const b = parseInt(hex.substring(4, 6), 16) / 255;
 
-                // GREEN -> DISPONIBILE
-                if (c.includes('22c55e') || c.includes('green') || c.includes('16a34a')) return "DISPONIBILE";
+                        if (!isNaN(r) && !isNaN(g) && !isNaN(b)) {
+                            const max = Math.max(r, g, b), min = Math.min(r, g, b);
+                            let h = 0;
+                            if (max !== min) {
+                                const d = max - min;
+                                switch (max) {
+                                    case r: h = (g - b) / d + (g < b ? 6 : 0); break;
+                                    case g: h = (b - r) / d + 2; break;
+                                    case b: h = (r - g) / d + 4; break;
+                                }
+                                h /= 6;
+                            }
+                            h = h * 360;
 
-                // BLUE -> IN SERVIZIO
-                if (c.includes('2563eb') || c.includes('0ea5e9') || c.includes('3b82f6') || c.includes('blue')) return "IN SERVIZIO";
+                            // Classulate based on Hue
+                            if ((h >= 0 && h < 15) || h >= 330) return "FUORI USO"; // Red
+                            if (h >= 15 && h < 70) return "IN RIPARAZIONE"; // Orange/Yellow
+                            if (h >= 70 && h < 165) return "DISPONIBILE"; // Green
+                            if (h >= 165 && h < 265) return "IN SERVIZIO"; // Blue/Cyan
+                        }
+                    } catch (e) { console.error("Color parse error", e); }
 
-                // Specific check for "FUORI USO" in location name if color check failed
-                if (vehicle.luoghi && vehicle.luoghi.luogo && vehicle.luoghi.luogo.toUpperCase().includes('FUORI USO')) return "FUORI USO";
+                    // 3. Fallback to string matching if HSL failed or was ambiguous (though HSL covers all hue ranges)
+                    if (c.includes('ef4444') || c.includes('red')) return "FUORI USO";
+                    if (c.includes('f59e0b') || c.includes('yellow') || c.includes('orange') || c.includes('amber')) return "IN RIPARAZIONE";
+                    if (c.includes('22c55e') || c.includes('green')) return "DISPONIBILE";
+                    if (c.includes('2563eb') || c.includes('blue')) return "IN SERVIZIO";
 
-                // Specific check for "IN RIPARAZIONE" / "OFFICINA"
-                const locName = (vehicle.luoghi && vehicle.luoghi.luogo) ? vehicle.luoghi.luogo.toUpperCase() : (locations.find(l => l.id == vehicle.location_id)?.luogo?.toUpperCase() || "");
-                if (locName.includes('OFFICINA') || locName.includes('RIPARAZ') || locName.includes('GUASTO') || locName.includes('MECCANICO') || locName.includes('CARROZZERIA')) return "IN RIPARAZIONE";
-
-                // Fallback: Location Name
-                if (vehicle.luoghi && vehicle.luoghi.luogo) return vehicle.luoghi.luogo.toUpperCase();
-                const loc = locations.find(l => l.id == vehicle.location_id);
-                if (loc) {
-                    if (loc.luogo.toUpperCase().includes('FUORI USO')) return "FUORI USO";
-                    return loc.luogo.toUpperCase();
-                }
-
-                return "";
+                    // 4. Final Fallback: Location Name
+                    return locName;
+                };
+                return getStatus();
             })()}
                 </div>
             </div>
