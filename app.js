@@ -176,12 +176,9 @@ async function renderVehicleGrid(vehicles) {
                     ${vehicle.sigla ? `<div style="font-size: 1.5rem; font-weight: 900; color: #1e3a8a; margin-bottom: 0px;">${vehicle.sigla}</div>` : ''}
                     <h4 style="font-size: 0.9rem; color: var(--text-secondary); margin-bottom: 0px; font-weight: 500;">${vehicle.model}</h4>
                     <span class="plate-number" style="font-size: 1.1rem; color: var(--text-primary); font-weight: 800; display:block;">${vehicle.plate}</span>
-                    <div style="display: flex; justify-content: center; gap: 0.5rem; margin-top: 0.5rem;">
+                    <div style="text-align: center; margin-top: 0.5rem;">
                         <button onclick="openVehicleForm('${vehicle.id}')" style="padding: 0.4rem 0.8rem; background: transparent; border: 2px solid var(--primary-color); color: var(--primary-color); border-radius: 4px; cursor: pointer; font-size: 1rem; font-weight: 700;">
                             <i class="fa-solid fa-pen"></i> DETTAGLI
-                        </button>
-                        <button onclick="callVehicle('${vehicle.id}')" style="padding: 0.4rem 0.8rem; background: var(--status-available); border: 2px solid var(--status-available); color: white; border-radius: 4px; cursor: pointer; font-size: 1rem; font-weight: 700;">
-                            <i class="fa-solid fa-phone"></i> CHIAMA
                         </button>
                     </div>
                 </div>
