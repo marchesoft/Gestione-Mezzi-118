@@ -312,7 +312,8 @@ body {
     background: rgba(255, 255, 255, 0.95);
     backdrop-filter: blur(4px);
     border: none;
-    border-radius: 2rem;
+    border-radius: 0;
+    /* Changed from 2rem to 0 */
     padding: 0.35rem 1rem 0.35rem 0.75rem;
     font-size: 0.75rem;
     font-weight: 700;
@@ -320,8 +321,13 @@ body {
     letter-spacing: 0.05em;
     cursor: pointer;
     text-align: center;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-    transition: all 0.2s;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    /* Updated box-shadow */
+    transition: transform 0.2s, box-shadow 0.2s;
+    /* Updated transition */
+    overflow: hidden;
+    /* Added overflow */
+    /* Ensures image stays within corners */
 }
 
 .status-select:hover {
