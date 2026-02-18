@@ -112,11 +112,11 @@ async function renderVehicleGrid(vehicles) {
         card.innerHTML = `
             <div class="card-header" style="position: relative;">
                 <img src="${vehicle.image}" alt="${vehicle.model}" onerror="this.src='https://placehold.co/600x400?text=No+Immagine'">
-                <div style="height: 30px; width: 100%; background-color: ${locationColor}; display: flex; align-items: center; justify-content: center; color: white; font-weight: 800; font-size: 0.9rem; letter-spacing: 1px;">
+                <div style="height: 30px; width: 100%; background-color: ${locationColor}; display: flex; align-items: center; justify-content: center; color: ${locationColor.toLowerCase() === '#ef4444' ? 'black' : 'white'}; font-weight: 800; font-size: 0.9rem; letter-spacing: 1px;">
                     ${(() => {
                 const c = locationColor.toLowerCase();
                 if (c === '#2563eb' || c === '#0ea5e9') return "IN SERVIZIO";
-                if (c === '#ef4444') return "IN RIPARAZIONE";
+                if (c === '#ef4444') return "FUORI USO";
                 if (c === '#f59e0b') return "IN OFFICINA";
                 if (c === '#22c55e') return "DISPONIBILE";
                 return "";
