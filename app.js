@@ -126,18 +126,8 @@ async function renderVehicleGrid(vehicles) {
                     </button>
                 </div>
 
-                <div class="vehicle-details">
-                    <div class="detail-item">
-                        <span class="detail-label">Chilometri</span>
-                        <span class="detail-value">
-                            ${parseInt(vehicle.mileage).toLocaleString()} km
-                            ${vehicle.mileage_month ? `<span style="font-size: 0.8rem; color: var(--text-secondary); font-weight: 400; margin-left: 0.25rem;">(${vehicle.mileage_month})</span>` : ''}
-                        </span>
-                    </div>
-                </div>
-
                 <div style="margin-top: auto; padding-top: 0.5rem; border-top: 1px solid #f1f5f9;">
-                    <select onchange="updateVehicleLocation('${vehicle.id}', this.value)" style="width: 100%; padding: 0.25rem; border: 1px solid #e2e8f0; border-radius: 4px; background-color: #f8fafc; font-weight: 600; color: #334155; cursor: pointer; font-size: 0.85rem;">
+                    <select onchange="updateVehicleLocation('${vehicle.id}', this.value)" style="width: 100%; padding: 0.25rem; border: 1px solid #e2e8f0; border-radius: 4px; background-color: #f8fafc; font-weight: 700; color: #334155; cursor: pointer; font-size: 1.1rem; text-align: center;">
                         <option value="">SELEZIONA SEDE</option>
                         ${locations.map(loc => `
                             <option value="${loc.id}" ${vehicle.location_id === loc.id ? 'selected' : ''}>${loc.luogo}</option>
