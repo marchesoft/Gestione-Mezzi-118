@@ -269,7 +269,8 @@ async function renderVehicleGrid(vehicles) {
         // Prepare combined notes display (Notes + Appointment)
         let noteContent = vehicle.notes || '';
         if (vehicle.appointment_date) {
-            const apptText = `APPUNTAMENTO: ${formatDate(vehicle.appointment_date)}`;
+            const locText = vehicle.appointment_location ? ` @ ${vehicle.appointment_location}` : '';
+            const apptText = `APPUNTAMENTO: ${formatDate(vehicle.appointment_date)}${locText}`;
             noteContent = noteContent ? `${apptText}\n---\n${noteContent}` : apptText;
         }
 
@@ -794,16 +795,25 @@ window.openVehicleModal = async function (id) {
                             </div>
                             <div>
                                 <div style="font-size: 0.75rem; text-transform: uppercase; color: #1e3a8a; font-weight: 800; margin-bottom: 0.1rem;">Prossimo Appuntamento</div>
-                                <div style="font-size: 1.1rem; font-weight: 700; color: #1e3a8a;">${vehicle.appointment_date ? formatDate(vehicle.appointment_date) : 'Nessun appuntamento'}</div>
+                                <div style="font-size: 1.1rem; font-weight: 700; color: #1e3a8a;">
+                                    ${vehicle.appointment_date ? formatDate(vehicle.appointment_date) : 'Nessun appuntamento'}
+                                    ${vehicle.appointment_location ? `<span style="font-weight: 400; font-size: 0.9rem; margin-left: 0.5rem;">(${vehicle.appointment_location})</span>` : ''}
+                                </div>
                             </div>
                         </div>
                         ${isAdmin ? `
-                            <div style="display: flex; align-items: center; gap: 0.5rem;">
-                                <input type="date" id="admin-appointment-input" value="${vehicle.appointment_date || ''}" 
-                                       style="padding: 0.4rem; border: 1px solid #1e3a8a; border-radius: 0.4rem; font-size: 0.9rem;">
-                                <button class="btn btn-primary" style="padding: 0.4rem 0.6rem;" onclick="saveVehicleAppointment('${vehicle.id}', document.getElementById('admin-appointment-input').value)">
-                                    <i class="fa-solid fa-save"></i>
-                                </button>
+                            <div style="display: flex; flex-direction: column; gap: 0.5rem; align-items: flex-end;">
+                                <div style="display: flex; align-items: center; gap: 0.5rem;">
+                                    <input type="date" id="admin-appointment-input" value="${vehicle.appointment_date || ''}" 
+                                           style="padding: 0.4rem; border: 1px solid #1e3a8a; border-radius: 0.4rem; font-size: 0.9rem;">
+                                    <button class="btn btn-primary" style="padding: 0.4rem 0.6rem;" onclick="saveVehicleAppointment('${vehicle.id}', document.getElementById('admin-appointment-input').value, document.getElementById('admin-appointment-location').value)">
+                                        <i class="fa-solid fa-save"></i>
+                                    </button>
+                                </div>
+                                <select id="admin-appointment-location" style="padding: 0.4rem; border: 1px solid #1e3a8a; border-radius: 0.4rem; font-size: 0.9rem; width: 100%;">
+                                    <option value="">Seleziona Luogo...</option>
+                                    ${cachedLocations.map(loc => `<option value="${loc.luogo}" ${vehicle.appointment_location === loc.luogo ? 'selected' : ''}>${loc.luogo}</option>`).join('')}
+                                </select>
                             </div>
                         ` : ''}
                     </div>
@@ -991,11 +1001,12 @@ window.saveVehicleMileageMonth = async function (id, text) {
 }
 
 // Appointment Save (Admin Only)
-window.saveVehicleAppointment = async function (id, date) {
+window.saveVehicleAppointment = async function (id, date, location) {
     try {
         const vehicle = await store.getVehicleById(id);
         if (vehicle) {
             vehicle.appointment_date = date || null;
+            vehicle.appointment_location = location || null;
             await store.updateVehicle(vehicle);
             alert("Appuntamento aggiornato.");
             // Refresh detail modal and dashboard
