@@ -191,24 +191,7 @@ async function renderVehicleGrid(vehicles) {
         card.draggable = isAdmin; // Only draggable if admin
 
         card.addEventListener('click', (e) => {
-            // Check for mobile logic
-            const isMobile = window.innerWidth <= 768;
-            const hasNotes = vehicle.notes && vehicle.notes.trim().length > 0;
-
-            if (isMobile && hasNotes) {
-                if (card.classList.contains('notes-visible')) {
-                    // Second click: Open datails
-                    window.openVehicleModal(vehicle.id);
-                } else {
-                    // First click: Show notes
-                    // Optional: Hide other open notes
-                    document.querySelectorAll('.vehicle-card.notes-visible').forEach(c => c.classList.remove('notes-visible'));
-                    card.classList.add('notes-visible');
-                }
-            } else {
-                // Desktop or no notes: Open details immediately
-                window.openVehicleModal(vehicle.id);
-            }
+            window.openVehicleModal(vehicle.id);
         });
 
         card.dataset.id = vehicle.id;

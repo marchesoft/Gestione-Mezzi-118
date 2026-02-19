@@ -101,20 +101,25 @@ body {
 
 .header-container {
     display: flex;
-    justify-content: space-between;
-    align-items: center;
+    flex-direction: column;
+    gap: 1rem;
     margin-bottom: 2rem;
-    gap: 1.5rem;
     padding-bottom: 1rem;
     border-bottom: 1px solid var(--border-color);
 }
 
 .header-row-title h1 {
-    font-size: 1.5rem;
+    font-size: 1.75rem;
     font-weight: 800;
-    color: var(--text-primary);
+    color: #1e3a8a;
     margin: 0;
-    white-space: nowrap;
+}
+
+.header-row-controls {
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    gap: 1rem;
 }
 
 .action-buttons {
@@ -1219,10 +1224,9 @@ body.is-admin #admin-hint-text {
         border-radius: 0.75rem;
     }
 
-    /* Mobile Notes Display */
+    /* Mobile Notes Display - Always Visible */
     .mobile-notes {
-        display: none;
-        /* Hidden by default, toggled via JS */
+        display: block !important;
         font-size: 0.8rem;
         background-color: #ffeb3b;
         color: #0f172a;
@@ -1235,11 +1239,6 @@ body.is-admin #admin-hint-text {
         line-height: 1.2;
         width: 100%;
         white-space: normal;
-        /* Allow wrapping for better readability */
-    }
-
-    .vehicle-card.notes-visible .mobile-notes {
-        display: block !important;
     }
 
     .note-tooltip {
