@@ -1408,8 +1408,7 @@ body.is-admin #admin-hint-text {
 
 @media (max-width: 480px) {
     .stats-grid {
-        grid-template-columns: 1fr;
-        /* Stack stats vertically on very small screens */
+        grid-template-columns: repeat(2, 1fr) !important;
         gap: 0 !important;
         /* Remove space between stacked cards */
     }
@@ -1417,43 +1416,76 @@ body.is-admin #admin-hint-text {
     .stat-card {
         border-radius: 0 !important;
         margin-bottom: 0 !important;
-        border-bottom: none !important;
+        border-bottom: 1px solid var(--border-color) !important;
+        border-right: 1px solid var(--border-color) !important;
     }
 
-    .stat-card:first-child {
+    /* First row rounding */
+    .stat-card:nth-child(1) {
         border-top-left-radius: var(--radius-xl) !important;
+    }
+
+    .stat-card:nth-child(2) {
         border-top-right-radius: var(--radius-xl) !important;
+        border-right: 1px solid var(--border-color) !important;
+    }
+
+    /* Last row rounding (assuming 4 stats for now, or use last-child logic) */
+    .stat-card:nth-last-child(2) {
+        border-bottom-left-radius: var(--radius-xl) !important;
     }
 
     .stat-card:last-child {
-        border-bottom-left-radius: var(--radius-xl) !important;
         border-bottom-right-radius: var(--radius-xl) !important;
-        border-bottom: 1px solid var(--border-color) !important;
     }
 
-    .filters {
-        grid-template-columns: 1fr !important;
-        gap: 0 !important;
+    /* Remove extra borders on right for every 2nd item */
+    .stat-card:nth-child(2n) {
+        border-right: 1px solid var(--border-color) !important;
     }
 
+    .stat-card:nth-child(2n-1) {
+        border-right: none !important;
+    }
+
+    /* Filter Optimization - 2 Column Square Grid */
     .filter-btn {
-        border-radius: 0 !important;
+        margin-bottom: 0 !important;
         border-bottom: 1px solid var(--border-color) !important;
-        aspect-ratio: auto !important;
-        padding: 0.75rem !important;
     }
+}
 
-    .filter-btn:first-child {
-        border-top-left-radius: 0.75rem !important;
-        border-top-right-radius: 0.75rem !important;
-    }
+/* Global stat card overrides if needed, but usually kept inside media queries */
 
-    .filter-btn:last-child {
-        border-bottom-left-radius: 0.75rem !important;
-        border-bottom-right-radius: 0.75rem !important;
-    }
+.stat-card:last-child {
+    border-bottom-left-radius: var(--radius-xl) !important;
+    border-bottom-right-radius: var(--radius-xl) !important;
+    border-bottom: 1px solid var(--border-color) !important;
+}
 
-    .view-title {
-        font-size: 1.5rem;
-    }
+.filters {
+    grid-template-columns: 1fr !important;
+    gap: 0 !important;
+}
+
+.filter-btn {
+    border-radius: 0 !important;
+    border-bottom: 1px solid var(--border-color) !important;
+    aspect-ratio: auto !important;
+    padding: 0.75rem !important;
+}
+
+.filter-btn:first-child {
+    border-top-left-radius: 0.75rem !important;
+    border-top-right-radius: 0.75rem !important;
+}
+
+.filter-btn:last-child {
+    border-bottom-left-radius: 0.75rem !important;
+    border-bottom-right-radius: 0.75rem !important;
+}
+
+.view-title {
+    font-size: 1.5rem;
+}
 }

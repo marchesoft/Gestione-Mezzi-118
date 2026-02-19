@@ -110,10 +110,12 @@ function setupRealtimeSubscription() {
                         console.log("Realtime: Refreshing open modal for vehicle", payload.new.id);
                         openVehicleModal(payload.new.id);
                     }
+                    sortVehiclesBySigla(cachedVehicles);
                 } else if (payload.eventType === 'INSERT') {
                     const newVehicle = { ...payload.new, maintenanceHistory: [] };
                     cachedVehicles.push(newVehicle);
                     console.log("Realtime: New vehicle added to cache", payload.new.id);
+                    sortVehiclesBySigla(cachedVehicles);
                 } else if (payload.eventType === 'DELETE') {
                     cachedVehicles = cachedVehicles.filter(v => v.id !== payload.old.id);
                     console.log("Realtime: Vehicle removed from cache", payload.old.id);
