@@ -1455,37 +1455,14 @@ body.is-admin #admin-hint-text {
     }
 }
 
-/* Global stat card overrides if needed, but usually kept inside media queries */
-
-.stat-card:last-child {
-    border-bottom-left-radius: var(--radius-xl) !important;
-    border-bottom-right-radius: var(--radius-xl) !important;
-    border-bottom: 1px solid var(--border-color) !important;
-}
-
-.filters {
-    grid-template-columns: 1fr !important;
-    gap: 0 !important;
-}
-
-.filter-btn {
-    border-radius: 0 !important;
-    border-bottom: 1px solid var(--border-color) !important;
-    aspect-ratio: auto !important;
-    padding: 0.75rem !important;
-}
-
-.filter-btn:first-child {
-    border-top-left-radius: 0.75rem !important;
-    border-top-right-radius: 0.75rem !important;
-}
-
-.filter-btn:last-child {
-    border-bottom-left-radius: 0.75rem !important;
-    border-bottom-right-radius: 0.75rem !important;
+/* Specific overrides for very small screens */
+@media (max-width: 480px) {
+    .filters {
+        grid-template-columns: repeat(2, 1fr) !important;
+        gap: 0.5rem !important;
+    }
 }
 
 .view-title {
     font-size: 1.5rem;
-}
 }
