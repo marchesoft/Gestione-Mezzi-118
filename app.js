@@ -1040,9 +1040,10 @@ window.switchDataTable = async function (type) {
                     <table style="width: 100%; border-collapse: collapse;">
                         <thead>
                             <tr style="background: #f8fafc; border-bottom: 2px solid var(--border-color);">
-                                <th style="padding: 0.75rem; text-align: left;">Sigla Mezzo</th>
                                 <th style="padding: 0.75rem; text-align: left;">Data Entrata</th>
                                 <th style="padding: 0.75rem; text-align: left;">Data Uscita</th>
+                                <th style="padding: 0.75rem; text-align: left;">Mezzo</th>
+                                <th style="padding: 0.75rem; text-align: left;">Officina</th>
                                 <th style="padding: 0.75rem; text-align: left;">Descrizione</th>
                                 <th style="padding: 0.75rem; text-align: right;">Azioni</th>
                             </tr>
@@ -1050,10 +1051,11 @@ window.switchDataTable = async function (type) {
                         <tbody>
                             ${data.map(i => `
                                 <tr style="border-bottom: 1px solid var(--border-color);">
-                                    <td style="padding: 0.75rem; font-weight: bold;">${i.sigla || '-'}</td>
                                     <td style="padding: 0.75rem;">${i.date}</td>
                                     <td style="padding: 0.75rem;">${i.date_out || '-'}</td>
-                                    <td style="padding: 0.75rem;">${i.description}</td>
+                                    <td style="padding: 0.75rem; font-weight: bold; color: var(--primary-color);">${i.sigla || 'N/A'}</td>
+                                    <td style="padding: 0.75rem;">${i.workshop || '-'}</td>
+                                    <td style="padding: 0.75rem; max-width: 300px;">${i.description}</td>
                                     <td style="padding: 0.75rem; text-align: right;">
                                         <button onclick="editInterventionHandler('${i.id}')" style="margin-right:0.5rem; cursor:pointer; background:none; border:none; color:var(--primary-color);"><i class="fa-solid fa-pen"></i></button>
                                         <button onclick="if(confirm('Eliminare questo intervento?')){store.deleteIntervention('${i.id}').then(() => switchDataTable('interventions'))}" style="cursor:pointer; background:none; border:none; color:var(--status-to-repair);"><i class="fa-solid fa-trash"></i></button>
