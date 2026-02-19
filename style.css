@@ -1410,6 +1410,47 @@ body.is-admin #admin-hint-text {
     .stats-grid {
         grid-template-columns: 1fr;
         /* Stack stats vertically on very small screens */
+        gap: 0 !important;
+        /* Remove space between stacked cards */
+    }
+
+    .stat-card {
+        border-radius: 0 !important;
+        margin-bottom: 0 !important;
+        border-bottom: none !important;
+    }
+
+    .stat-card:first-child {
+        border-top-left-radius: var(--radius-xl) !important;
+        border-top-right-radius: var(--radius-xl) !important;
+    }
+
+    .stat-card:last-child {
+        border-bottom-left-radius: var(--radius-xl) !important;
+        border-bottom-right-radius: var(--radius-xl) !important;
+        border-bottom: 1px solid var(--border-color) !important;
+    }
+
+    .filters {
+        grid-template-columns: 1fr !important;
+        gap: 0 !important;
+    }
+
+    .filter-btn {
+        border-radius: 0 !important;
+        border-bottom: 1px solid var(--border-color) !important;
+        aspect-ratio: auto !important;
+        padding: 0.75rem !important;
+    }
+
+    .filter-btn:first-child {
+        border-top-left-radius: 0.75rem !important;
+        border-top-right-radius: 0.75rem !important;
+    }
+
+    .filter-btn:last-child {
+        border-bottom-left-radius: 0.75rem !important;
+        border-bottom-right-radius: 0.75rem !important;
     }
 
     .view-title {
