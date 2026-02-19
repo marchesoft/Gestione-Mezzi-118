@@ -195,18 +195,12 @@ async function renderVehicleGrid(vehicles) {
     tomorrow.setDate(tomorrow.getDate() + 1);
     const tomorrowStr = tomorrow.toISOString().split('T')[0];
 
-    // Sort vehicles based on localStorage order if available
-    const savedOrder = JSON.parse(localStorage.getItem('vehicleOrder') || '[]');
-    if (savedOrder.length > 0) {
-        vehicles.sort((a, b) => {
-            const indexA = savedOrder.indexOf(a.id);
-            const indexB = savedOrder.indexOf(b.id);
-            if (indexA !== -1 && indexB !== -1) return indexA - indexB;
-            if (indexA !== -1) return -1;
-            if (indexB !== -1) return 1;
-            return 0;
-        });
-    }
+    // Sort vehicles based on sigla (alpha-numerical ascending)
+    vehicles.sort((a, b) => {
+        const siglaA = (a.sigla || '').toString().toLowerCase();
+        const siglaB = (b.sigla || '').toString().toLowerCase();
+        return siglaA.localeCompare(siglaB, undefined, { numeric: true, sensitivity: 'base' });
+    });
 
     if (vehicles.length === 0) {
         grid.innerHTML = '<p style="grid-column: 1/-1; text-align: center; padding: 2rem;">Nessun veicolo trovato.</p>';
