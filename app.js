@@ -942,10 +942,15 @@ window.deleteMaintenanceRecord = async function (recordId, vehicleId) {
 window.openMaintenanceForm = function (vehicleId, vehicleSigla, record = null) {
     const modal = document.getElementById('maintenance-form-modal');
     const form = document.getElementById('maintenance-form');
+    const workshopSelect = document.getElementById('maintenance-workshop');
 
     form.reset();
     document.getElementById('maintenance-vehicle-id').value = vehicleId;
     document.getElementById('maintenance-vehicle-sigla').value = vehicleSigla || 'N/A';
+
+    // Populate Workshop dropdown from cachedLocations
+    workshopSelect.innerHTML = '<option value="">-- Seleziona Officina --</option>' +
+        (cachedLocations || []).map(loc => `<option value="${loc}">${loc}</option>`).join('');
 
     if (record) {
         // Edit Mode
