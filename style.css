@@ -364,8 +364,10 @@ body {
     bottom: 105%;
     left: 50%;
     transform: translateX(-50%);
-    background-color: rgba(255, 255, 255, 0.95);
-    color: #1e3a8a;
+    background-color: #ffeb3b;
+    /* Vivid Yellow */
+    color: #0f172a;
+    /* Dark Blue */
     padding: 0.5rem 0.75rem;
     border-radius: 0.5rem;
     font-size: 0.8rem;
@@ -373,7 +375,7 @@ body {
     width: max-content;
     max-width: 220px;
     box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-    border: 1px solid #1e3a8a;
+    border: 1px solid #0f172a;
     opacity: 0;
     visibility: hidden;
     transition: opacity 0.2s, transform 0.2s;
@@ -392,7 +394,7 @@ body {
     margin-left: -5px;
     border-width: 5px;
     border-style: solid;
-    border-color: #1e3a8a transparent transparent transparent;
+    border-color: #0f172a transparent transparent transparent;
 }
 
 .vehicle-card:hover .note-tooltip {
@@ -1211,11 +1213,15 @@ body.is-admin #admin-hint-text {
     .mobile-notes {
         display: none;
         /* Hidden by default, toggled via JS */
-        font-size: 0.75rem;
-        color: var(--text-secondary);
+        font-size: 0.8rem;
+        background-color: #ffeb3b;
+        color: #0f172a;
+        padding: 0.35rem 0.6rem;
+        border-radius: 0.4rem;
+        border: 1px solid #0f172a;
+        font-weight: 700;
         text-align: center;
         margin-top: 0.25rem;
-        font-style: italic;
         line-height: 1.2;
         width: 100%;
         white-space: normal;
