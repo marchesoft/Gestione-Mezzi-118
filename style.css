@@ -650,7 +650,7 @@ body {
     max-width: none;
     text-align: center;
     text-align-last: center;
-    font-size: 1.4rem;
+    font-size: 1.2rem;
     font-weight: 900;
     color: var(--text-primary);
     text-transform: uppercase;
@@ -1336,8 +1336,8 @@ body.is-admin #admin-hint-text {
     }
 
     .location-select-container .location-select,
-    .location-select-container span {
-        font-size: 1.0rem !important;
+    .location-select-container .location-display {
+        font-size: 1.5rem !important;
     }
 
     .model-text {

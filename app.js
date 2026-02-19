@@ -343,12 +343,11 @@ async function renderVehicleGrid(vehicles) {
                 </div>
             </div>
             `;
-        } else {
             locationHtml = `
             <div class="location-select-container" style="cursor: default; background: transparent; border: none; padding: 0;">
                 <div style="font-size: 0.7rem; text-transform: uppercase; font-weight: 800; color: var(--text-secondary); margin-bottom: 0.1rem;">Posizione</div>
                 <div style="width: 100%; text-align: center;">
-                    <span style="font-weight: 700; font-size: 1.4rem; color: black;">${vehicle.station}</span>
+                    <span class="location-display" style="font-weight: 700; color: black;">${vehicle.station}</span>
                 </div>
             </div>
             `;
