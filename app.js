@@ -1,4 +1,4 @@
-// isAdmin, cachedVehicles, and cachedLocations are already declared or inherited
+const APP_VERSION = "1.1.2 - 2026-02-19 22:15"; // Used to verify cache on mobile
 let isAdmin = false;
 let cachedVehicles = null;
 let cachedLocations = null;
@@ -14,10 +14,19 @@ function formatDate(dateStr) {
 // Helper for robust alpha-numerical sorting by sigla
 function sortVehiclesBySigla(vehicles) {
     if (!vehicles || !Array.isArray(vehicles)) return vehicles;
+
+    const collator = new Intl.Collator(undefined, { numeric: true, sensitivity: 'base' });
+
     return vehicles.sort((a, b) => {
-        const siglaA = (a.sigla || '').toString().trim().toLowerCase();
-        const siglaB = (b.sigla || '').toString().trim().toLowerCase();
-        return siglaA.localeCompare(siglaB, undefined, { numeric: true, sensitivity: 'base' });
+        const siglaA = (a.sigla || '').toString().trim();
+        const siglaB = (b.sigla || '').toString().trim();
+
+        // Handle empty values - always at the bottom
+        if (!siglaA && siglaB) return 1;
+        if (siglaA && !siglaB) return -1;
+        if (!siglaA && !siglaB) return 0;
+
+        return collator.compare(siglaA, siglaB);
     });
 }
 
@@ -46,6 +55,7 @@ async function initApp() {
         if (hintText) hintText.textContent = 'Modalita amministratore';
     }
 
+    console.log(`%c APP START: Version ${APP_VERSION}`, 'background: #1e3a8a; color: #fff; font-weight: bold; padding: 4px;');
     setupEventListeners();
     await renderDashboard(true); // Force initial fetch
     setupRealtimeSubscription();
@@ -178,6 +188,7 @@ async function renderDashboard(forceRefresh = false) {
 
     if (needsRefresh) {
         cachedVehicles = await store.getVehicles();
+        sortVehiclesBySigla(cachedVehicles);
     }
 
     updateStats(cachedVehicles);
@@ -1069,7 +1080,7 @@ window.saveVehicleMileageMonth = async function (id, text) {
         if (vehicle) {
             vehicle.mileage_month = text;
             await store.updateVehicle(vehicle);
-            loadVehicles(); // Refresh the grid to show the new month immediately
+            renderDashboard(true); // Use renderDashboard instead of legacy loadVehicles
         }
     } catch (e) {
         console.error('Error saving mileage month:', e);
