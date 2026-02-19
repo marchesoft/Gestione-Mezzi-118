@@ -1038,7 +1038,7 @@ body.is-admin #admin-hint-text {
 
     .location-select-container .location-select,
     .location-select-container span {
-        font-size: 0.8rem !important;
+        font-size: 1.0rem !important;
     }
 
     .model-text {
