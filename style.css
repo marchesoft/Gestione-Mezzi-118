@@ -1167,17 +1167,21 @@ body.is-admin #admin-hint-text {
 
     /* Mobile Notes Display */
     .mobile-notes {
-        display: block !important;
-        font-size: 0.7rem;
+        display: none;
+        /* Hidden by default, toggled via JS */
+        font-size: 0.75rem;
         color: var(--text-secondary);
         text-align: center;
-        margin-top: 0.15rem;
+        margin-top: 0.25rem;
         font-style: italic;
-        line-height: 1.1;
+        line-height: 1.2;
         width: 100%;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        white-space: nowrap;
+        white-space: normal;
+        /* Allow wrapping for better readability */
+    }
+
+    .vehicle-card.notes-visible .mobile-notes {
+        display: block !important;
     }
 
     .note-tooltip {
