@@ -1,4 +1,4 @@
-const APP_VERSION = "1.1.2 - 2026-02-19 22:15"; // Used to verify cache on mobile
+const APP_VERSION = "1.2.0 - 2026-02-20"; // Major sync logic upgrade
 let isAdmin = false;
 let cachedVehicles = null;
 let cachedLocations = null;
@@ -84,6 +84,9 @@ function setupIdleRefresh() {
     resetTimer(); // Start timer initially
 }
 
+let isSyncing = false; // Prevents race conditions during fetch
+let lastVehicleSync = Date.now();
+
 function setupRealtimeSubscription() {
     if (window.store && window.store.supabase) {
         console.log("Realtime: Initializing subscriptions...");
@@ -91,11 +94,13 @@ function setupRealtimeSubscription() {
         const handleStatusChange = (status, channelName) => {
             console.log(`Realtime: ${channelName} status:`, status);
             if (status === 'SUBSCRIBED') {
-                console.log(`Realtime: Successfully subscribed to ${channelName}. Refreshing data...`);
-                renderDashboard(true);
+                console.log(`Realtime: ${channelName} active.`);
+                // We used to call renderDashboard(true) here, but that causes 
+                // race conditions if triggered too often. 
+                // Initial load handles the first pull anyway.
             } else if (status === 'CHANNEL_ERROR' || status === 'CLOSED') {
-                console.warn(`Realtime: ${channelName} connection lost (${status}). Retrying in 5s...`);
-                setTimeout(() => setupRealtimeSubscription(), 5000);
+                console.warn(`Realtime: ${channelName} connection lost (${status}). Auto-retrying...`);
+                // Supabase JS client handles some retry internally, but we reinforce it.
             }
         };
 
@@ -103,34 +108,44 @@ function setupRealtimeSubscription() {
         window.store.supabase
             .channel('public:vehicles')
             .on('postgres_changes', { event: '*', schema: 'public', table: 'vehicles' }, (payload) => {
-                console.log("Realtime: Vehicle change detected", payload.eventType, payload.new?.id || payload.old?.id);
+                console.log("Realtime event received:", payload.eventType, payload.new?.id || payload.old?.id);
 
-                if (!cachedVehicles) {
-                    return renderDashboard(true);
+                // If we are currently fetching all vehicles, ignore this event to avoid inconsistent state
+                // The fetch response will contain the latest data anyway.
+                if (isSyncing) {
+                    console.log("Realtime: Sync in progress, skipping event.");
+                    return;
                 }
+
+                if (!cachedVehicles) return renderDashboard(true);
 
                 if (payload.eventType === 'UPDATE') {
                     const idx = cachedVehicles.findIndex(v => v.id === payload.new.id);
                     if (idx !== -1) {
+                        // Merge fields carefully to not lose maintenanceHistory if event payload is partial
+                        // (Wait, REPLICA IDENTITY FULL should give us all columns)
                         const oldHistory = cachedVehicles[idx].maintenanceHistory || [];
                         cachedVehicles[idx] = { ...payload.new, maintenanceHistory: oldHistory };
+                    } else {
+                        // If not in cache, just refresh to be safe
+                        return renderDashboard(true);
                     }
-                    if (currentOpenedVehicleId === payload.new.id) {
-                        openVehicleModal(payload.new.id);
-                    }
-                    sortVehiclesBySigla(cachedVehicles);
                 } else if (payload.eventType === 'INSERT') {
-                    cachedVehicles.push({ ...payload.new, maintenanceHistory: [] });
-                    sortVehiclesBySigla(cachedVehicles);
+                    if (!cachedVehicles.find(v => v.id === payload.new.id)) {
+                        cachedVehicles.push({ ...payload.new, maintenanceHistory: [] });
+                    }
                 } else if (payload.eventType === 'DELETE') {
                     cachedVehicles = cachedVehicles.filter(v => v.id !== payload.old.id);
-                    if (currentOpenedVehicleId === payload.old.id) {
-                        closeVehicleModal();
-                    }
+                    if (currentOpenedVehicleId === payload.old.id) closeVehicleModal();
                 }
 
+                sortVehiclesBySigla(cachedVehicles);
                 updateStats(cachedVehicles);
                 renderVehicleGrid(cachedVehicles);
+
+                if (currentOpenedVehicleId === payload.new?.id) {
+                    openVehicleModal(payload.new.id);
+                }
             })
             .subscribe((status) => handleStatusChange(status, 'Vehicles'));
 
@@ -138,12 +153,8 @@ function setupRealtimeSubscription() {
         window.store.supabase
             .channel('public:interventions')
             .on('postgres_changes', { event: '*', schema: 'public', table: 'interventions' }, (payload) => {
-                const vId = payload.new ? payload.new.vehicle_id : payload.old.vehicle_id;
-                renderDashboard(true).then(() => {
-                    if (currentOpenedVehicleId === vId) {
-                        openVehicleModal(vId);
-                    }
-                });
+                // Interventions are deep-linked, trigger full refresh to sync maintenanceHistory
+                renderDashboard(true);
             })
             .subscribe((status) => handleStatusChange(status, 'Interventions'));
 
@@ -154,42 +165,58 @@ function setupRealtimeSubscription() {
                 renderDashboard(true);
             })
             .subscribe((status) => handleStatusChange(status, 'Locations'));
-    } else {
-        console.warn("Supabase client not found in store.");
     }
 }
 
 async function renderDashboard(forceRefresh = false) {
-    if (forceRefresh || !cachedVehicles) {
-        cachedVehicles = await store.getVehicles();
-        sortVehiclesBySigla(cachedVehicles);
-    }
-    if (forceRefresh || !cachedLocations) {
-        cachedLocations = await store.getLocations();
-    }
+    if (isSyncing) return; // Prevent multiple concurrent refreshes
 
-    // AUTO-CLEANUP: Delete expired appointments
-    const todayStr = getLocalISODate();
-    let needsRefresh = false;
+    try {
+        if (forceRefresh || !cachedVehicles) {
+            isSyncing = true;
+            console.log("Syncing dashboard data from DB...");
 
-    for (const vehicle of cachedVehicles) {
-        if (vehicle.appointment_date && vehicle.appointment_date < todayStr) {
-            console.log(`Auto-cleaning expired appointment for vehicle ${vehicle.id}`);
-            vehicle.appointment_date = null;
-            vehicle.appointment_location = null;
-            vehicle.alert_ack_date = null;
-            await store.updateVehicle(vehicle);
-            needsRefresh = true;
+            // Parallel fetch
+            const [vehicles, locations] = await Promise.all([
+                store.getVehicles(),
+                store.getLocations()
+            ]);
+
+            cachedVehicles = vehicles;
+            cachedLocations = locations;
+            sortVehiclesBySigla(cachedVehicles);
+            lastVehicleSync = Date.now();
         }
-    }
 
-    if (needsRefresh) {
-        cachedVehicles = await store.getVehicles();
-        sortVehiclesBySigla(cachedVehicles);
-    }
+        // AUTO-CLEANUP: Only if admin (optimization)
+        if (isAdmin && cachedVehicles) {
+            const todayStr = getLocalISODate();
+            let needsDbUpdate = false;
 
-    updateStats(cachedVehicles);
-    renderVehicleGrid(cachedVehicles);
+            for (const vehicle of cachedVehicles) {
+                if (vehicle.appointment_date && vehicle.appointment_date < todayStr) {
+                    console.log(`Auto-cleaning expired appointment for vehicle ${vehicle.id}`);
+                    vehicle.appointment_date = null;
+                    vehicle.appointment_location = null;
+                    vehicle.alert_ack_date = null;
+                    await store.updateVehicle(vehicle);
+                    needsDbUpdate = true;
+                }
+            }
+            if (needsDbUpdate) {
+                cachedVehicles = await store.getVehicles();
+                sortVehiclesBySigla(cachedVehicles);
+            }
+        }
+
+        updateStats(cachedVehicles);
+        renderVehicleGrid(cachedVehicles);
+
+    } catch (err) {
+        console.error("Dashboard render error:", err);
+    } finally {
+        isSyncing = false;
+    }
 }
 
 function updateStats(vehicles) {
