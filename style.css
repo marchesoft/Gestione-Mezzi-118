@@ -313,7 +313,10 @@ body {
 .vehicle-card {
     background: #FAF8F3;
     border-radius: var(--radius-lg);
-    overflow: hidden;
+    overflow: visible;
+    /* Changed from hidden to allow tooltip */
+    position: relative;
+    /* Ensure absolute children are relative to card */
     box-shadow: var(--shadow-sm);
     transition: all 0.3s ease;
     border: 1.5px solid #cbd5e1;
@@ -322,6 +325,54 @@ body {
     display: flex;
     flex-direction: column;
     cursor: pointer;
+}
+
+/* Ensure images respect border radius since overflow is visible */
+.vehicle-card .card-header img {
+    border-top-left-radius: var(--radius-lg);
+    border-top-right-radius: var(--radius-lg);
+}
+
+/* Note Tooltip */
+.note-tooltip {
+    position: absolute;
+    bottom: 105%;
+    left: 50%;
+    transform: translateX(-50%);
+    background-color: #1e293b;
+    color: white;
+    padding: 0.5rem 0.75rem;
+    border-radius: 0.5rem;
+    font-size: 0.75rem;
+    font-weight: 500;
+    width: max-content;
+    max-width: 220px;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.2s, transform 0.2s;
+    pointer-events: none;
+    z-index: 100;
+    text-align: center;
+    line-height: 1.4;
+    white-space: normal;
+}
+
+.note-tooltip::after {
+    content: '';
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    margin-left: -5px;
+    border-width: 5px;
+    border-style: solid;
+    border-color: #1e293b transparent transparent transparent;
+}
+
+.vehicle-card:hover .note-tooltip {
+    opacity: 1;
+    visibility: visible;
+    transform: translateX(-50%) translateY(-5px);
 }
 
 .sigla-text {

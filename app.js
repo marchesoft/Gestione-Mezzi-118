@@ -221,6 +221,7 @@ async function renderVehicleGrid(vehicles) {
         }
 
         card.innerHTML = `
+            ${vehicle.notes ? `<div class="note-tooltip">${vehicle.notes}</div>` : ''}
             ${statusHtml}
             <div class="card-body">
                 <div class="vehicle-id" style="text-align: center; margin-bottom: 0.5rem; display: flex; flex-direction: column; gap: 0.1rem;">
