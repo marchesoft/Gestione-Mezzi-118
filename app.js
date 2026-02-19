@@ -693,7 +693,8 @@ window.saveVehicleForm = async function () {
         await renderDashboard(true);
     }
 
-    if (window.lastDataManagerTab === 'vehicles') {
+    // Only return to Data Management if we were editing an existing vehicle (id exists)
+    if (id && window.lastDataManagerTab === 'vehicles') {
         window.openDataManagement();
         switchDataTable('vehicles');
     }
