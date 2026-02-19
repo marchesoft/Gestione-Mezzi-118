@@ -6,14 +6,18 @@ let currentOpenedVehicleId = null;
 
 // Helper to format date strings from YYYY-MM-DD to DD/MM/YYYY
 function formatDate(dateStr) {
-    if (!dateStr || dateStr === '-') return '-';
-    try {
-        const [year, month, day] = dateStr.split('-');
-        if (!year || !month || !day) return dateStr;
-        return `${day}/${month}/${year}`;
-    } catch (e) {
-        return dateStr;
-    }
+    if (!dateStr) return '';
+    const [year, month, day] = dateStr.split('-');
+    return `${day}/${month}/${year}`;
+}
+
+// Helper for local YYYY-MM-DD
+function getLocalISODate() {
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const day = String(now.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
 }
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -118,7 +122,7 @@ async function renderDashboard(forceRefresh = false) {
     }
 
     // AUTO-CLEANUP: Delete expired appointments
-    const todayStr = new Date().toISOString().split('T')[0];
+    const todayStr = getLocalISODate();
     let needsRefresh = false;
 
     for (const vehicle of cachedVehicles) {
@@ -189,11 +193,14 @@ function getStatusLabel(status) {
 
 async function renderVehicleGrid(vehicles) {
     const grid = document.getElementById('vehicle-grid');
-    const today = new Date();
-    const todayStr = today.toISOString().split('T')[0];
-    const tomorrow = new Date(today);
+    const todayStr = getLocalISODate();
+
+    const tomorrow = new Date();
     tomorrow.setDate(tomorrow.getDate() + 1);
-    const tomorrowStr = tomorrow.toISOString().split('T')[0];
+    const tomorrowYear = tomorrow.getFullYear();
+    const tomorrowMonth = String(tomorrow.getMonth() + 1).padStart(2, '0');
+    const tomorrowDay = String(tomorrow.getDate()).padStart(2, '0');
+    const tomorrowStr = `${tomorrowYear}-${tomorrowMonth}-${tomorrowDay}`;
 
     // Sort vehicles based on sigla (alpha-numerical ascending)
     vehicles.sort((a, b) => {
@@ -1048,18 +1055,34 @@ window.saveVehicleAppointment = async function (id, date, location) {
 }
 
 window.acknowledgeAppointmentAlert = async function (event, id) {
-    if (event) event.stopPropagation();
+    if (event) {
+        event.stopPropagation();
+        event.preventDefault();
+    }
+
     try {
+        const todayStr = getLocalISODate();
+
+        // 1. Optimistic Update in Cache
+        if (cachedVehicles) {
+            const v = cachedVehicles.find(item => item.id === id);
+            if (v) {
+                v.alert_ack_date = todayStr;
+                renderVehicleGrid(cachedVehicles);
+            }
+        }
+
+        // 2. Persistent Update in DB
         const vehicle = await store.getVehicleById(id);
         if (vehicle) {
-            const todayStr = new Date().toISOString().split('T')[0];
             vehicle.alert_ack_date = todayStr;
             await store.updateVehicle(vehicle);
-            // Refresh dashboard to hide overlay
+            // Full refresh to ensure consistency
             renderDashboard(true);
         }
     } catch (error) {
         console.error("Error acknowledging alert:", error);
+        alert("Errore durante la conferma dell'avviso. Riprova.");
     }
 }
 
