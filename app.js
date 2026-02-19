@@ -990,6 +990,24 @@ window.saveVehicleMileageMonth = async function (id, text) {
     }
 }
 
+// Appointment Save (Admin Only)
+window.saveVehicleAppointment = async function (id, date) {
+    try {
+        const vehicle = await store.getVehicleById(id);
+        if (vehicle) {
+            vehicle.appointment_date = date || null;
+            await store.updateVehicle(vehicle);
+            alert("Appuntamento aggiornato.");
+            // Refresh detail modal and dashboard
+            openVehicleModal(id);
+            renderDashboard(true);
+        }
+    } catch (error) {
+        console.error("Error saving appointment:", error);
+        alert("Errore durante il salvataggio dell'appuntamento.");
+    }
+}
+
 // Note Auto-Save
 window.saveVehicleNote = async function (id, text, showFeedback = false) {
     try {
