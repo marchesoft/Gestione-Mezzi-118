@@ -11,17 +11,17 @@
     --text-secondary: #64748b;
     --border-color: #e2e8f0;
 
-    --status-operative: #2563eb;
-    /* Blue */
-    --status-operative-bg: #dbeafe;
+    --status-operative: #0ea5e9;
+    /* Azure/Sky Blue */
+    --status-operative-bg: #e0f2fe;
     --status-available: #22c55e;
     /* Green */
     --status-available-bg: #dcfce7;
-    --status-maintenance: #f59e0b;
-    /* Yellow (remains yellow/amber) */
-    --status-maintenance-bg: #fef3c7;
+    --status-maintenance: #f97316;
+    /* Orange */
+    --status-maintenance-bg: #ffedd5;
     --status-to-repair: #ef4444;
-    /* Red (remains red) */
+    /* Red */
     --status-to-repair-bg: #fee2e2;
 
     --shadow-sm: 0 2px 4px 0 rgb(0 0 0 / 0.12);
