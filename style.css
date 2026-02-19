@@ -294,6 +294,21 @@ body {
     letter-spacing: 0.02em;
     cursor: pointer;
     border-radius: 0;
+    position: relative;
+}
+
+.appointment-dot {
+    position: absolute;
+    top: 50%;
+    right: 1rem;
+    transform: translateY(-50%);
+    width: 12px;
+    height: 12px;
+    background-color: #ccff00;
+    /* Fluo Yellow */
+    border-radius: 50%;
+    box-shadow: 0 0 10px #ccff00, 0 0 5px rgba(0, 0, 0, 0.3);
+    z-index: 5;
 }
 
 .status-full-bar:focus {

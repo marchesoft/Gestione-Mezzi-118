@@ -217,17 +217,23 @@ async function renderVehicleGrid(vehicles) {
 
         if (isAdmin) {
             statusHtml = `
-            <select class="status-full-bar status-${vehicle.status}" onchange="quickUpdateStatus(event, '${vehicle.id}')" onclick="event.stopPropagation()">
-                <option value="operative" ${vehicle.status === 'operative' ? 'selected' : ''}>In Servizio</option>
-                <option value="available" ${vehicle.status === 'available' ? 'selected' : ''}>Disponibile</option>
-                <option value="maintenance" ${vehicle.status === 'maintenance' ? 'selected' : ''}>In Officina</option>
-                <option value="to-repair" ${vehicle.status === 'to-repair' ? 'selected' : ''}>Da Riparare</option>
-            </select>
+            <div style="position: relative; width: 100%;">
+                <select class="status-full-bar status-${vehicle.status}" onchange="quickUpdateStatus(event, '${vehicle.id}')" onclick="event.stopPropagation()">
+                    <option value="operative" ${vehicle.status === 'operative' ? 'selected' : ''}>In Servizio</option>
+                    <option value="available" ${vehicle.status === 'available' ? 'selected' : ''}>Disponibile</option>
+                    <option value="maintenance" ${vehicle.status === 'maintenance' ? 'selected' : ''}>In Officina</option>
+                    <option value="to-repair" ${vehicle.status === 'to-repair' ? 'selected' : ''}>Da Riparare</option>
+                </select>
+                ${vehicle.appointment_date ? '<div class="appointment-dot" title="Appuntamento Fissato"></div>' : ''}
+            </div>
             `;
         } else {
             statusHtml = `
-            <div class="status-full-bar status-${vehicle.status}" style="cursor: default;">
-                ${statusLabels[vehicle.status] || vehicle.status}
+            <div style="position: relative; width: 100%;">
+                <div class="status-full-bar status-${vehicle.status}" style="cursor: default;">
+                    ${statusLabels[vehicle.status] || vehicle.status}
+                </div>
+                ${vehicle.appointment_date ? '<div class="appointment-dot" title="Appuntamento Fissato"></div>' : ''}
             </div>
             `;
         }
@@ -481,6 +487,7 @@ window.openVehicleForm = async function (vehicleId = null) {
 
             document.getElementById('vehicle-inspection').value = vehicle.inspection_expiry || '';
             document.getElementById('vehicle-revision-o2').value = vehicle.revision_o2 || '';
+            document.getElementById('vehicle-appointment').value = vehicle.appointment_date || '';
             document.getElementById('vehicle-notes').value = vehicle.notes || '';
         }
     } else {
@@ -641,6 +648,7 @@ window.saveVehicleForm = async function () {
 
     const inspection_expiry = document.getElementById('vehicle-inspection').value;
     const revision_o2 = document.getElementById('vehicle-revision-o2').value;
+    const appointment_date = document.getElementById('vehicle-appointment').value;
     const notes = document.getElementById('vehicle-notes').value;
 
     const vehicleData = {
@@ -651,6 +659,7 @@ window.saveVehicleForm = async function () {
 
         inspection_expiry: inspection_expiry || null,
         revision_o2: revision_o2 || null,
+        appointment_date: appointment_date || null,
         notes
     };
 
@@ -764,11 +773,21 @@ window.openVehicleModal = async function (id) {
                         </div>
                         <div>
                             <div style="font-size: 0.75rem; text-transform: uppercase; color: black; font-weight: 600; margin-bottom: 0.25rem;">Scadenza Revisione</div>
-                            <div style="font-size: 0.95rem; font-weight: 600; color: black;">${vehicle.inspection_expiry ? new Date(vehicle.inspection_expiry).toLocaleDateString() : '-'}</div>
+                            <div style="font-size: 0.95rem; font-weight: 600; color: black;">${vehicle.inspection_expiry ? formatDate(vehicle.inspection_expiry) : '-'}</div>
                         </div>
                         <div>
                             <div style="font-size: 0.75rem; text-transform: uppercase; color: black; font-weight: 600; margin-bottom: 0.25rem;">Rev. O2</div>
-                            <div style="font-size: 0.95rem; font-weight: 600; color: black;">${vehicle.revision_o2 ? new Date(vehicle.revision_o2).toLocaleDateString() : '-'}</div>
+                            <div style="font-size: 0.95rem; font-weight: 600; color: black;">${vehicle.revision_o2 ? formatDate(vehicle.revision_o2) : '-'}</div>
+                        </div>
+                    </div>
+
+                    <div style="margin-bottom: 1rem; background: #fff7ed; padding: 1rem; border: 2px solid #1e3a8a; border-radius: 0.75rem; display: flex; align-items: center; gap: 1rem;">
+                        <div style="background: #1e3a8a; color: white; padding: 0.5rem; border-radius: 0.5rem;">
+                            <i class="fa-solid fa-calendar-check" style="font-size: 1.2rem;"></i>
+                        </div>
+                        <div>
+                            <div style="font-size: 0.75rem; text-transform: uppercase; color: #1e3a8a; font-weight: 800; margin-bottom: 0.1rem;">Prossimo Appuntamento</div>
+                            <div style="font-size: 1.1rem; font-weight: 700; color: #1e3a8a;">${vehicle.appointment_date ? formatDate(vehicle.appointment_date) : 'Nessun appuntamento fissato'}</div>
                         </div>
                     </div>
 
@@ -808,8 +827,8 @@ window.openVehicleModal = async function (id) {
                         <tbody>
                             ${vehicle.maintenanceHistory.map(record => `
                                 <tr style="border-bottom: 1px solid var(--border-color);">
-                                    <td style="padding: 1rem; font-weight: 500;">${record.date ? new Date(record.date).toLocaleDateString() : '-'}</td>
-                                    <td style="padding: 1rem; font-weight: 500;">${record.date_out ? new Date(record.date_out).toLocaleDateString() : '-'}</td>
+                                    <td style="padding: 1rem; font-weight: 500;">${record.date ? formatDate(record.date) : '-'}</td>
+                                    <td style="padding: 1rem; font-weight: 500;">${record.date_out ? formatDate(record.date_out) : '-'}</td>
                                     <td style="padding: 1rem; font-weight: 500;">${record.workshop || '-'}</td>
                                     <td style="padding: 1rem;">${record.description}</td>
                                     <td style="padding: 1rem; text-align: right;">
