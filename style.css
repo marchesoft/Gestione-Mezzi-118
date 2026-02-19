@@ -1020,25 +1020,25 @@ body.is-admin #admin-hint-text {
     }
 
     .sigla-text {
-        font-size: 1.2rem;
-    }
-
-    .plate-number {
         font-size: 1.0rem;
     }
 
+    .plate-number {
+        font-size: 0.85rem;
+    }
+
     .status-full-bar {
-        font-size: 0.75rem;
+        font-size: 0.65rem;
         padding: 0.5rem 0.25rem;
     }
 
     .location-select-container .location-select,
     .location-select-container span {
-        font-size: 1.1rem !important;
+        font-size: 0.9rem !important;
     }
 
     .model-text {
-        font-size: 0.65rem;
+        font-size: 0.6rem;
     }
 
     .vehicle-id {
