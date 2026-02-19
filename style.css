@@ -306,10 +306,10 @@ body {
     transform: translateY(-50%);
     width: 24px;
     height: 24px;
-    background-color: #ff00ff;
-    /* Fuchsia */
+    background-color: #ffff00;
+    /* Yellow */
     border-radius: 50%;
-    box-shadow: 0 0 15px #ff00ff, 0 0 5px rgba(0, 0, 0, 0.3);
+    box-shadow: 0 0 15px #ffff00, 0 0 5px rgba(0, 0, 0, 0.3);
     z-index: 5;
     border: 2px solid white;
 }
