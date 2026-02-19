@@ -375,7 +375,7 @@ window.quickUpdateStationSelect = async function (event, id) {
     if (vehicle && vehicle.station !== newStation) {
         vehicle.station = newStation;
         await store.updateVehicle(vehicle);
-        await renderDashboard();
+        await renderDashboard(true);
 
         if (!document.getElementById('vehicle-modal').classList.contains('hidden')) {
             openVehicleModal(id);
@@ -642,7 +642,7 @@ window.saveVehicleForm = async function () {
     }
 
     document.getElementById('vehicle-form-modal').classList.add('hidden');
-    await renderDashboard();
+    await renderDashboard(true);
 
     if (window.lastDataManagerTab === 'vehicles') {
         window.openDataManagement();
