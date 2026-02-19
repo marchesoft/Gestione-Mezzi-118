@@ -1,6 +1,19 @@
+const store = new VehicleStore();
 let isAdmin = false;
 let cachedVehicles = null;
 let cachedLocations = null;
+
+// Helper to format date strings from YYYY-MM-DD to DD/MM/YYYY
+function formatDate(dateStr) {
+    if (!dateStr || dateStr === '-') return '-';
+    try {
+        const [year, month, day] = dateStr.split('-');
+        if (!year || !month || !day) return dateStr;
+        return `${day}/${month}/${year}`;
+    } catch (e) {
+        return dateStr;
+    }
+}
 
 document.addEventListener('DOMContentLoaded', () => {
     initApp();
@@ -693,6 +706,12 @@ window.saveVehicleForm = async function () {
         await renderDashboard(true);
     }
 
+    // Refresh Data Management table if it's open
+    const dataModal = document.getElementById('data-management-modal');
+    if (dataModal && !dataModal.classList.contains('hidden')) {
+        await switchDataTable(window.lastDataManagerTab || 'vehicles');
+    }
+
 
 
     if (!document.getElementById('vehicle-modal').classList.contains('hidden') && id) {
@@ -908,6 +927,12 @@ window.saveMaintenanceRecord = async function (e) {
             await openVehicleModal(vehicleId);
         }
 
+        // Refresh Data Management table if it's open
+        const dataModal = document.getElementById('data-management-modal');
+        if (dataModal && !dataModal.classList.contains('hidden')) {
+            await switchDataTable(window.lastDataManagerTab || 'interventions');
+        }
+
         // If data management was used, re-open it to requested tab
         // We can detect if it was likely open or just always refresh dashboard/lists
         // Let's check a global flag or just rely on manual re-opening if needed, 
@@ -981,8 +1006,6 @@ window.editInterventionHandler = async function (id) {
         // Let's fetch the vehicle to get the sigla.
         const vehicle = await store.getVehicleById(intervention.vehicle_id);
         openMaintenanceForm(intervention.vehicle_id, vehicle ? vehicle.sigla : 'N/A', intervention);
-        // Hide management modal to let form show (z-index/overlap issues sometimes occur)
-        document.getElementById('data-management-modal').classList.add('hidden');
     }
 }
 
@@ -1007,7 +1030,7 @@ window.switchDataTable = async function (type) {
             html = `
                 <div style="margin-bottom: 1.5rem; background: #f8fafc; padding: 1rem; border-radius: 0.75rem; border: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center;">
                     <h4 style="font-size: 0.9rem;">Elenco Mezzi</h4>
-                    <button class="btn btn-primary" onclick="openVehicleForm(); document.getElementById('data-management-modal').classList.add('hidden');" style="padding: 0.5rem 1rem;"><i class="fa-solid fa-plus"></i> Nuovo Mezzo</button>
+                    <button class="btn btn-primary" onclick="openVehicleForm();" style="padding: 0.5rem 1rem;"><i class="fa-solid fa-plus"></i> Nuovo Mezzo</button>
                 </div>
                 <div style="overflow-x: auto;">
                     <table style="width: 100%; border-collapse: collapse; min-width: 1200px;">
@@ -1041,10 +1064,10 @@ window.switchDataTable = async function (type) {
                                     <td style="padding: 0.75rem; max-width: 150px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${v.notes || ''}">${v.notes || '-'}</td>
                                     <td style="padding: 0.75rem;">${v.radio_id || '-'}</td>
 
-                                    <td style="padding: 0.75rem;">${v.inspection_expiry || '-'}</td>
-                                    <td style="padding: 0.75rem;">${v.revision_o2 || '-'}</td>
+                                    <td style="padding: 0.75rem;">${formatDate(v.inspection_expiry)}</td>
+                                    <td style="padding: 0.75rem;">${formatDate(v.revision_o2)}</td>
                                     <td style="padding: 0.75rem; text-align: right;">
-                                        <button onclick="openVehicleForm('${v.id}'); document.getElementById('data-management-modal').classList.add('hidden');" style="margin-right:0.5rem; cursor:pointer; background:none; border:none; color:var(--primary-color);"><i class="fa-solid fa-pen"></i></button>
+                                        <button onclick="openVehicleForm('${v.id}');" style="margin-right:0.5rem; cursor:pointer; background:none; border:none; color:var(--primary-color);"><i class="fa-solid fa-pen"></i></button>
                                         <button onclick="deleteVehicleHandler('${v.id}')" style="cursor:pointer; background:none; border:none; color:var(--status-to-repair);"><i class="fa-solid fa-trash"></i></button>
                                     </td>
                                 </tr>
@@ -1099,8 +1122,8 @@ window.switchDataTable = async function (type) {
                         <tbody>
                             ${data.map(i => `
                                 <tr style="border-bottom: 1px solid var(--border-color);">
-                                    <td style="padding: 0.75rem;">${i.date}</td>
-                                    <td style="padding: 0.75rem;">${i.date_out || '-'}</td>
+                                    <td style="padding: 0.75rem;">${formatDate(i.date)}</td>
+                                    <td style="padding: 0.75rem;">${formatDate(i.date_out)}</td>
                                     <td style="padding: 0.75rem; font-weight: bold; color: var(--primary-color);">${i.sigla || 'N/A'}</td>
                                     <td style="padding: 0.75rem;">${i.workshop || '-'}</td>
                                     <td style="padding: 0.75rem; max-width: 300px;">${i.description}</td>

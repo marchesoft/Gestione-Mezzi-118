@@ -233,8 +233,12 @@ body {
 }
 
 .section-header h3 {
-    font-size: 1.25rem;
-    font-weight: 600;
+    font-size: 1.6rem;
+    font-weight: 700;
+    color: #0f172a;
+    /* Dark Blue */
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
 }
 
 .filters {
@@ -695,6 +699,12 @@ body {
 .modal.hidden {
     opacity: 0;
     pointer-events: none;
+}
+
+/* Form Modals should be in front of Management Modals */
+#vehicle-form-modal,
+#maintenance-form-modal {
+    z-index: 2000;
 }
 
 .modal-content {
