@@ -2,6 +2,7 @@
 let isAdmin = false;
 let cachedVehicles = null;
 let cachedLocations = null;
+let currentOpenedVehicleId = null;
 
 // Helper to format date strings from YYYY-MM-DD to DD/MM/YYYY
 function formatDate(dateStr) {
@@ -60,14 +61,11 @@ function setupIdleRefresh() {
 }
 
 function setupRealtimeSubscription() {
-    // To be safe, we'll try to use the one from store.js if exported, or assume global.
-    // Based on previous file reads, implicit global 'supabase' or initialized in store.js
-
     if (window.store && window.store.supabase) {
+        // Vehicles Subscription
         window.store.supabase
             .channel('public:vehicles')
             .on('postgres_changes', { event: '*', schema: 'public', table: 'vehicles' }, (payload) => {
-                // Determine if we need to update cache
                 if (!cachedVehicles) {
                     return renderDashboard(true);
                 }
@@ -75,21 +73,35 @@ function setupRealtimeSubscription() {
                 if (payload.eventType === 'UPDATE') {
                     const idx = cachedVehicles.findIndex(v => v.id === payload.new.id);
                     if (idx !== -1) {
-                        // Merge new data but preserve existing properties not in payload if any (though payload.new is usually full row)
-                        // Important: payload.new might lack joined fields if any (like maintenanceHistory which is not in vehicles table)
-                        // So we merge INTO existing
                         cachedVehicles[idx] = { ...cachedVehicles[idx], ...payload.new };
                     }
+
+                    // IF THIS VEHICLE IS CURRENTLY OPENED IN MODAL, REFRESH THE MODAL
+                    if (currentOpenedVehicleId === payload.new.id) {
+                        openVehicleModal(payload.new.id);
+                    }
                 } else if (payload.eventType === 'INSERT') {
-                    // Start with empty maintenance history for new item
                     const newVehicle = { ...payload.new, maintenanceHistory: [] };
                     cachedVehicles.push(newVehicle);
                 } else if (payload.eventType === 'DELETE') {
                     cachedVehicles = cachedVehicles.filter(v => v.id !== payload.old.id);
+                    if (currentOpenedVehicleId === payload.old.id) {
+                        document.getElementById('vehicle-modal').classList.add('hidden');
+                        currentOpenedVehicleId = null;
+                    }
                 }
 
                 updateStats(cachedVehicles);
                 renderVehicleGrid(cachedVehicles);
+            })
+            .subscribe();
+
+        // Interventions Subscription
+        window.store.supabase
+            .channel('public:interventions')
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'interventions' }, (payload) => {
+                console.log("Intervention change detected, refreshing dashboard...");
+                renderDashboard(true);
             })
             .subscribe();
     } else {
@@ -624,6 +636,11 @@ function setupEventListeners() {
         });
     }
 
+    window.closeVehicleModal = function () {
+        document.getElementById('vehicle-modal').classList.add('hidden');
+        currentOpenedVehicleId = null;
+    }
+
     window.onclick = function (event) {
         const modal = document.getElementById('vehicle-modal');
         const formModal = document.getElementById('vehicle-form-modal');
@@ -631,7 +648,9 @@ function setupEventListeners() {
         const locModal = document.getElementById('location-modal');
         const adminModal = document.getElementById('admin-login-modal');
 
-        if (event.target === modal) modal.classList.add('hidden');
+        if (event.target == modal) {
+            closeVehicleModal();
+        }
         if (event.target === formModal) formModal.classList.add('hidden');
         if (event.target === maintModal) maintModal.classList.add('hidden');
         if (event.target === locModal) locModal.classList.add('hidden');
@@ -719,6 +738,7 @@ window.saveVehicleForm = async function () {
 }
 
 window.openVehicleModal = async function (id) {
+    currentOpenedVehicleId = id;
     const vehicle = await store.getVehicleById(id);
     if (!vehicle) return;
 
@@ -732,14 +752,14 @@ window.openVehicleModal = async function (id) {
     else statusColorClass = 'status-to-repair';
 
     content.innerHTML = `
-                <div style="position: relative; padding: 1.5rem 1.5rem 0 1.5rem;">
-                    <button onclick="document.getElementById('vehicle-modal').classList.add('hidden')" style="position: absolute; top: 1rem; right: 1rem; background: rgba(0,0,0,0.5); border: none; color: white; width: 32px; height: 32px; border-radius: 50%; cursor: pointer; font-size: 1.2rem; display: flex; align-items: center; justify-content: center; z-index: 10;">&times;</button>
+                <div class="modal-header-image" style="position: relative; padding: 1.5rem 1.5rem 0 1.5rem;">
+                    <button onclick="closeVehicleModal()" style="position: absolute; top: 1rem; right: 1rem; background: rgba(0,0,0,0.5); border: none; color: white; width: 32px; height: 32px; border-radius: 50%; cursor: pointer; font-size: 1.2rem; display: flex; align-items: center; justify-content: center; z-index: 10;">&times;</button>
                     <div class="status-badge ${statusColorClass}" style="position: relative; top: 0; left: 0; font-size: 1.1rem; padding: 0.6rem 1.2rem; display: inline-block; margin-bottom: 1rem;">
                         ${getStatusLabel(vehicle.status)}
                     </div>
                 </div>
                 <div style="padding: 1.5rem;">
-                    <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1rem;">
+                    <div class="modal-main-title" style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1rem;">
                         <div>
                             <div>
                                 <div style="display: flex; gap: 0.75rem; align-items: baseline; margin-bottom: 0.25rem;">
@@ -788,7 +808,7 @@ window.openVehicleModal = async function (id) {
                         </div>
                     </div>
 
-                    <div style="margin-bottom: 1rem; background: #fff7ed; padding: 1rem; border: 2px solid #1e3a8a; border-radius: 0.75rem; display: flex; align-items: center; justify-content: space-between; gap: 1rem;">
+                    <div class="appointment-block" style="margin-bottom: 1rem; background: #fff7ed; padding: 1rem; border: 2px solid #1e3a8a; border-radius: 0.75rem; display: flex; align-items: center; justify-content: space-between; gap: 1rem;">
                         <div style="display: flex; align-items: center; gap: 1rem;">
                             <div style="background: #1e3a8a; color: white; padding: 0.5rem; border-radius: 0.5rem;">
                                 <i class="fa-solid fa-calendar-check" style="font-size: 1.2rem;"></i>
@@ -802,7 +822,7 @@ window.openVehicleModal = async function (id) {
                             </div>
                         </div>
                         ${isAdmin ? `
-                            <div style="display: flex; flex-direction: column; gap: 0.5rem; align-items: flex-end;">
+                            <div class="admin-appointment-controls" style="display: flex; flex-direction: column; gap: 0.5rem; align-items: flex-end;">
                                 <div style="display: flex; align-items: center; gap: 0.5rem;">
                                     <input type="date" id="admin-appointment-input" value="${vehicle.appointment_date || ''}" 
                                            style="padding: 0.4rem; border: 1px solid #1e3a8a; border-radius: 0.4rem; font-size: 0.9rem;">
