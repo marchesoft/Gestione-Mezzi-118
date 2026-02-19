@@ -312,6 +312,25 @@ body {
     box-shadow: 0 0 15px #ffff00, 0 0 5px rgba(0, 0, 0, 0.3);
     z-index: 5;
     border: 2px solid white;
+    animation: pulse-yellow 1.5s infinite;
+}
+
+@keyframes pulse-yellow {
+    0% {
+        transform: translateY(-50%) scale(1);
+        box-shadow: 0 0 15px #ffff00, 0 0 5px rgba(0, 0, 0, 0.3);
+    }
+
+    50% {
+        transform: translateY(-50%) scale(1.2);
+        box-shadow: 0 0 25px #ffff00, 0 0 10px #ffff00;
+        filter: brightness(1.2);
+    }
+
+    100% {
+        transform: translateY(-50%) scale(1);
+        box-shadow: 0 0 15px #ffff00, 0 0 5px rgba(0, 0, 0, 0.3);
+    }
 }
 
 .status-full-bar:focus {
