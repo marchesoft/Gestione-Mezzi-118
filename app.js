@@ -240,7 +240,7 @@ async function renderVehicleGrid(vehicles) {
 
         // Location Display - Admin: Dropdown, Non-Admin: Static Text
         let locationHtml = '';
-        const locationOptions = savedLocations.map(loc =>
+        const locationOptions = cachedLocations.map(loc =>
             `<option value="${loc}" ${vehicle.station === loc ? 'selected' : ''}>${loc}</option>`
         ).join('');
 
@@ -812,7 +812,7 @@ window.openVehicleModal = async function (id) {
                                 </div>
                                 <select id="admin-appointment-location" style="padding: 0.4rem; border: 1px solid #1e3a8a; border-radius: 0.4rem; font-size: 0.9rem; width: 100%;">
                                     <option value="">Seleziona Luogo...</option>
-                                    ${cachedLocations.map(loc => `<option value="${loc.luogo}" ${vehicle.appointment_location === loc.luogo ? 'selected' : ''}>${loc.luogo}</option>`).join('')}
+                                    ${cachedLocations.map(loc => `<option value="${loc}" ${vehicle.appointment_location === loc ? 'selected' : ''}>${loc}</option>`).join('')}
                                 </select>
                             </div>
                         ` : ''}
