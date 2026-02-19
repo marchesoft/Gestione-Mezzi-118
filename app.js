@@ -666,7 +666,6 @@ window.saveVehicleForm = async function () {
 
         inspection_expiry: inspection_expiry || null,
         revision_o2: revision_o2 || null,
-        appointment_date: appointment_date || null,
         notes
     };
 
@@ -788,14 +787,25 @@ window.openVehicleModal = async function (id) {
                         </div>
                     </div>
 
-                    <div style="margin-bottom: 1rem; background: #fff7ed; padding: 1rem; border: 2px solid #1e3a8a; border-radius: 0.75rem; display: flex; align-items: center; gap: 1rem;">
-                        <div style="background: #1e3a8a; color: white; padding: 0.5rem; border-radius: 0.5rem;">
-                            <i class="fa-solid fa-calendar-check" style="font-size: 1.2rem;"></i>
+                    <div style="margin-bottom: 1rem; background: #fff7ed; padding: 1rem; border: 2px solid #1e3a8a; border-radius: 0.75rem; display: flex; align-items: center; justify-content: space-between; gap: 1rem;">
+                        <div style="display: flex; align-items: center; gap: 1rem;">
+                            <div style="background: #1e3a8a; color: white; padding: 0.5rem; border-radius: 0.5rem;">
+                                <i class="fa-solid fa-calendar-check" style="font-size: 1.2rem;"></i>
+                            </div>
+                            <div>
+                                <div style="font-size: 0.75rem; text-transform: uppercase; color: #1e3a8a; font-weight: 800; margin-bottom: 0.1rem;">Prossimo Appuntamento</div>
+                                <div style="font-size: 1.1rem; font-weight: 700; color: #1e3a8a;">${vehicle.appointment_date ? formatDate(vehicle.appointment_date) : 'Nessun appuntamento'}</div>
+                            </div>
                         </div>
-                        <div>
-                            <div style="font-size: 0.75rem; text-transform: uppercase; color: #1e3a8a; font-weight: 800; margin-bottom: 0.1rem;">Prossimo Appuntamento</div>
-                            <div style="font-size: 1.1rem; font-weight: 700; color: #1e3a8a;">${vehicle.appointment_date ? formatDate(vehicle.appointment_date) : 'Nessun appuntamento fissato'}</div>
-                        </div>
+                        ${isAdmin ? `
+                            <div style="display: flex; align-items: center; gap: 0.5rem;">
+                                <input type="date" id="admin-appointment-input" value="${vehicle.appointment_date || ''}" 
+                                       style="padding: 0.4rem; border: 1px solid #1e3a8a; border-radius: 0.4rem; font-size: 0.9rem;">
+                                <button class="btn btn-primary" style="padding: 0.4rem 0.6rem;" onclick="saveVehicleAppointment('${vehicle.id}', document.getElementById('admin-appointment-input').value)">
+                                    <i class="fa-solid fa-save"></i>
+                                </button>
+                            </div>
+                        ` : ''}
                     </div>
 
                     <div style="margin-bottom: 1.5rem;">
