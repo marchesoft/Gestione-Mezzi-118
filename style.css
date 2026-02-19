@@ -260,24 +260,24 @@ body {
 }
 
 .status-full-bar.status-operative {
-    background-color: var(--status-operative);
-    color: white;
+    background-color: var(--status-operative) !important;
+    color: white !important;
 }
 
 .status-full-bar.status-available {
-    background-color: var(--status-available);
-    color: white;
+    background-color: var(--status-available) !important;
+    color: white !important;
 }
 
 .status-full-bar.status-maintenance {
-    background-color: var(--status-maintenance);
-    color: white;
+    background-color: var(--status-maintenance) !important;
+    color: white !important;
 }
 
 /* Yellow contrast? White is usually ok with this dark yellow */
 .status-full-bar.status-to-repair {
-    background-color: var(--status-to-repair);
-    color: white;
+    background-color: var(--status-to-repair) !important;
+    color: white !important;
 }
 
 /* Status-specific card borders */
