@@ -340,15 +340,16 @@ body {
     bottom: 105%;
     left: 50%;
     transform: translateX(-50%);
-    background-color: #1e293b;
-    color: white;
+    background-color: rgba(255, 255, 255, 0.95);
+    color: #1e3a8a;
     padding: 0.5rem 0.75rem;
     border-radius: 0.5rem;
-    font-size: 0.75rem;
-    font-weight: 500;
+    font-size: 0.8rem;
+    font-weight: 700;
     width: max-content;
     max-width: 220px;
     box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    border: 1px solid #1e3a8a;
     opacity: 0;
     visibility: hidden;
     transition: opacity 0.2s, transform 0.2s;
@@ -367,7 +368,7 @@ body {
     margin-left: -5px;
     border-width: 5px;
     border-style: solid;
-    border-color: #1e293b transparent transparent transparent;
+    border-color: #1e3a8a transparent transparent transparent;
 }
 
 .vehicle-card:hover .note-tooltip {
