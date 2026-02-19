@@ -363,44 +363,51 @@ window.quickUpdateStatus = async function (event, id) {
         card.classList.add(`border-${newStatus}`);
     }
 
-    // 2. Update cached data immediately
-    const vehicle = await store.getVehicleById(id);
-    if (vehicle) {
-        // Even if status matches DB (vehicle.status === newStatus), we ensure our local cache is updated
-        // But we only write to DB if different to save bandwidth/calls
-        if (vehicle.status !== newStatus) {
-            vehicle.status = newStatus;
+    // 2. Optimistic Update
+    if (cachedVehicles) {
+        const idx = cachedVehicles.findIndex(v => v.id === id);
+        if (idx !== -1) {
+            const vehicle = cachedVehicles[idx];
+            if (vehicle.status !== newStatus) {
+                vehicle.status = newStatus;
+                updateStats(cachedVehicles);
 
-            // Update local cache immediately so any subsequent re-renders use new data
-            if (cachedVehicles) {
-                const idx = cachedVehicles.findIndex(v => v.id === id);
-                if (idx !== -1) cachedVehicles[idx].status = newStatus;
+                // Background DB Update
+                store.updateVehicle(vehicle).catch(err => {
+                    console.error("Failed to update status in DB:", err);
+                    alert("Errore di connessione: aggiornamento non salvato.");
+                });
             }
-            // Update stats immediately
-            updateStats(cachedVehicles || [vehicle]);
-
-            await store.updateVehicle(vehicle);
-        }
-
-        // Refresh modal if open
-        if (!document.getElementById('vehicle-modal').classList.contains('hidden')) {
-            openVehicleModal(id);
+            // Refresh modal if open (immediate)
+            if (!document.getElementById('vehicle-modal').classList.contains('hidden')) {
+                openVehicleModal(id);
+            }
         }
     }
 }
 
-window.quickUpdateStationSelect = async function (event, id) {
+window.quickUpdateStationSelect = function (event, id) {
     event.stopPropagation();
     const newStation = event.target.value;
 
-    const vehicle = await store.getVehicleById(id);
-    if (vehicle && vehicle.station !== newStation) {
-        vehicle.station = newStation;
-        await store.updateVehicle(vehicle);
-        await renderDashboard(true);
+    if (cachedVehicles) {
+        const idx = cachedVehicles.findIndex(v => v.id === id);
+        if (idx !== -1) {
+            const vehicle = cachedVehicles[idx];
+            if (vehicle.station !== newStation) {
+                vehicle.station = newStation;
 
-        if (!document.getElementById('vehicle-modal').classList.contains('hidden')) {
-            openVehicleModal(id);
+                // Update DB in background
+                store.updateVehicle(vehicle).catch(err => {
+                    console.error("Failed to update station:", err);
+                    alert("Errore salvataggio stazione.");
+                });
+
+                // If modal is open, we might need to update it
+                if (!document.getElementById('vehicle-modal').classList.contains('hidden')) {
+                    openVehicleModal(id);
+                }
+            }
         }
     }
 }
@@ -652,10 +659,29 @@ window.saveVehicleForm = async function () {
     };
 
     if (id) {
-        const existing = await store.getVehicleById(id);
-        const updated = { ...existing, ...vehicleData };
-        await store.updateVehicle(updated);
+        // Optimistic Update for Existing Vehicle
+        const existing = cachedVehicles ? cachedVehicles.find(v => v.id === id) : await store.getVehicleById(id);
+        if (existing) {
+            const updated = { ...existing, ...vehicleData };
+
+            // Update Cache
+            if (cachedVehicles) {
+                const idx = cachedVehicles.findIndex(v => v.id === id);
+                if (idx !== -1) cachedVehicles[idx] = updated;
+            }
+
+            // Render UI Immediately
+            document.getElementById('vehicle-form-modal').classList.add('hidden');
+            renderDashboard(false);
+
+            // Background DB Sync
+            store.updateVehicle(updated).catch(err => {
+                console.error("Failed to update vehicle:", err);
+                alert("Errore salvataggio modifiche. Ricaricare la pagina.");
+            });
+        }
     } else {
+        // New Vehicle - Wait for DB
         const newId = type.substring(0, 3).toUpperCase() + '-' + Math.floor(100 + Math.random() * 900) + '-' + Math.floor(10 + Math.random() * 90);
         const newVehicle = {
             id: newId,
@@ -663,10 +689,9 @@ window.saveVehicleForm = async function () {
             maintenanceHistory: []
         };
         await store.addVehicle(newVehicle);
+        document.getElementById('vehicle-form-modal').classList.add('hidden');
+        await renderDashboard(true);
     }
-
-    document.getElementById('vehicle-form-modal').classList.add('hidden');
-    await renderDashboard(true);
 
     if (window.lastDataManagerTab === 'vehicles') {
         window.openDataManagement();
