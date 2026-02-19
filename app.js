@@ -11,6 +11,16 @@ function formatDate(dateStr) {
     return `${day}/${month}/${year}`;
 }
 
+// Helper for robust alpha-numerical sorting by sigla
+function sortVehiclesBySigla(vehicles) {
+    if (!vehicles || !Array.isArray(vehicles)) return vehicles;
+    return vehicles.sort((a, b) => {
+        const siglaA = (a.sigla || '').toString().trim().toLowerCase();
+        const siglaB = (b.sigla || '').toString().trim().toLowerCase();
+        return siglaA.localeCompare(siglaB, undefined, { numeric: true, sensitivity: 'base' });
+    });
+}
+
 // Helper for local YYYY-MM-DD
 function getLocalISODate() {
     const now = new Date();
@@ -145,12 +155,7 @@ function setupRealtimeSubscription() {
 async function renderDashboard(forceRefresh = false) {
     if (forceRefresh || !cachedVehicles) {
         cachedVehicles = await store.getVehicles();
-        // Sort immediately after fetch
-        cachedVehicles.sort((a, b) => {
-            const siglaA = (a.sigla || '').toString().toLowerCase();
-            const siglaB = (b.sigla || '').toString().toLowerCase();
-            return siglaA.localeCompare(siglaB, undefined, { numeric: true, sensitivity: 'base' });
-        });
+        sortVehiclesBySigla(cachedVehicles);
     }
     if (forceRefresh || !cachedLocations) {
         cachedLocations = await store.getLocations();
@@ -212,6 +217,7 @@ window.setDashboardFilter = async function (status) {
         renderVehicleGrid(cachedVehicles);
     } else {
         const filtered = cachedVehicles.filter(v => v.status === status);
+        sortVehiclesBySigla(filtered); // Ensure sorted after filter
         renderVehicleGrid(filtered);
     }
 }
@@ -237,12 +243,8 @@ async function renderVehicleGrid(vehicles) {
     const tomorrowDay = String(tomorrow.getDate()).padStart(2, '0');
     const tomorrowStr = `${tomorrowYear}-${tomorrowMonth}-${tomorrowDay}`;
 
-    // Sort vehicles based on sigla (alpha-numerical ascending)
-    vehicles.sort((a, b) => {
-        const siglaA = (a.sigla || '').toString().toLowerCase();
-        const siglaB = (b.sigla || '').toString().toLowerCase();
-        return siglaA.localeCompare(siglaB, undefined, { numeric: true, sensitivity: 'base' });
-    });
+    // Ensure vehicles are sorted based on sigla
+    sortVehiclesBySigla(vehicles);
 
     if (vehicles.length === 0) {
         grid.innerHTML = '<p style="grid-column: 1/-1; text-align: center; padding: 2rem;">Nessun veicolo trovato.</p>';
