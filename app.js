@@ -391,12 +391,10 @@ window.openVehicleForm = async function (vehicleId = null) {
 
             // Extended Fields
             document.getElementById('vehicle-mileage-month').value = vehicle.mileage_month || ''; // Populate new field
-            document.getElementById('vehicle-barella').value = vehicle.barella_data || '';
             document.getElementById('vehicle-radio').value = vehicle.radio_id || '';
-            document.getElementById('vehicle-aspirator').value = vehicle.aspirator_id || '';
 
             document.getElementById('vehicle-inspection').value = vehicle.inspection_expiry || '';
-            document.getElementById('vehicle-testing').value = vehicle.testing_expiry || '';
+            document.getElementById('vehicle-revision-o2').value = vehicle.revision_o2 || '';
             document.getElementById('vehicle-notes').value = vehicle.notes || '';
         }
     } else {
@@ -551,24 +549,20 @@ window.saveVehicleForm = async function () {
     const station = document.getElementById('vehicle-station').value;
 
     const mileage_month = document.getElementById('vehicle-mileage-month').value;
-    const barella_data = document.getElementById('vehicle-barella').value;
     const radio_id = document.getElementById('vehicle-radio').value;
-    const aspirator_id = document.getElementById('vehicle-aspirator').value;
 
     const inspection_expiry = document.getElementById('vehicle-inspection').value;
-    const testing_expiry = document.getElementById('vehicle-testing').value;
+    const revision_o2 = document.getElementById('vehicle-revision-o2').value;
     const notes = document.getElementById('vehicle-notes').value;
 
     const vehicleData = {
         model, plate, sigla, status, type, station,
         mileage: parseInt(mileage) || 0,
         mileage_month,
-        barella_data,
         radio_id,
-        aspirator_id,
 
         inspection_expiry: inspection_expiry || null,
-        testing_expiry: testing_expiry || null,
+        revision_o2: revision_o2 || null,
         notes
     };
 
@@ -653,24 +647,16 @@ window.openVehicleModal = async function (id) {
 
                     <div class="form-grid-3" style="margin-bottom: 1rem; background: #f1f5f9; padding: 1rem; border-radius: 0.75rem;">
                         <div>
-                            <div style="font-size: 0.75rem; text-transform: uppercase; color: black; font-weight: 600; margin-bottom: 0.25rem;">Barella</div>
-                            <div style="font-size: 0.95rem; font-weight: 600; color: black;">${vehicle.barella_data || '-'}</div>
-                        </div>
-                        <div>
                             <div style="font-size: 0.75rem; text-transform: uppercase; color: black; font-weight: 600; margin-bottom: 0.25rem;">ID Radio</div>
                             <div style="font-size: 0.95rem; font-weight: 600; color: black;">${vehicle.radio_id || '-'}</div>
-                        </div>
-                        <div>
-                            <div style="font-size: 0.75rem; text-transform: uppercase; color: black; font-weight: 600; margin-bottom: 0.25rem;">ID Aspiratore</div>
-                            <div style="font-size: 0.95rem; font-weight: 600; color: black;">${vehicle.aspirator_id || '-'}</div>
                         </div>
                         <div>
                             <div style="font-size: 0.75rem; text-transform: uppercase; color: black; font-weight: 600; margin-bottom: 0.25rem;">Scadenza Revisione</div>
                             <div style="font-size: 0.95rem; font-weight: 600; color: black;">${vehicle.inspection_expiry ? new Date(vehicle.inspection_expiry).toLocaleDateString() : '-'}</div>
                         </div>
                         <div>
-                            <div style="font-size: 0.75rem; text-transform: uppercase; color: black; font-weight: 600; margin-bottom: 0.25rem;">Ultimo Collaudo O2</div>
-                            <div style="font-size: 0.95rem; font-weight: 600; color: black;">${vehicle.testing_expiry ? new Date(vehicle.testing_expiry).toLocaleDateString() : '-'}</div>
+                            <div style="font-size: 0.75rem; text-transform: uppercase; color: black; font-weight: 600; margin-bottom: 0.25rem;">Rev. O2</div>
+                            <div style="font-size: 0.95rem; font-weight: 600; color: black;">${vehicle.revision_o2 ? new Date(vehicle.revision_o2).toLocaleDateString() : '-'}</div>
                         </div>
                     </div>
 
@@ -687,7 +673,7 @@ window.openVehicleModal = async function (id) {
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
                         <h3 style="font-size: 1.1rem; margin: 0; color: black;">Storico Manutenzione</h3>
                         ${isAdmin ? `<button class="btn btn-primary" style="font-size: 0.9rem; padding: 0.5rem 1rem;" onclick="openMaintenanceForm('${vehicle.id}', '${vehicle.sigla || vehicle.plate}')">
-                    <i class="fa-solid fa-plus"></i> Aggiungi Record
+                    <i class="fa-solid fa-plus"></i> Aggiungi Manutenzione
                 </button>` : ''}
                     </div>
 
@@ -914,7 +900,7 @@ window.switchDataTable = async function (type) {
                                 <th style="padding: 0.75rem; text-align: left;">Radio</th>
 
                                 <th style="padding: 0.75rem; text-align: left;">Rev. Scad.</th>
-                                <th style="padding: 0.75rem; text-align: left;">Coll. Scad.</th>
+                                <th style="padding: 0.75rem; text-align: left;">Rev. O2</th>
                                 <th style="padding: 0.75rem; text-align: right;">Azioni</th>
                             </tr>
                         </thead>
@@ -932,7 +918,7 @@ window.switchDataTable = async function (type) {
                                     <td style="padding: 0.75rem;">${v.radio_id || '-'}</td>
 
                                     <td style="padding: 0.75rem;">${v.inspection_expiry || '-'}</td>
-                                    <td style="padding: 0.75rem;">${v.testing_expiry || '-'}</td>
+                                    <td style="padding: 0.75rem;">${v.revision_o2 || '-'}</td>
                                     <td style="padding: 0.75rem; text-align: right;">
                                         <button onclick="openVehicleForm('${v.id}'); document.getElementById('data-management-modal').classList.add('hidden');" style="margin-right:0.5rem; cursor:pointer; background:none; border:none; color:var(--primary-color);"><i class="fa-solid fa-pen"></i></button>
                                         <button onclick="deleteVehicleHandler('${v.id}')" style="cursor:pointer; background:none; border:none; color:var(--status-to-repair);"><i class="fa-solid fa-trash"></i></button>
