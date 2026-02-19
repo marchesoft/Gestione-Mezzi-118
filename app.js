@@ -542,6 +542,7 @@ function setupEventListeners() {
     if (closeDataModal) {
         closeDataModal.addEventListener('click', () => {
             document.getElementById('data-management-modal').classList.add('hidden');
+            window.lastDataManagerTab = null; // Clear history to prevent auto-reopen
         });
     }
 
