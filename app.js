@@ -70,6 +70,7 @@ function setupRealtimeSubscription() {
         window.store.supabase
             .channel('public:vehicles')
             .on('postgres_changes', { event: '*', schema: 'public', table: 'vehicles' }, (payload) => {
+                console.log("Realtime: Vehicle change detected");
                 if (!cachedVehicles) {
                     return renderDashboard(true);
                 }
@@ -77,10 +78,10 @@ function setupRealtimeSubscription() {
                 if (payload.eventType === 'UPDATE') {
                     const idx = cachedVehicles.findIndex(v => v.id === payload.new.id);
                     if (idx !== -1) {
-                        cachedVehicles[idx] = { ...cachedVehicles[idx], ...payload.new };
+                        // Merge update but preserve maintenanceHistory (which is not in payload)
+                        const oldHistory = cachedVehicles[idx].maintenanceHistory || [];
+                        cachedVehicles[idx] = { ...payload.new, maintenanceHistory: oldHistory };
                     }
-
-                    // IF THIS VEHICLE IS CURRENTLY OPENED IN MODAL, REFRESH THE MODAL
                     if (currentOpenedVehicleId === payload.new.id) {
                         openVehicleModal(payload.new.id);
                     }
@@ -90,8 +91,7 @@ function setupRealtimeSubscription() {
                 } else if (payload.eventType === 'DELETE') {
                     cachedVehicles = cachedVehicles.filter(v => v.id !== payload.old.id);
                     if (currentOpenedVehicleId === payload.old.id) {
-                        document.getElementById('vehicle-modal').classList.add('hidden');
-                        currentOpenedVehicleId = null;
+                        closeVehicleModal();
                     }
                 }
 
@@ -104,7 +104,23 @@ function setupRealtimeSubscription() {
         window.store.supabase
             .channel('public:interventions')
             .on('postgres_changes', { event: '*', schema: 'public', table: 'interventions' }, (payload) => {
-                console.log("Intervention change detected, refreshing dashboard...");
+                console.log("Realtime: Intervention change detected");
+                const vId = payload.new ? payload.new.vehicle_id : payload.old.vehicle_id;
+
+                // Re-fetch everything to ensure consistent joined data
+                renderDashboard(true).then(() => {
+                    if (currentOpenedVehicleId === vId) {
+                        openVehicleModal(vId);
+                    }
+                });
+            })
+            .subscribe();
+
+        // Locations Subscription
+        window.store.supabase
+            .channel('public:locations')
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'locations' }, () => {
+                console.log("Realtime: Location change detected");
                 renderDashboard(true);
             })
             .subscribe();
