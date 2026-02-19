@@ -88,6 +88,17 @@ function setupRealtimeSubscription() {
     if (window.store && window.store.supabase) {
         console.log("Realtime: Initializing subscriptions...");
 
+        const handleStatusChange = (status, channelName) => {
+            console.log(`Realtime: ${channelName} status:`, status);
+            if (status === 'SUBSCRIBED') {
+                console.log(`Realtime: Successfully subscribed to ${channelName}. Refreshing data...`);
+                renderDashboard(true);
+            } else if (status === 'CHANNEL_ERROR' || status === 'CLOSED') {
+                console.warn(`Realtime: ${channelName} connection lost (${status}). Retrying in 5s...`);
+                setTimeout(() => setupRealtimeSubscription(), 5000);
+            }
+        };
+
         // Vehicles Subscription
         window.store.supabase
             .channel('public:vehicles')
@@ -95,7 +106,6 @@ function setupRealtimeSubscription() {
                 console.log("Realtime: Vehicle change detected", payload.eventType, payload.new?.id || payload.old?.id);
 
                 if (!cachedVehicles) {
-                    console.log("Realtime: No cached vehicles, forcing dashboard refresh");
                     return renderDashboard(true);
                 }
 
@@ -104,21 +114,16 @@ function setupRealtimeSubscription() {
                     if (idx !== -1) {
                         const oldHistory = cachedVehicles[idx].maintenanceHistory || [];
                         cachedVehicles[idx] = { ...payload.new, maintenanceHistory: oldHistory };
-                        console.log("Realtime: Local cache updated for vehicle", payload.new.id);
                     }
                     if (currentOpenedVehicleId === payload.new.id) {
-                        console.log("Realtime: Refreshing open modal for vehicle", payload.new.id);
                         openVehicleModal(payload.new.id);
                     }
                     sortVehiclesBySigla(cachedVehicles);
                 } else if (payload.eventType === 'INSERT') {
-                    const newVehicle = { ...payload.new, maintenanceHistory: [] };
-                    cachedVehicles.push(newVehicle);
-                    console.log("Realtime: New vehicle added to cache", payload.new.id);
+                    cachedVehicles.push({ ...payload.new, maintenanceHistory: [] });
                     sortVehiclesBySigla(cachedVehicles);
                 } else if (payload.eventType === 'DELETE') {
                     cachedVehicles = cachedVehicles.filter(v => v.id !== payload.old.id);
-                    console.log("Realtime: Vehicle removed from cache", payload.old.id);
                     if (currentOpenedVehicleId === payload.old.id) {
                         closeVehicleModal();
                     }
@@ -127,40 +132,30 @@ function setupRealtimeSubscription() {
                 updateStats(cachedVehicles);
                 renderVehicleGrid(cachedVehicles);
             })
-            .subscribe((status) => {
-                console.log("Realtime: Vehicles subscription status:", status);
-            });
+            .subscribe((status) => handleStatusChange(status, 'Vehicles'));
 
         // Interventions Subscription
         window.store.supabase
             .channel('public:interventions')
             .on('postgres_changes', { event: '*', schema: 'public', table: 'interventions' }, (payload) => {
-                console.log("Realtime: Intervention change detected", payload.eventType);
                 const vId = payload.new ? payload.new.vehicle_id : payload.old.vehicle_id;
-
                 renderDashboard(true).then(() => {
                     if (currentOpenedVehicleId === vId) {
-                        console.log("Realtime: Refreshing modal after intervention change");
                         openVehicleModal(vId);
                     }
                 });
             })
-            .subscribe((status) => {
-                console.log("Realtime: Interventions subscription status:", status);
-            });
+            .subscribe((status) => handleStatusChange(status, 'Interventions'));
 
         // Locations Subscription
         window.store.supabase
             .channel('public:locations')
             .on('postgres_changes', { event: '*', schema: 'public', table: 'locations' }, (payload) => {
-                console.log("Realtime: Location change detected", payload.eventType);
                 renderDashboard(true);
             })
-            .subscribe((status) => {
-                console.log("Realtime: Locations subscription status:", status);
-            });
+            .subscribe((status) => handleStatusChange(status, 'Locations'));
     } else {
-        console.warn("Supabase client not found in store. Realtime updates may not work.");
+        console.warn("Supabase client not found in store.");
     }
 }
 
