@@ -1,4 +1,4 @@
-const store = new VehicleStore();
+// isAdmin, cachedVehicles, and cachedLocations are already declared or inherited
 let isAdmin = false;
 let cachedVehicles = null;
 let cachedLocations = null;
