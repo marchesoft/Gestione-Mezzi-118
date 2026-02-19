@@ -27,24 +27,33 @@ function setupRealtimeSubscription() {
     // To be safe, we'll try to use the one from store.js if exported, or assume global.
     // Based on previous file reads, implicit global 'supabase' or initialized in store.js
 
-    // We will assume store.js instantiates the client. 
-    // If not, we might need to peek at store.js again. 
-    // But `store.js` usually encapsulates logic. 
-    // Best way: Subscribe using the same client/credentials.
-    // However, since `store.js` is opaque here, let's look at `store.js` content first to be sure.
-    // Wait, I have `store.js` in file list but haven't read it fully in this turn.
-    // I recall `supabase` global from HTML script tag.
-
-    // Let's implement a generic subscriber assuming `store.supabase` or `window.supabase` is available.
-    // Actually, looking at `app.js` lines 387, it loads supabase-js.
-
-    // Implementation:
     if (window.store && window.store.supabase) {
         window.store.supabase
             .channel('public:vehicles')
             .on('postgres_changes', { event: '*', schema: 'public', table: 'vehicles' }, (payload) => {
-                console.log('Change received!', payload);
-                renderDashboard(true); // Force refresh cache on change
+                // Determine if we need to update cache
+                if (!cachedVehicles) {
+                    return renderDashboard(true);
+                }
+
+                if (payload.eventType === 'UPDATE') {
+                    const idx = cachedVehicles.findIndex(v => v.id === payload.new.id);
+                    if (idx !== -1) {
+                        // Merge new data but preserve existing properties not in payload if any (though payload.new is usually full row)
+                        // Important: payload.new might lack joined fields if any (like maintenanceHistory which is not in vehicles table)
+                        // So we merge INTO existing
+                        cachedVehicles[idx] = { ...cachedVehicles[idx], ...payload.new };
+                    }
+                } else if (payload.eventType === 'INSERT') {
+                    // Start with empty maintenance history for new item
+                    const newVehicle = { ...payload.new, maintenanceHistory: [] };
+                    cachedVehicles.push(newVehicle);
+                } else if (payload.eventType === 'DELETE') {
+                    cachedVehicles = cachedVehicles.filter(v => v.id !== payload.old.id);
+                }
+
+                updateStats(cachedVehicles);
+                renderVehicleGrid(cachedVehicles);
             })
             .subscribe();
     } else {
@@ -296,31 +305,38 @@ window.quickUpdateStatus = async function (event, id) {
     const newStatus = event.target.value;
     const select = event.target;
 
-    // Immediate UI update for responsiveness
-    select.classList.remove('status-operative', 'status-available', 'status-maintenance', 'status-to-repair');
+    // 1. Force Immediate UI update (Robustness for re-clicks)
+    const allStatuses = ['status-operative', 'status-available', 'status-maintenance', 'status-to-repair'];
+    select.classList.remove(...allStatuses);
     select.classList.add(`status-${newStatus}`);
 
     const card = select.closest('.vehicle-card');
     if (card) {
-        card.classList.remove('border-operative', 'border-available', 'border-maintenance', 'border-to-repair');
+        const allBorders = ['border-operative', 'border-available', 'border-maintenance', 'border-to-repair'];
+        card.classList.remove(...allBorders);
         card.classList.add(`border-${newStatus}`);
     }
 
+    // 2. Update cached data immediately
     const vehicle = await store.getVehicleById(id);
-    if (vehicle && vehicle.status !== newStatus) {
-        const oldStatus = vehicle.status;
-        vehicle.status = newStatus;
-        await store.updateVehicle(vehicle);
+    if (vehicle) {
+        // Even if status matches DB (vehicle.status === newStatus), we ensure our local cache is updated
+        // But we only write to DB if different to save bandwidth/calls
+        if (vehicle.status !== newStatus) {
+            vehicle.status = newStatus;
 
-        // Optimistic Stats Update
-        const oldCounter = document.getElementById(`stat-${oldStatus}`);
-        if (oldCounter) oldCounter.innerText = Math.max(0, parseInt(oldCounter.innerText || '0') - 1);
+            // Update local cache immediately so any subsequent re-renders use new data
+            if (cachedVehicles) {
+                const idx = cachedVehicles.findIndex(v => v.id === id);
+                if (idx !== -1) cachedVehicles[idx].status = newStatus;
+            }
+            // Update stats immediately
+            updateStats(cachedVehicles || [vehicle]);
 
-        const newCounter = document.getElementById(`stat-${newStatus}`);
-        if (newCounter) newCounter.innerText = parseInt(newCounter.innerText || '0') + 1;
+            await store.updateVehicle(vehicle);
+        }
 
-        // Do NOT call renderDashboard() here to prevent UI revert due to race conditions
-
+        // Refresh modal if open
         if (!document.getElementById('vehicle-modal').classList.contains('hidden')) {
             openVehicleModal(id);
         }
