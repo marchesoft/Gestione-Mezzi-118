@@ -294,11 +294,23 @@ function handleDrop(e) {
 window.quickUpdateStatus = async function (event, id) {
     event.stopPropagation();
     const newStatus = event.target.value;
+    const select = event.target;
+
+    // Immediate UI update for responsiveness
+    select.classList.remove('status-operative', 'status-available', 'status-maintenance', 'status-to-repair');
+    select.classList.add(`status-${newStatus}`);
+
+    const card = select.closest('.vehicle-card');
+    if (card) {
+        card.classList.remove('border-operative', 'border-available', 'border-maintenance', 'border-to-repair');
+        card.classList.add(`border-${newStatus}`);
+    }
+
     const vehicle = await store.getVehicleById(id);
     if (vehicle && vehicle.status !== newStatus) {
         vehicle.status = newStatus;
         await store.updateVehicle(vehicle);
-        await renderDashboard();
+        await renderDashboard(); // Re-render to ensure consistency with DB
 
         if (!document.getElementById('vehicle-modal').classList.contains('hidden')) {
             openVehicleModal(id);
