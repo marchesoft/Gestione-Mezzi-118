@@ -499,6 +499,7 @@ function setupEventListeners() {
     if (closeDetailModal) {
         closeDetailModal.addEventListener('click', () => {
             document.getElementById('vehicle-modal').classList.add('hidden');
+            renderDashboard(true); // Refresh to show note updates
         });
     }
 
@@ -907,6 +908,7 @@ window.saveVehicleNote = async function (id, text, showFeedback = false) {
         if (vehicle) {
             vehicle.notes = text;
             await store.updateVehicle(vehicle);
+            await renderDashboard(true); // Force refresh
             if (showFeedback) {
                 alert('Note aggiornate con successo!');
             }
