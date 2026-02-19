@@ -266,8 +266,15 @@ async function renderVehicleGrid(vehicles) {
             `;
         }
 
+        // Prepare combined notes display (Notes + Appointment)
+        let noteContent = vehicle.notes || '';
+        if (vehicle.appointment_date) {
+            const apptText = `APPUNTAMENTO: ${formatDate(vehicle.appointment_date)}`;
+            noteContent = noteContent ? `${apptText}\n---\n${noteContent}` : apptText;
+        }
+
         card.innerHTML = `
-            ${vehicle.notes ? `<div class="note-tooltip">${vehicle.notes}</div>` : ''}
+            ${noteContent ? `<div class="note-tooltip">${noteContent}</div>` : ''}
             ${statusHtml}
             <div class="card-body">
                 <div class="vehicle-id" style="text-align: center; margin-bottom: 0.5rem; display: flex; flex-direction: column; gap: 0.1rem;">
@@ -277,7 +284,7 @@ async function renderVehicleGrid(vehicles) {
                 </div>
                 <div class="card-actions" style="justify-content: center; flex-direction: column; align-items: center;">
                     ${locationHtml}
-                    ${vehicle.notes ? `<div class="mobile-notes">${vehicle.notes}</div>` : ''}
+                    ${noteContent ? `<div class="mobile-notes">${noteContent.replace(/\n/g, '<br>')}</div>` : ''}
                 </div>
             </div>
         `;
