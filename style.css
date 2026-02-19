@@ -1019,35 +1019,51 @@ body.is-admin #admin-hint-text {
         border-width: 1px;
     }
 
+    /* Aggressive Font Reductions */
     .sigla-text {
-        font-size: 0.85rem;
+        font-size: 0.75rem;
     }
 
     .plate-number {
-        font-size: 0.85rem;
+        font-size: 0.75rem;
     }
 
     .status-full-bar {
-        font-size: 0.65rem;
-        padding: 0.5rem 0.25rem;
+        font-size: 0.55rem;
+        padding: 0.25rem 0.1rem;
     }
 
     .location-select-container .location-select,
     .location-select-container span {
-        font-size: 0.9rem !important;
+        font-size: 0.8rem !important;
     }
 
     .model-text {
-        font-size: 0.6rem;
+        font-size: 0.55rem;
     }
 
     .vehicle-id {
         gap: 0;
-        margin-bottom: 0.25rem;
+        margin-bottom: 0.15rem;
     }
 
     .card-body {
-        padding: 0.5rem;
+        padding: 0.25rem;
+    }
+
+    /* Filter Optimization */
+    .section-header {
+        margin-bottom: 1rem;
+    }
+
+    .filters {
+        gap: 0.25rem;
+        padding: 0.25rem;
+    }
+
+    .filter-btn {
+        padding: 0.25rem 0.5rem;
+        font-size: 0.8rem;
     }
 }
 
