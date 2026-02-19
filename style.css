@@ -304,13 +304,14 @@ body {
     top: 50%;
     right: 1rem;
     transform: translateY(-50%);
-    width: 12px;
-    height: 12px;
-    background-color: #ccff00;
-    /* Fluo Yellow */
+    width: 24px;
+    height: 24px;
+    background-color: #ff00ff;
+    /* Fuchsia */
     border-radius: 50%;
-    box-shadow: 0 0 10px #ccff00, 0 0 5px rgba(0, 0, 0, 0.3);
+    box-shadow: 0 0 15px #ff00ff, 0 0 5px rgba(0, 0, 0, 0.3);
     z-index: 5;
+    border: 2px solid white;
 }
 
 .status-full-bar:focus {
