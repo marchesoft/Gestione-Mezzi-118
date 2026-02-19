@@ -912,6 +912,7 @@ window.saveVehicleNote = async function (id, text, showFeedback = false) {
             await renderDashboard(true); // Force refresh
             if (showFeedback) {
                 alert('Note aggiornate con successo!');
+                document.getElementById('vehicle-modal').classList.add('hidden');
             }
         }
     } catch (e) {
