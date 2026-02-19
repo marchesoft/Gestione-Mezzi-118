@@ -1017,6 +1017,9 @@ body.is-admin #admin-hint-text {
 
     .vehicle-card {
         border-width: 1px;
+        aspect-ratio: auto !important;
+        height: auto !important;
+        min-height: 160px;
     }
 
     /* Aggressive Font Reductions */
