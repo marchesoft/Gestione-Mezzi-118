@@ -616,13 +616,16 @@ window.openVehicleModal = async function (id) {
                 <div style="padding: 1.5rem;">
                     <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1rem;">
                         <div>
-                            <div style="display: flex; flex-direction: column; gap: 0.1rem;">
-                                ${vehicle.sigla ? `<h1 style="font-size: 1.5rem; font-weight: 800; color: var(--primary-color); margin: 0;">${vehicle.sigla}</h1>` : ''}
-                                <h2 style="font-size: 1.25rem; margin-bottom: 0.25rem; color: var(--text-primary);">${vehicle.model}</h2>
-                            </div>
-                            <div style="display: flex; gap: 0.75rem; align-items: center;">
-                                <span class="plate-number" style="font-size: 1rem; padding: 0.2rem 0.6rem;">${vehicle.plate}</span>
-                                <span style="color: var(--text-secondary); font-weight: 500; font-size: 0.9rem;">${vehicle.type}</span>
+                            <div>
+                                <div style="display: flex; gap: 0.75rem; align-items: baseline; margin-bottom: 0.25rem;">
+                                    ${vehicle.sigla ? `<h1 style="font-size: 1.5rem; font-weight: 800; color: var(--primary-color); margin: 0;">${vehicle.sigla}</h1>` : ''}
+                                    <h1 style="font-size: 1.5rem; font-weight: 800; color: var(--text-primary); margin: 0;">${vehicle.plate}</h1>
+                                </div>
+                                <div style="display: flex; gap: 0.5rem; align-items: center;">
+                                    <h2 style="font-size: 1.1rem; margin: 0; color: var(--text-secondary); font-weight: 600;">${vehicle.model}</h2>
+                                    <span style="color: var(--border-color);">|</span>
+                                    <span style="color: var(--text-secondary); font-weight: 500; font-size: 0.9rem;">${vehicle.type}</span>
+                                </div>
                             </div>
                         </div>
                         ${isAdmin ? `<div style="text-align: right; display: flex; gap: 0.5rem;">
