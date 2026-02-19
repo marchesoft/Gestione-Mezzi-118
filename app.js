@@ -21,6 +21,29 @@ async function initApp() {
     setupEventListeners();
     await renderDashboard(true); // Force initial fetch
     setupRealtimeSubscription();
+    setupIdleRefresh();
+}
+
+function setupIdleRefresh() {
+    let idleTimer;
+    const idleTime = 5 * 60 * 1000; // 5 minutes
+
+    function resetTimer() {
+        clearTimeout(idleTimer);
+        idleTimer = setTimeout(() => {
+            console.log('User idle for 5 minutes, refreshing dashboard...');
+            renderDashboard(true);
+        }, idleTime);
+    }
+
+    // Events to track activity
+    window.addEventListener('mousemove', resetTimer);
+    window.addEventListener('mousedown', resetTimer);
+    window.addEventListener('keypress', resetTimer);
+    window.addEventListener('touchmove', resetTimer);
+    window.addEventListener('scroll', resetTimer);
+
+    resetTimer(); // Start timer initially
 }
 
 function setupRealtimeSubscription() {
