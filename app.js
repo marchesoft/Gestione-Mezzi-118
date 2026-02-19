@@ -752,6 +752,7 @@ window.openVehicleModal = async function (id) {
                             <tr>
                                 <th style="text-align: left; padding: 1rem; font-size: 0.85rem; color: var(--text-secondary);">Data Entrata</th>
                                 <th style="text-align: left; padding: 1rem; font-size: 0.85rem; color: var(--text-secondary);">Data Uscita</th>
+                                <th style="text-align: left; padding: 1rem; font-size: 0.85rem; color: var(--text-secondary);">Officina</th>
                                 <th style="text-align: left; padding: 1rem; font-size: 0.85rem; color: var(--text-secondary);">Descrizione</th>
                                 <th style="text-align: right; padding: 1rem; font-size: 0.85rem; color: var(--text-secondary);">Azioni</th>
                             </tr>
@@ -761,6 +762,7 @@ window.openVehicleModal = async function (id) {
                                 <tr style="border-bottom: 1px solid var(--border-color);">
                                     <td style="padding: 1rem; font-weight: 500;">${record.date ? new Date(record.date).toLocaleDateString() : '-'}</td>
                                     <td style="padding: 1rem; font-weight: 500;">${record.date_out ? new Date(record.date_out).toLocaleDateString() : '-'}</td>
+                                    <td style="padding: 1rem; font-weight: 500;">${record.workshop || '-'}</td>
                                     <td style="padding: 1rem;">${record.description}</td>
                                     <td style="padding: 1rem; text-align: right;">
                                         <button class="btn" style="padding: 0.25rem 0.5rem; font-size: 0.8rem; background: var(--primary-color); color: white; margin-right: 0.5rem;" onclick='openMaintenanceForm("${vehicle.id}", "${vehicle.sigla || vehicle.plate}", ${JSON.stringify(record).replace(/'/g, "&#39;")})'><i class="fa-solid fa-pen"></i></button>
@@ -803,17 +805,20 @@ window.openMaintenanceForm = function (vehicleId, vehicleSigla, record = null) {
 
     if (record) {
         // Edit Mode
-        document.querySelector('#maintenance-form-modal h3').textContent = 'Modifica Record';
+        document.querySelector('#maintenance-form-modal h3').textContent = 'Modifica Manutenzione';
         document.getElementById('maintenance-id').value = record.id;
         document.getElementById('maintenance-date').value = record.date;
         document.getElementById('maintenance-date-out').value = record.date_out || '';
+        document.getElementById('maintenance-workshop').value = record.workshop || '';
         document.getElementById('maintenance-description').value = record.description;
     } else {
         // Add Mode
-        document.querySelector('#maintenance-form-modal h3').textContent = 'Aggiungi Record Manutenzione';
+        document.querySelector('#maintenance-form-modal h3').textContent = 'Aggiungi Manutenzione';
         document.getElementById('maintenance-id').value = '';
         document.getElementById('maintenance-date').valueAsDate = new Date();
         document.getElementById('maintenance-date-out').value = '';
+        document.getElementById('maintenance-workshop').value = '';
+        document.getElementById('maintenance-description').value = '';
     }
 
     modal.classList.remove('hidden');
@@ -826,6 +831,7 @@ window.saveMaintenanceRecord = async function (e) {
     const id = document.getElementById('maintenance-id').value;
     const date = document.getElementById('maintenance-date').value;
     const date_out = document.getElementById('maintenance-date-out').value;
+    const workshop = document.getElementById('maintenance-workshop').value;
     const description = document.getElementById('maintenance-description').value;
 
     // Fetch vehicle to get sigla
@@ -835,6 +841,7 @@ window.saveMaintenanceRecord = async function (e) {
     const record = {
         date,
         date_out: date_out || null,
+        workshop: workshop || null,
         description,
         type: 'Routine',
         cost: 0,
