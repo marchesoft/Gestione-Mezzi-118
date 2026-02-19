@@ -1287,11 +1287,17 @@ body.is-admin #admin-hint-text {
     }
 
     .header-row-title {
+        background-color: #1e3a8a !important;
+        /* Force Dark Blue on mobile */
         padding: 0.75rem 0.5rem;
         border-radius: var(--radius-md);
+        width: 100%;
+        text-align: center;
     }
 
     .header-row-title h1 {
+        color: rgb(255, 255, 0) !important;
+        /* Force Yellow on mobile */
         white-space: normal;
         font-size: 1.3rem;
         line-height: 1.2;

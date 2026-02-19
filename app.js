@@ -132,6 +132,12 @@ function setupRealtimeSubscription() {
 async function renderDashboard(forceRefresh = false) {
     if (forceRefresh || !cachedVehicles) {
         cachedVehicles = await store.getVehicles();
+        // Sort immediately after fetch
+        cachedVehicles.sort((a, b) => {
+            const siglaA = (a.sigla || '').toString().toLowerCase();
+            const siglaB = (b.sigla || '').toString().toLowerCase();
+            return siglaA.localeCompare(siglaB, undefined, { numeric: true, sensitivity: 'base' });
+        });
     }
     if (forceRefresh || !cachedLocations) {
         cachedLocations = await store.getLocations();
