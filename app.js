@@ -116,6 +116,26 @@ async function renderDashboard(forceRefresh = false) {
     if (forceRefresh || !cachedLocations) {
         cachedLocations = await store.getLocations();
     }
+
+    // AUTO-CLEANUP: Delete expired appointments
+    const todayStr = new Date().toISOString().split('T')[0];
+    let needsRefresh = false;
+
+    for (const vehicle of cachedVehicles) {
+        if (vehicle.appointment_date && vehicle.appointment_date < todayStr) {
+            console.log(`Auto-cleaning expired appointment for vehicle ${vehicle.id}`);
+            vehicle.appointment_date = null;
+            vehicle.appointment_location = null;
+            vehicle.alert_ack_date = null;
+            await store.updateVehicle(vehicle);
+            needsRefresh = true;
+        }
+    }
+
+    if (needsRefresh) {
+        cachedVehicles = await store.getVehicles();
+    }
+
     updateStats(cachedVehicles);
     renderVehicleGrid(cachedVehicles);
 }
@@ -169,6 +189,11 @@ function getStatusLabel(status) {
 
 async function renderVehicleGrid(vehicles) {
     const grid = document.getElementById('vehicle-grid');
+    const today = new Date();
+    const todayStr = today.toISOString().split('T')[0];
+    const tomorrow = new Date(today);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    const tomorrowStr = tomorrow.toISOString().split('T')[0];
 
     // Sort vehicles based on localStorage order if available
     const savedOrder = JSON.parse(localStorage.getItem('vehicleOrder') || '[]');
@@ -176,50 +201,36 @@ async function renderVehicleGrid(vehicles) {
         vehicles.sort((a, b) => {
             const indexA = savedOrder.indexOf(a.id);
             const indexB = savedOrder.indexOf(b.id);
-            // If both are found, sort by index
             if (indexA !== -1 && indexB !== -1) return indexA - indexB;
-            // If only A is found, it comes first
             if (indexA !== -1) return -1;
-            // If only B is found, it comes first
             if (indexB !== -1) return 1;
-            // If neither is found, keep original order (or sort by ID/something else)
             return 0;
         });
     }
-
-    grid.innerHTML = '';
 
     if (vehicles.length === 0) {
         grid.innerHTML = '<p style="grid-column: 1/-1; text-align: center; padding: 2rem;">Nessun veicolo trovato.</p>';
         return;
     }
 
+    grid.innerHTML = vehicles.map(vehicle => {
+        // ALERT LOGIC
+        let alertHTML = '';
+        const isToday = vehicle.appointment_date === todayStr;
+        const isTomorrow = vehicle.appointment_date === tomorrowStr;
+        const alreadyAcked = vehicle.alert_ack_date === todayStr;
 
-    const savedLocations = cachedLocations || [];
-
-    vehicles.forEach(vehicle => {
-        const card = document.createElement('div');
-        card.className = `vehicle-card border-${vehicle.status}`;
-        card.draggable = isAdmin; // Only draggable if admin
-
-        card.addEventListener('click', (e) => {
-            window.openVehicleModal(vehicle.id);
-        });
-
-        card.dataset.id = vehicle.id;
-
-        // Drag Events - Only if admin
-        if (isAdmin) {
-            card.addEventListener('dragstart', handleDragStart);
-            card.addEventListener('dragover', handleDragOver);
-            card.addEventListener('drop', handleDrop);
-            card.addEventListener('dragenter', handleDragEnter);
-            card.addEventListener('dragleave', handleDragLeave);
-            card.addEventListener('dragend', handleDragEnd);
+        if ((isToday || isTomorrow) && !alreadyAcked) {
+            alertHTML = `
+                <div class="appointment-alert-overlay">
+                    <div class="alert-title">${isToday ? 'OGGI' : 'DOMANI'} APPUNTAMENTO</div>
+                    <div class="alert-subtitle">${vehicle.appointment_location || 'Luogo non specificato'}</div>
+                    <button class="alert-ack-btn" onclick="acknowledgeAppointmentAlert(event, '${vehicle.id}')">PRESA VISIONE</button>
+                </div>
+            `;
         }
 
-        // Status Display - Admin: Dropdown, Non-Admin: Static Badge
-        let statusHtml = '';
+        // Status 
         const statusLabels = {
             'operative': 'In Servizio',
             'available': 'Disponibile',
@@ -227,42 +238,33 @@ async function renderVehicleGrid(vehicles) {
             'to-repair': 'Da Riparare'
         };
 
-        if (isAdmin) {
-            statusHtml = `
+        let statusHtml = `
             <div style="position: relative; width: 100%;">
-                <select class="status-full-bar status-${vehicle.status}" onchange="quickUpdateStatus(event, '${vehicle.id}')" onclick="event.stopPropagation()">
-                    <option value="operative" ${vehicle.status === 'operative' ? 'selected' : ''}>In Servizio</option>
-                    <option value="available" ${vehicle.status === 'available' ? 'selected' : ''}>Disponibile</option>
-                    <option value="maintenance" ${vehicle.status === 'maintenance' ? 'selected' : ''}>In Officina</option>
-                    <option value="to-repair" ${vehicle.status === 'to-repair' ? 'selected' : ''}>Da Riparare</option>
-                </select>
+                ${isAdmin ? `
+                    <select class="status-full-bar status-${vehicle.status}" onchange="quickUpdateStatus(event, '${vehicle.id}')" onclick="event.stopPropagation()">
+                        <option value="operative" ${vehicle.status === 'operative' ? 'selected' : ''}>In Servizio</option>
+                        <option value="available" ${vehicle.status === 'available' ? 'selected' : ''}>Disponibile</option>
+                        <option value="maintenance" ${vehicle.status === 'maintenance' ? 'selected' : ''}>In Officina</option>
+                        <option value="to-repair" ${vehicle.status === 'to-repair' ? 'selected' : ''}>Da Riparare</option>
+                    </select>
+                ` : `
+                    <div class="status-full-bar status-${vehicle.status}" style="cursor: default;">
+                        ${statusLabels[vehicle.status] || vehicle.status}
+                    </div>
+                `}
                 ${vehicle.appointment_date ? '<div class="appointment-dot" title="Appuntamento Fissato"></div>' : ''}
             </div>
-            `;
-        } else {
-            statusHtml = `
-            <div style="position: relative; width: 100%;">
-                <div class="status-full-bar status-${vehicle.status}" style="cursor: default;">
-                    ${statusLabels[vehicle.status] || vehicle.status}
-                </div>
-                ${vehicle.appointment_date ? '<div class="appointment-dot" title="Appuntamento Fissato"></div>' : ''}
-            </div>
-            `;
-        }
+        `;
 
-        // Location Display - Admin: Dropdown, Non-Admin: Static Text
+        // Location
         let locationHtml = '';
-        const locationOptions = cachedLocations.map(loc =>
-            `<option value="${loc}" ${vehicle.station === loc ? 'selected' : ''}>${loc}</option>`
-        ).join('');
-
         if (isAdmin) {
             locationHtml = `
             <div class="location-select-container" onclick="event.stopPropagation()">
                 <div style="font-size: 0.7rem; text-transform: uppercase; font-weight: 800; color: var(--text-secondary); margin-bottom: 0.1rem;">Posizione</div>
                 <div style="width: 100%;">
                     <select class="location-select" onchange="quickUpdateStationSelect(event, '${vehicle.id}')">
-                        ${locationOptions}
+                        ${cachedLocations.map(loc => `<option value="${loc}" ${vehicle.station === loc ? 'selected' : ''}>${loc}</option>`).join('')}
                     </select>
                 </div>
             </div>
@@ -278,7 +280,7 @@ async function renderVehicleGrid(vehicles) {
             `;
         }
 
-        // Prepare combined notes display (Notes + Appointment)
+        // Notes
         let noteContent = vehicle.notes || '';
         if (vehicle.appointment_date) {
             const locText = vehicle.appointment_location ? ` @ ${vehicle.appointment_location}` : '';
@@ -286,23 +288,34 @@ async function renderVehicleGrid(vehicles) {
             noteContent = noteContent ? `${apptText}\n---\n${noteContent}` : apptText;
         }
 
-        card.innerHTML = `
-            ${noteContent ? `<div class="note-tooltip">${noteContent}</div>` : ''}
-            ${statusHtml}
-            <div class="card-body">
-                <div class="vehicle-id" style="text-align: center; margin-bottom: 0.5rem; display: flex; flex-direction: column; gap: 0.1rem;">
-                    ${vehicle.sigla ? `<div class="sigla-text">${vehicle.sigla}</div>` : ''}
-                    <div class="model-text">${vehicle.model}</div>
-                    <div class="plate-number">${vehicle.plate}</div>
-                </div>
-                <div class="card-actions" style="justify-content: center; flex-direction: column; align-items: center;">
-                    ${locationHtml}
-                    ${noteContent ? `<div class="mobile-notes">${noteContent.replace(/\n/g, '<br>')}</div>` : ''}
+        return `
+            <div class="vehicle-card border-${vehicle.status}" 
+                 data-id="${vehicle.id}" 
+                 draggable="${isAdmin}" 
+                 onclick="openVehicleModal('${vehicle.id}')"
+                 ondragstart="handleDragStart(event)" 
+                 ondragover="handleDragOver(event)" 
+                 ondrop="handleDrop(event)" 
+                 ondragenter="handleDragEnter(event)" 
+                 ondragleave="handleDragLeave(event)" 
+                 ondragend="handleDragEnd(event)">
+                ${alertHTML}
+                ${noteContent ? `<div class="note-tooltip">${noteContent}</div>` : ''}
+                ${statusHtml}
+                <div class="card-body">
+                    <div class="vehicle-id" style="text-align: center; margin-bottom: 0.5rem; display: flex; flex-direction: column; gap: 0.1rem;">
+                        ${vehicle.sigla ? `<div class="sigla-text">${vehicle.sigla}</div>` : ''}
+                        <div class="model-text">${vehicle.model}</div>
+                        <div class="plate-number">${vehicle.plate}</div>
+                    </div>
+                    <div class="card-actions" style="justify-content: center; flex-direction: column; align-items: center;">
+                        ${locationHtml}
+                        ${noteContent ? `<div class="mobile-notes">${noteContent.replace(/\n/g, '<br>')}</div>` : ''}
+                    </div>
                 </div>
             </div>
         `;
-        grid.appendChild(card);
-    });
+    }).join('');
 }
 
 // Drag & Drop Handlers
@@ -1027,6 +1040,7 @@ window.saveVehicleAppointment = async function (id, date, location) {
         if (vehicle) {
             vehicle.appointment_date = date || null;
             vehicle.appointment_location = location || null;
+            vehicle.alert_ack_date = null; // Reset ack for new appointment
             await store.updateVehicle(vehicle);
             alert("Appuntamento aggiornato.");
             // Refresh detail modal and dashboard
@@ -1036,6 +1050,22 @@ window.saveVehicleAppointment = async function (id, date, location) {
     } catch (error) {
         console.error("Error saving appointment:", error);
         alert("Errore durante il salvataggio dell'appuntamento.");
+    }
+}
+
+window.acknowledgeAppointmentAlert = async function (event, id) {
+    if (event) event.stopPropagation();
+    try {
+        const vehicle = await store.getVehicleById(id);
+        if (vehicle) {
+            const todayStr = new Date().toISOString().split('T')[0];
+            vehicle.alert_ack_date = todayStr;
+            await store.updateVehicle(vehicle);
+            // Refresh dashboard to hide overlay
+            renderDashboard(true);
+        }
+    } catch (error) {
+        console.error("Error acknowledging alert:", error);
     }
 }
 
