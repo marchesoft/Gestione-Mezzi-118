@@ -111,15 +111,22 @@ body {
 .header-row-title {
     width: 100%;
     text-align: center;
+    background-color: #ef4444;
+    /* High-visibility Red */
+    padding: 1rem 0;
+    margin-bottom: 1rem;
+    box-shadow: var(--shadow-md);
+    border-radius: var(--radius-lg);
 }
 
 .header-row-title h1 {
-    font-size: 1.75rem;
-    font-weight: 800;
-    color: #1e3a8a;
+    font-size: 2rem;
+    font-weight: 900;
+    color: white;
     margin: 0;
     text-transform: uppercase;
-    letter-spacing: 0.02em;
+    letter-spacing: 0.05em;
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.2);
 }
 
 .header-row-controls {
@@ -1279,9 +1286,15 @@ body.is-admin #admin-hint-text {
         margin-bottom: 1.5rem;
     }
 
+    .header-row-title {
+        padding: 0.75rem 0.5rem;
+        border-radius: var(--radius-md);
+    }
+
     .header-row-title h1 {
         white-space: normal;
-        font-size: 1.2rem;
+        font-size: 1.3rem;
+        line-height: 1.2;
     }
 
     .action-buttons {
