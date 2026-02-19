@@ -245,6 +245,7 @@ async function renderVehicleGrid(vehicles) {
 
     // Ensure vehicles are sorted based on sigla
     sortVehiclesBySigla(vehicles);
+    console.log("Realtime: Rendering grid with sorted sigle:", vehicles.map(v => v.sigla).join(', '));
 
     if (vehicles.length === 0) {
         grid.innerHTML = '<p style="grid-column: 1/-1; text-align: center; padding: 2rem;">Nessun veicolo trovato.</p>';
@@ -1184,6 +1185,7 @@ window.switchDataTable = async function (type) {
     try {
         if (type === 'vehicles') {
             data = await store.getVehicles();
+            sortVehiclesBySigla(data);
             html = `
                 <div style="margin-bottom: 1.5rem; background: #f8fafc; padding: 1rem; border-radius: 0.75rem; border: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center;">
                     <h4 style="font-size: 0.9rem;">Elenco Mezzi</h4>
