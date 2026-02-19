@@ -1009,6 +1009,48 @@ body.is-admin #admin-hint-text {
     }
 }
 
+@media (max-width: 768px) {
+    .vehicle-grid {
+        grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+        gap: 0.5rem;
+    }
+
+    .vehicle-card {
+        border-width: 1px;
+    }
+
+    .sigla-text {
+        font-size: 1.5rem;
+    }
+
+    .plate-number {
+        font-size: 1.2rem;
+    }
+
+    .status-full-bar {
+        font-size: 0.9rem;
+        padding: 0.5rem 0.25rem;
+    }
+
+    .location-select-container .location-select,
+    .location-select-container span {
+        font-size: 1.1rem !important;
+    }
+
+    .model-text {
+        font-size: 0.75rem;
+    }
+
+    .vehicle-id {
+        gap: 0;
+        margin-bottom: 0.25rem;
+    }
+
+    .card-body {
+        padding: 0.5rem;
+    }
+}
+
 @media (max-width: 480px) {
     .stats-grid {
         grid-template-columns: 1fr;
