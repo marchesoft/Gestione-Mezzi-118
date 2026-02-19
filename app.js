@@ -693,11 +693,7 @@ window.saveVehicleForm = async function () {
         await renderDashboard(true);
     }
 
-    // Only return to Data Management if we were editing an existing vehicle (id exists)
-    if (id && window.lastDataManagerTab === 'vehicles') {
-        window.openDataManagement();
-        switchDataTable('vehicles');
-    }
+
 
     if (!document.getElementById('vehicle-modal').classList.contains('hidden') && id) {
         window.openVehicleModal(id);
