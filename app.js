@@ -252,8 +252,9 @@ async function renderVehicleGrid(vehicles) {
                     <div class="model-text">${vehicle.model}</div>
                     <div class="plate-number">${vehicle.plate}</div>
                 </div>
-                <div class="card-actions" style="justify-content: center;">
+                <div class="card-actions" style="justify-content: center; flex-direction: column; align-items: center;">
                     ${locationHtml}
+                    ${vehicle.notes ? `<div class="mobile-notes">${vehicle.notes}</div>` : ''}
                 </div>
             </div>
         `;

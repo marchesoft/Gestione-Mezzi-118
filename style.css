@@ -1084,6 +1084,11 @@ body.is-admin #admin-hint-text {
     }
 }
 
+/* Mobile Notes hidden by default */
+.mobile-notes {
+    display: none;
+}
+
 @media (max-width: 768px) {
     .vehicle-grid {
         grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
@@ -1158,6 +1163,25 @@ body.is-admin #admin-hint-text {
         font-weight: 700;
         line-height: 1.2;
         border-radius: 0.75rem;
+    }
+
+    /* Mobile Notes Display */
+    .mobile-notes {
+        display: block !important;
+        font-size: 0.7rem;
+        color: var(--text-secondary);
+        text-align: center;
+        margin-top: 0.15rem;
+        font-style: italic;
+        line-height: 1.1;
+        width: 100%;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .note-tooltip {
+        display: none !important;
     }
 }
 
