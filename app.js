@@ -308,9 +308,18 @@ window.quickUpdateStatus = async function (event, id) {
 
     const vehicle = await store.getVehicleById(id);
     if (vehicle && vehicle.status !== newStatus) {
+        const oldStatus = vehicle.status;
         vehicle.status = newStatus;
         await store.updateVehicle(vehicle);
-        await renderDashboard(); // Re-render to ensure consistency with DB
+
+        // Optimistic Stats Update
+        const oldCounter = document.getElementById(`stat-${oldStatus}`);
+        if (oldCounter) oldCounter.innerText = Math.max(0, parseInt(oldCounter.innerText || '0') - 1);
+
+        const newCounter = document.getElementById(`stat-${newStatus}`);
+        if (newCounter) newCounter.innerText = parseInt(newCounter.innerText || '0') + 1;
+
+        // Do NOT call renderDashboard() here to prevent UI revert due to race conditions
 
         if (!document.getElementById('vehicle-modal').classList.contains('hidden')) {
             openVehicleModal(id);
