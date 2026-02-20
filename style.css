@@ -651,7 +651,7 @@ body {
     max-width: none;
     text-align: center;
     text-align-last: center;
-    font-size: 0.9rem;
+    font-size: 0.65rem;
     font-weight: 900;
     color: var(--text-primary);
     text-transform: uppercase;
