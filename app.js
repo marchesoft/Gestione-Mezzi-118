@@ -342,7 +342,7 @@ async function renderVehicleGrid(vehicles) {
                         ${statusLabels[vehicle.status] || vehicle.status}
                     </div>
                 `}
-                ${vehicle.appointment_date ? '<div class="appointment-dot" title="Appuntamento Fissato"><i class="fa-solid fa-calendar-check"></i></div>' : ''}
+                ${vehicle.appointment_date ? '<div class="appointment-dot" title="Appuntamento Fissato"><i class="fa-solid fa-calendar-day"></i></div>' : ''}
             </div>
         `;
 
