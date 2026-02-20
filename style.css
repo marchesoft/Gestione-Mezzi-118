@@ -651,14 +651,14 @@ body {
     max-width: none;
     text-align: center;
     text-align-last: center;
-    font-size: 0.65rem;
+    font-size: 0.6rem;
     font-weight: 900;
     color: var(--text-primary);
     text-transform: uppercase;
 }
 
 .location-label {
-    font-size: 0.6rem;
+    font-size: 0.55rem;
     text-transform: uppercase;
     font-weight: 800;
     color: var(--text-secondary);
@@ -1346,11 +1346,11 @@ body.is-admin #admin-hint-text {
 
     .location-select-container .location-select,
     .location-select-container .location-display {
-        font-size: 1.5rem !important;
+        font-size: 1.0rem !important;
     }
 
     .location-label {
-        font-size: 0.75rem !important;
+        font-size: 0.65rem !important;
     }
 
     .model-text {
