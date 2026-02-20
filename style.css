@@ -635,7 +635,8 @@ body {
     color: var(--primary-color);
 }
 
-.location-select {
+.location-select,
+.location-display {
     border: 1px solid transparent;
     background: transparent;
     color: var(--text-secondary);
@@ -650,10 +651,18 @@ body {
     max-width: none;
     text-align: center;
     text-align-last: center;
-    font-size: 1.2rem;
+    font-size: 0.9rem;
     font-weight: 900;
     color: var(--text-primary);
     text-transform: uppercase;
+}
+
+.location-label {
+    font-size: 0.6rem;
+    text-transform: uppercase;
+    font-weight: 800;
+    color: var(--text-secondary);
+    margin-bottom: 0.1rem;
 }
 
 .location-select:hover {
@@ -1338,6 +1347,10 @@ body.is-admin #admin-hint-text {
     .location-select-container .location-select,
     .location-select-container .location-display {
         font-size: 1.5rem !important;
+    }
+
+    .location-label {
+        font-size: 0.75rem !important;
     }
 
     .model-text {

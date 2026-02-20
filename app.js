@@ -335,7 +335,7 @@ async function renderVehicleGrid(vehicles) {
         if (isAdmin) {
             locationHtml = `
             <div class="location-select-container" onclick="event.stopPropagation()">
-                <div style="font-size: 0.7rem; text-transform: uppercase; font-weight: 800; color: var(--text-secondary); margin-bottom: 0.1rem;">Posizione</div>
+                <div class="location-label">Posizione</div>
                 <div style="width: 100%;">
                     <select class="location-select" onchange="quickUpdateStationSelect(event, '${vehicle.id}')">
                         ${cachedLocations.map(loc => `<option value="${loc}" ${vehicle.station === loc ? 'selected' : ''}>${loc}</option>`).join('')}
@@ -345,7 +345,7 @@ async function renderVehicleGrid(vehicles) {
             `;
             locationHtml = `
             <div class="location-select-container" style="cursor: default; background: transparent; border: none; padding: 0;">
-                <div style="font-size: 0.7rem; text-transform: uppercase; font-weight: 800; color: var(--text-secondary); margin-bottom: 0.1rem;">Posizione</div>
+                <div class="location-label">Posizione</div>
                 <div style="width: 100%; text-align: center;">
                     <span class="location-display" style="font-weight: 700; color: black;">${vehicle.station}</span>
                 </div>
