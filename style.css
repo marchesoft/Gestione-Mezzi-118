@@ -651,19 +651,19 @@ body {
     max-width: none;
     text-align: center;
     text-align-last: center;
-    font-size: 0.5rem !important;
+    font-size: 0.85rem !important;
     font-weight: 900 !important;
     color: var(--text-primary);
     text-transform: uppercase;
 }
 
 .location-label {
-    font-size: 0.5rem !important;
+    font-size: 0.7rem !important;
     text-transform: uppercase;
     font-weight: 800;
     color: var(--text-secondary);
-    margin-bottom: 0px !important;
-    line-height: 1 !important;
+    margin-bottom: 2px !important;
+    line-height: 1.2 !important;
 }
 
 .location-select:hover {
