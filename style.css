@@ -651,14 +651,14 @@ body {
     max-width: none;
     text-align: center;
     text-align-last: center;
-    font-size: 0.85rem !important;
+    font-size: 1.3rem !important;
     font-weight: 900 !important;
     color: var(--text-primary);
     text-transform: uppercase;
 }
 
 .location-label {
-    font-size: 0.7rem !important;
+    font-size: 1.0rem !important;
     text-transform: uppercase;
     font-weight: 800;
     color: var(--text-secondary);
