@@ -1,26 +1,28 @@
 :root {
-    --primary-color: #0ea5e9;
-    /* Sky blue */
-    --primary-dark: #0284c7;
+    --primary-color: #3366ff;
+    /* In Servizio Blue */
+    --primary-dark: #254ccb;
     --secondary-color: #64748b;
     /* Slate */
-    --background-bg: #F5F3EF;
+    --background-bg: #ccffcc;
+    /* App Background Light Green */
     --sidebar-bg: #FAF8F3;
     --card-bg: #FAF8F3;
     --text-primary: #1e293b;
     --text-secondary: #64748b;
-    --border-color: #e2e8f0;
+    --border-color: #accab0;
+    /* Adjusted for green bg */
 
-    --status-operative: #0ea5e9;
-    /* Azure/Sky Blue */
-    --status-operative-bg: #e0f2fe;
-    --status-available: #22c55e;
+    --status-operative: #3366ff;
+    /* Blue */
+    --status-operative-bg: #e0e7ff;
+    --status-available: #008000;
     /* Green */
     --status-available-bg: #dcfce7;
-    --status-maintenance: #f97316;
+    --status-maintenance: #ff6600;
     /* Orange */
     --status-maintenance-bg: #ffedd5;
-    --status-to-repair: #ef4444;
+    --status-to-repair: #ff0000;
     /* Red */
     --status-to-repair-bg: #fee2e2;
 
@@ -46,6 +48,12 @@ body {
     color: var(--text-primary);
     height: 100vh;
     overflow: hidden;
+}
+
+input,
+textarea,
+select {
+    text-transform: uppercase;
 }
 
 /* Layout */
@@ -111,8 +119,8 @@ body {
 .header-row-title {
     width: 100%;
     text-align: center;
-    background-color: #1e3a8a;
-    /* Dark Blue */
+    background-color: #000080;
+    /* Navy Blue */
     padding: 1rem 0;
     margin-bottom: 1rem;
     box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.2), 0 2px 4px -1px rgba(0, 0, 0, 0.1);
@@ -122,7 +130,7 @@ body {
 .header-row-title h1 {
     font-size: 2rem;
     font-weight: 900;
-    color: rgb(255, 255, 0) !important;
+    color: #ffff00 !important;
     margin: 0;
     text-transform: uppercase;
     letter-spacing: 0.05em;
@@ -233,8 +241,8 @@ body {
 
 .stat-info h3 {
     font-size: 0.9rem;
-    font-weight: 500;
-    color: var(--text-secondary);
+    font-weight: 700;
+    color: #000000;
     margin-bottom: 0.25rem;
 }
 
@@ -277,8 +285,8 @@ body {
     background: transparent;
     border-radius: var(--radius-md);
     cursor: pointer;
-    font-weight: 500;
-    color: var(--text-secondary);
+    font-weight: 800;
+    color: #000000;
     transition: all 0.2s;
 }
 
@@ -309,34 +317,36 @@ body {
 .appointment-dot {
     position: absolute;
     top: 50%;
-    right: 1rem;
+    right: 1.2rem;
     transform: translateY(-50%);
-    width: 24px;
-    height: 24px;
-    background-color: #ffff00;
+    width: 28px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #ffff00;
     /* Yellow */
-    border-radius: 50%;
-    box-shadow: 0 0 15px #ffff00, 0 0 5px rgba(0, 0, 0, 0.3);
+    font-size: 1.5rem;
+    filter: drop-shadow(0 0 8px #ffff00);
     z-index: 5;
-    border: 2px solid white;
-    animation: pulse-yellow 1.5s infinite;
+    animation: pulse-yellow-icon 1.5s infinite;
 }
 
-@keyframes pulse-yellow {
+@keyframes pulse-yellow-icon {
     0% {
         transform: translateY(-50%) scale(1);
-        box-shadow: 0 0 15px #ffff00, 0 0 5px rgba(0, 0, 0, 0.3);
+        filter: drop-shadow(0 0 8px #ffff00);
     }
 
     50% {
-        transform: translateY(-50%) scale(1.2);
-        box-shadow: 0 0 25px #ffff00, 0 0 10px #ffff00;
-        filter: brightness(1.2);
+        transform: translateY(-50%) scale(1.3);
+        filter: drop-shadow(0 0 15px #ffff00);
+        opacity: 0.8;
     }
 
     100% {
         transform: translateY(-50%) scale(1);
-        box-shadow: 0 0 15px #ffff00, 0 0 5px rgba(0, 0, 0, 0.3);
+        filter: drop-shadow(0 0 8px #ffff00);
     }
 }
 
@@ -651,14 +661,14 @@ body {
     max-width: none;
     text-align: center;
     text-align-last: center;
-    font-size: 1.3rem !important;
+    font-size: 1.7rem !important;
     font-weight: 900 !important;
     color: var(--text-primary);
     text-transform: uppercase;
 }
 
 .location-label {
-    font-size: 1.0rem !important;
+    font-size: 1.2rem !important;
     text-transform: uppercase;
     font-weight: 800;
     color: var(--text-secondary);
@@ -1347,11 +1357,11 @@ body.is-admin #admin-hint-text {
 
     .location-select-container .location-select,
     .location-select-container .location-display {
-        font-size: 1.0rem !important;
+        font-size: 1.8rem !important;
     }
 
     .location-label {
-        font-size: 0.65rem !important;
+        font-size: 1.2rem !important;
     }
 
     .model-text {

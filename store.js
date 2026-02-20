@@ -10,32 +10,37 @@ class Store {
     // --- Vehicles ---
 
     async getVehicles() {
-        const { data, error } = await this.supabase
+        const { data: vehicles, error: vError } = await this.supabase
             .from('vehicles')
             .select('*');
-        if (error) {
-            console.error('Error fetching vehicles:', error);
+
+        if (vError) {
+            console.error('Error fetching vehicles:', vError);
             return [];
         }
 
-        // Fetch maintenance history for each vehicle (approximated for now)
-        // Ideally we would join, but for compatibility with existing app structure 
-        // we might handle it differently. 
-        // For now, let's just get the vehicles. The app expects a 'maintenanceHistory' array property.
-        // We will fetch interventions separately or join.
-        // Let's do a simple join or separate fetch.
-        // To keep it simple for this step, let's attach interventions.
+        // Fetch all interventions in one go to avoid N+1 queries
+        const { data: allInterventions, error: iError } = await this.supabase
+            .from('interventions')
+            .select('*')
+            .order('date', { ascending: false });
 
-        for (let vehicle of data) {
-            const { data: interventions } = await this.supabase
-                .from('interventions')
-                .select('*')
-                .eq('vehicle_id', vehicle.id)
-                .order('date', { ascending: false });
-            vehicle.maintenanceHistory = interventions || [];
+        if (iError) {
+            console.error('Error fetching interventions:', iError);
         }
 
-        return data || [];
+        // Map interventions to vehicles
+        const interventionsByVehicle = (allInterventions || []).reduce((acc, curr) => {
+            if (!acc[curr.vehicle_id]) acc[curr.vehicle_id] = [];
+            acc[curr.vehicle_id].push(curr);
+            return acc;
+        }, {});
+
+        vehicles.forEach(vehicle => {
+            vehicle.maintenanceHistory = interventionsByVehicle[vehicle.id] || [];
+        });
+
+        return vehicles;
     }
 
     async getVehicleById(id) {
@@ -191,6 +196,55 @@ class Store {
         if (error) {
             console.error('Error updating intervention:', error);
             alert("Errore aggiornamento intervento: " + error.message);
+        }
+    }
+
+    // --- Cambi Mezzi ---
+
+    async getCambiMezzi() {
+        const { data, error } = await this.supabase
+            .from('cambiomezzo')
+            .select('*')
+            .order('data', { ascending: false });
+
+        if (error) {
+            console.error('Error fetching cambi mezzi:', error);
+            return [];
+        }
+        return data;
+    }
+
+    async addCambioMezzo(cambio) {
+        const { error } = await this.supabase
+            .from('cambiomezzo')
+            .insert([cambio]);
+
+        if (error) {
+            console.error('Error adding cambio mezzo:', error);
+            alert("Errore salvataggio cambio mezzo: " + error.message);
+            throw error;
+        }
+    }
+
+    async updateCambioMezzo(id, data) {
+        const { error } = await this.client
+            .from('cambiomezzo')
+            .update(data)
+            .eq('id', id);
+
+        if (error) throw error;
+        return true;
+    }
+
+    async deleteCambioMezzo(id) {
+        const { error } = await this.supabase
+            .from('cambiomezzo')
+            .delete()
+            .eq('id', id);
+
+        if (error) {
+            console.error('Error deleting cambio mezzo:', error);
+            alert("Errore eliminazione cambio mezzo: " + error.message);
         }
     }
 }

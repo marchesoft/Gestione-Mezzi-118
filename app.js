@@ -1,8 +1,11 @@
-const APP_VERSION = "1.2.0 - 2026-02-20"; // Major sync logic upgrade
+const APP_VERSION = "1.3.0 - 2026-02-20"; // Major Performance & Real-time Fix
 let isAdmin = false;
 let cachedVehicles = null;
 let cachedLocations = null;
 let currentOpenedVehicleId = null;
+
+// Helper to ensure strings are uppercase
+const upper = (str) => (str || '').toString().toUpperCase().trim();
 
 // Helper to format date strings from YYYY-MM-DD to DD/MM/YYYY
 function formatDate(dateStr) {
@@ -60,6 +63,14 @@ async function initApp() {
     await renderDashboard(true); // Force initial fetch
     setupRealtimeSubscription();
     setupIdleRefresh();
+
+    // Refresh on return to focus (important for mobile)
+    document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'visible') {
+            console.log('App returned to foreground, refreshing data...');
+            renderDashboard(true);
+        }
+    });
 }
 
 function setupIdleRefresh() {
@@ -110,13 +121,6 @@ function setupRealtimeSubscription() {
             .on('postgres_changes', { event: '*', schema: 'public', table: 'vehicles' }, (payload) => {
                 console.log("Realtime event received:", payload.eventType, payload.new?.id || payload.old?.id);
 
-                // If we are currently fetching all vehicles, ignore this event to avoid inconsistent state
-                // The fetch response will contain the latest data anyway.
-                if (isSyncing) {
-                    console.log("Realtime: Sync in progress, skipping event.");
-                    return;
-                }
-
                 if (!cachedVehicles) return renderDashboard(true);
 
                 if (payload.eventType === 'UPDATE') {
@@ -165,6 +169,18 @@ function setupRealtimeSubscription() {
                 renderDashboard(true);
             })
             .subscribe((status) => handleStatusChange(status, 'Locations'));
+
+        // Cambi Mezzi Subscription
+        window.store.supabase
+            .channel('public:cambiomezzo')
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'cambiomezzo' }, (payload) => {
+                console.log("Realtime: Cambi Mezzi event received.");
+                // If Data Management is open and showing Cambi, refresh it
+                if (!document.getElementById('data-management-modal').classList.contains('hidden')) {
+                    switchDataTable('cambiomezzo');
+                }
+            })
+            .subscribe((status) => handleStatusChange(status, 'CambiMezzi'));
     }
 }
 
@@ -326,7 +342,7 @@ async function renderVehicleGrid(vehicles) {
                         ${statusLabels[vehicle.status] || vehicle.status}
                     </div>
                 `}
-                ${vehicle.appointment_date ? '<div class="appointment-dot" title="Appuntamento Fissato"></div>' : ''}
+                ${vehicle.appointment_date ? '<div class="appointment-dot" title="Appuntamento Fissato"><i class="fa-solid fa-calendar-check"></i></div>' : ''}
             </div>
         `;
 
@@ -497,7 +513,7 @@ window.quickUpdateStatus = async function (event, id) {
 
 window.quickUpdateStationSelect = function (event, id) {
     event.stopPropagation();
-    const newStation = event.target.value;
+    const newStation = upper(event.target.value);
 
     if (cachedVehicles) {
         const idx = cachedVehicles.findIndex(v => v.id === id);
@@ -557,8 +573,9 @@ window.openVehicleForm = async function (vehicleId = null) {
     }
 
     const modal = document.getElementById('vehicle-form-modal');
-    const title = document.getElementById('form-modal-title');
+    const title = document.querySelector('#vehicle-form-modal h3');
     const form = document.getElementById('vehicle-form');
+
     form.reset();
     document.getElementById('vehicle-id').value = '';
 
@@ -576,25 +593,20 @@ window.openVehicleForm = async function (vehicleId = null) {
 
     if (vehicleId) {
         title.textContent = 'Modifica Mezzo';
-        const vehicle = await store.getVehicleById(vehicleId);
+        const vehicle = cachedVehicles.find(v => v.id === vehicleId);
         if (vehicle) {
             document.getElementById('vehicle-id').value = vehicle.id;
-            document.getElementById('vehicle-model').value = vehicle.model;
             document.getElementById('vehicle-plate').value = vehicle.plate;
+            document.getElementById('vehicle-model').value = vehicle.model;
             document.getElementById('vehicle-sigla').value = vehicle.sigla || '';
-            document.getElementById('vehicle-type').value = vehicle.type || 'Ambulanza';
+            document.getElementById('vehicle-station').value = vehicle.station;
             document.getElementById('vehicle-status').value = vehicle.status;
-            document.getElementById('vehicle-station').value = vehicle.station || '';
-
             document.getElementById('vehicle-mileage').value = vehicle.mileage;
-
-            // Extended Fields
-            document.getElementById('vehicle-mileage-month').value = vehicle.mileage_month || ''; // Populate new field
+            document.getElementById('vehicle-mileage-month').value = vehicle.mileage_month || '';
             document.getElementById('vehicle-radio').value = vehicle.radio_id || '';
-
             document.getElementById('vehicle-inspection').value = vehicle.inspection_expiry || '';
             document.getElementById('vehicle-revision-o2').value = vehicle.revision_o2 || '';
-            document.getElementById('vehicle-appointment').value = vehicle.appointment_date || '';
+            document.getElementById('vehicle-type').value = vehicle.type;
             document.getElementById('vehicle-notes').value = vehicle.notes || '';
         }
     } else {
@@ -605,6 +617,124 @@ window.openVehicleForm = async function (vehicleId = null) {
     }
 
     modal.classList.remove('hidden');
+}
+
+window.openCambioMezzoModal = async function (cambioId = null) {
+    if (!isAdmin) return;
+
+    const modal = document.getElementById('cambio-mezzo-modal');
+    const form = document.getElementById('cambio-mezzo-form');
+    const title = document.querySelector('#cambio-mezzo-modal h3');
+    form.reset();
+    document.getElementById('cambio-id').value = '';
+
+    if (cambioId) {
+        title.textContent = 'Modifica Cambio Mezzo';
+        try {
+            // We could fetch specifically or filter from a list if we had one cached. 
+            // For now, let's fetch it from the store to be safe.
+            const list = await store.getCambiMezzi();
+            const cambio = list.find(c => c.id === cambioId);
+            if (cambio) {
+                document.getElementById('cambio-id').value = cambio.id;
+                document.getElementById('cambio-data').value = cambio.data;
+                document.getElementById('cambio-turno').value = cambio.turno;
+                document.getElementById('cambio-luogo').value = cambio.luogo || '';
+                document.getElementById('cambio-equipaggio').value = cambio.equipaggio || '';
+                // Dropdowns will be populated below, we need to set values AFTER populating
+                // But Dal/Al depend on cachedVehicles which is usually ready
+            }
+        } catch (error) {
+            console.error("Error loading cambio data:", error);
+        }
+    } else {
+        title.textContent = 'Registra Cambio Mezzo';
+        document.getElementById('cambio-data').valueAsDate = new Date();
+    }
+
+    // Populate Luogo Dropdown
+    const luogoSelect = document.getElementById('cambio-luogo');
+    luogoSelect.innerHTML = '<option value="">-- Seleziona Luogo --</option>';
+    if (cachedLocations) {
+        cachedLocations.forEach(loc => {
+            const option = document.createElement('option');
+            option.value = loc;
+            option.textContent = loc;
+            luogoSelect.appendChild(option);
+        });
+    }
+
+    // Populate Vehicle Selects (Sigle)
+    const dalSelect = document.getElementById('cambio-dal-mezzo');
+    const alSelect = document.getElementById('cambio-al-mezzo');
+
+    dalSelect.innerHTML = '<option value="">-- Seleziona --</option>';
+    alSelect.innerHTML = '<option value="">-- Seleziona --</option>';
+
+    if (cachedVehicles) {
+        // Filter out vehicles without sigla and sort them
+        const vehiclesWithSigla = cachedVehicles.filter(v => v.sigla).sort((a, b) => a.sigla.localeCompare(b.sigla));
+
+        vehiclesWithSigla.forEach(v => {
+            const option = document.createElement('option');
+            option.value = v.sigla;
+            option.textContent = v.sigla;
+            dalSelect.appendChild(option.cloneNode(true));
+            alSelect.appendChild(option);
+        });
+    }
+
+    // Set values if editing
+    const cambioIdVal = document.getElementById('cambio-id').value;
+    if (cambioIdVal) {
+        // We need the data again or passed in. Let's assume we fetch it or it's simple.
+        // Actually, better to set values here if they were already fetched.
+        const list = await store.getCambiMezzi();
+        const cambio = list.find(c => c.id === cambioIdVal);
+        if (cambio) {
+            dalSelect.value = cambio.dal_mezzo;
+            alSelect.value = cambio.al_mezzo;
+        }
+    }
+
+    modal.classList.remove('hidden');
+}
+
+window.saveCambioMezzo = async function () {
+    const id = document.getElementById('cambio-id').value;
+    const data = document.getElementById('cambio-data').value;
+    const turno = document.getElementById('cambio-turno').value;
+    const luogo = document.getElementById('cambio-luogo').value;
+    const equipaggio = document.getElementById('cambio-equipaggio').value;
+    const dal_mezzo = document.getElementById('cambio-dal-mezzo').value;
+    const al_mezzo = document.getElementById('cambio-al-mezzo').value;
+
+    const cambioData = {
+        data,
+        turno: upper(turno),
+        luogo: upper(luogo),
+        equipaggio: upper(equipaggio),
+        dal_mezzo: upper(dal_mezzo),
+        al_mezzo: upper(al_mezzo)
+    };
+
+    try {
+        if (id) {
+            await store.updateCambioMezzo(id, cambioData);
+            alert("Cambio mezzo aggiornato con successo!");
+        } else {
+            await store.addCambioMezzo(cambioData);
+            alert("Cambio mezzo registrato con successo!");
+        }
+        document.getElementById('cambio-mezzo-modal').classList.add('hidden');
+
+        // Refresh Data Management if open
+        if (!document.getElementById('data-management-modal').classList.contains('hidden')) {
+            switchDataTable(window.lastDataManagerTab || 'cambiomezzo');
+        }
+    } catch (error) {
+        console.error("Error saving cambio mezzo:", error);
+    }
 }
 
 function setupEventListeners() {
@@ -663,6 +793,13 @@ function setupEventListeners() {
         });
     }
 
+    const closeCambioModal = document.querySelector('.close-cambio-modal');
+    if (closeCambioModal) {
+        closeCambioModal.addEventListener('click', () => {
+            document.getElementById('cambio-mezzo-modal').classList.add('hidden');
+        });
+    }
+
     const cancelBtn = document.getElementById('cancel-vehicle-btn');
     if (cancelBtn) {
         cancelBtn.addEventListener('click', () => {
@@ -674,6 +811,13 @@ function setupEventListeners() {
     if (cancelMaintBtn) {
         cancelMaintBtn.addEventListener('click', () => {
             document.getElementById('maintenance-form-modal').classList.add('hidden');
+        });
+    }
+
+    const cancelCambioBtn = document.getElementById('cancel-cambio-btn');
+    if (cancelCambioBtn) {
+        cancelCambioBtn.addEventListener('click', () => {
+            document.getElementById('cambio-mezzo-modal').classList.add('hidden');
         });
     }
 
@@ -702,6 +846,13 @@ function setupEventListeners() {
         });
     }
 
+    const cambiBtn = document.getElementById('btn-cambi-mezzi');
+    if (cambiBtn) {
+        cambiBtn.addEventListener('click', () => {
+            openCambioMezzoModal();
+        });
+    }
+
     const form = document.getElementById('vehicle-form');
     if (form) {
         form.addEventListener('submit', (e) => {
@@ -723,6 +874,14 @@ function setupEventListeners() {
         });
     }
 
+    const cambioForm = document.getElementById('cambio-mezzo-form');
+    if (cambioForm) {
+        cambioForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            saveCambioMezzo();
+        });
+    }
+
     window.closeVehicleModal = function () {
         document.getElementById('vehicle-modal').classList.add('hidden');
         currentOpenedVehicleId = null;
@@ -741,6 +900,8 @@ function setupEventListeners() {
         if (event.target === formModal) formModal.classList.add('hidden');
         if (event.target === maintModal) maintModal.classList.add('hidden');
         if (event.target === locModal) locModal.classList.add('hidden');
+        const cambioModal = document.getElementById('cambio-mezzo-modal');
+        if (event.target === cambioModal) cambioModal.classList.add('hidden');
         if (event.target === adminModal) adminModal.classList.add('hidden');
     }
 }
@@ -766,14 +927,19 @@ window.saveVehicleForm = async function () {
     const notes = document.getElementById('vehicle-notes').value;
 
     const vehicleData = {
-        model, plate, sigla, status, type, station,
+        model: upper(model),
+        plate: upper(plate),
+        sigla: upper(sigla),
+        status,
+        type,
+        station: upper(station),
         mileage: parseInt(mileage) || 0,
-        mileage_month,
-        radio_id,
+        mileage_month: upper(mileage_month),
+        radio_id: upper(radio_id),
 
         inspection_expiry: inspection_expiry || null,
         revision_o2: revision_o2 || null,
-        notes
+        notes: upper(notes)
     };
 
     if (id) {
@@ -1047,11 +1213,11 @@ window.saveMaintenanceRecord = async function (e) {
     const record = {
         date,
         date_out: date_out || null,
-        workshop: workshop || null,
-        description,
+        workshop: upper(workshop),
+        description: upper(description),
         type: 'Routine',
         cost: 0,
-        sigla: vehicleSigla // Add sigla to record
+        sigla: upper(vehicleSigla)
     };
 
     try {
@@ -1102,7 +1268,7 @@ window.saveVehicleMileageMonth = async function (id, text) {
     try {
         const vehicle = await store.getVehicleById(id);
         if (vehicle) {
-            vehicle.mileage_month = text;
+            vehicle.mileage_month = upper(text);
             await store.updateVehicle(vehicle);
             renderDashboard(true); // Use renderDashboard instead of legacy loadVehicles
         }
@@ -1118,7 +1284,7 @@ window.saveVehicleAppointment = async function (id, date, location) {
         const vehicle = await store.getVehicleById(id);
         if (vehicle) {
             vehicle.appointment_date = date || null;
-            vehicle.appointment_location = location || null;
+            vehicle.appointment_location = upper(location) || null;
             vehicle.alert_ack_date = null; // Reset ack for new appointment
             await store.updateVehicle(vehicle);
             alert("Appuntamento aggiornato.");
@@ -1169,7 +1335,7 @@ window.saveVehicleNote = async function (id, text, showFeedback = false) {
     try {
         const vehicle = await store.getVehicleById(id);
         if (vehicle) {
-            vehicle.notes = text;
+            vehicle.notes = upper(text);
             await store.updateVehicle(vehicle);
             await renderDashboard(true); // Force refresh
             if (showFeedback) {
@@ -1274,7 +1440,7 @@ window.switchDataTable = async function (type) {
             html = `
                 <div style="margin-bottom: 1.5rem; background: #f8fafc; padding: 1rem; border-radius: 0.75rem; border: 1px solid var(--border-color);">
                     <h4 style="margin-bottom: 0.75rem; font-size: 0.9rem;">Aggiungi Nuovo Luogo</h4>
-                    <form onsubmit="event.preventDefault(); const n = this.querySelector('input').value.trim(); if(n){store.addLocation(n).then(() => switchDataTable('locations'))}" style="display: flex; gap: 0.5rem;">
+                    <form onsubmit="event.preventDefault(); const n = upper(this.querySelector('input').value); if(n){store.addLocation(n).then(() => switchDataTable('locations'))}" style="display: flex; gap: 0.5rem;">
                         <input type="text" placeholder="Nome luogo..." required style="flex-grow: 1; padding: 0.5rem; border: 1px solid var(--border-color); border-radius: 0.4rem;">
                             <button type="submit" class="btn btn-primary" style="padding: 0.5rem 1rem;"><i class="fa-solid fa-plus"></i> Aggiungi</button>
                     </form>
@@ -1291,7 +1457,7 @@ window.switchDataTable = async function (type) {
                             <tr style="border-bottom: 1px solid var(--border-color);">
                                 <td style="padding: 0.75rem;">${l}</td>
                                 <td style="padding: 0.75rem; text-align: right;">
-                                    <button onclick="const n = prompt('Modifica nome luogo:', '${l}'); if(n && n !== '${l}'){store.updateLocation('${l}', n).then(() => switchDataTable('locations'))}" style="margin-right:0.5rem; cursor:pointer; background:none; border:none; color:var(--primary-color);"><i class="fa-solid fa-pen"></i></button>
+                                    <button onclick="let n = prompt('Modifica nome luogo:', '${l}'); if(n){ n = upper(n); if(n !== '${l}'){store.updateLocation('${l}', n).then(() => switchDataTable('locations'))}}" style="margin-right:0.5rem; cursor:pointer; background:none; border:none; color:var(--primary-color);"><i class="fa-solid fa-pen"></i></button>
                                     <button onclick="if(confirm('Eliminare questo luogo?')){store.deleteLocation('${l}').then(() => switchDataTable('locations'))}" style="cursor:pointer; background:none; border:none; color:var(--status-to-repair);"><i class="fa-solid fa-trash"></i></button>
                                 </td>
                             </tr>
@@ -1324,6 +1490,40 @@ window.switchDataTable = async function (type) {
                                     <td style="padding: 0.75rem; text-align: right;">
                                         <button onclick="editInterventionHandler('${i.id}')" style="margin-right:0.5rem; cursor:pointer; background:none; border:none; color:var(--primary-color);"><i class="fa-solid fa-pen"></i></button>
                                         <button onclick="if(confirm('Eliminare questo intervento?')){store.deleteIntervention('${i.id}').then(() => switchDataTable('interventions'))}" style="cursor:pointer; background:none; border:none; color:var(--status-to-repair);"><i class="fa-solid fa-trash"></i></button>
+                                    </td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                </div>`;
+        } else if (type === 'cambiomezzo') {
+            data = await store.getCambiMezzi();
+            html = `
+                <div style="overflow-x: auto;">
+                    <table style="width: 100%; border-collapse: collapse;">
+                        <thead>
+                            <tr style="background: #f8fafc; border-bottom: 2px solid var(--border-color);">
+                                <th style="padding: 0.75rem; text-align: left;">Data</th>
+                                <th style="padding: 0.75rem; text-align: left;">Luogo</th>
+                                <th style="padding: 0.75rem; text-align: left;">Turno</th>
+                                <th style="padding: 0.75rem; text-align: left;">Equipaggio</th>
+                                <th style="padding: 0.75rem; text-align: left;">Dal Mezzo</th>
+                                <th style="padding: 0.75rem; text-align: left;">Al Mezzo</th>
+                                <th style="padding: 0.75rem; text-align: right;">Azioni</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${data.map(c => `
+                                <tr style="border-bottom: 1px solid var(--border-color);">
+                                    <td style="padding: 0.75rem;">${formatDate(c.data)}</td>
+                                    <td style="padding: 0.75rem;">${c.luogo || '-'}</td>
+                                    <td style="padding: 0.75rem;">${c.turno}</td>
+                                    <td style="padding: 0.75rem;">${c.equipaggio || '-'}</td>
+                                    <td style="padding: 0.75rem; font-weight: bold; color: var(--primary-color);">${c.dal_mezzo}</td>
+                                    <td style="padding: 0.75rem; font-weight: bold; color: var(--status-available);">${c.al_mezzo}</td>
+                                    <td style="padding: 0.75rem; text-align: right; display: flex; gap: 0.5rem; justify-content: flex-end;">
+                                        <button onclick="openCambioMezzoModal('${c.id}')" style="cursor:pointer; background:none; border:none; color:var(--primary-color);"><i class="fa-solid fa-edit"></i></button>
+                                        <button onclick="if(confirm('Eliminare questo cambio?')){store.deleteCambioMezzo('${c.id}').then(() => switchDataTable('cambiomezzo'))}" style="cursor:pointer; background:none; border:none; color:var(--status-to-repair);"><i class="fa-solid fa-trash"></i></button>
                                     </td>
                                 </tr>
                             `).join('')}
