@@ -1357,11 +1357,11 @@ body.is-admin #admin-hint-text {
 
     .location-select-container .location-select,
     .location-select-container .location-display {
-        font-size: 1.4rem !important;
+        font-size: 1.3rem !important;
     }
 
     .location-label {
-        font-size: 0.9rem !important;
+        font-size: 0.85rem !important;
     }
 
     .model-text {
