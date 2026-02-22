@@ -858,6 +858,20 @@ select {
     overflow-y: auto;
 }
 
+/* Specific styles for Data Management Modal */
+.data-mgmt-content {
+    width: 85vw;
+    max-width: 95vw;
+    height: 85vh;
+    display: flex;
+    flex-direction: column;
+    resize: both;
+    overflow: auto;
+    min-width: 600px;
+    min-height: 400px;
+    max-height: 95vh;
+}
+
 .close-modal {
     position: absolute;
     top: 1rem;
@@ -1218,6 +1232,9 @@ body.is-admin #admin-hint-text {
         border-radius: 0;
         display: flex;
         flex-direction: column;
+        min-width: 0;
+        min-height: 0;
+        resize: none;
     }
 
     #data-table-container {
