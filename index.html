@@ -464,6 +464,7 @@
                     <button class="filter-btn" onclick="switchDataTable('locations')">Luoghi</button>
                     <button class="filter-btn" onclick="switchDataTable('interventions')">Interventi</button>
                     <button class="filter-btn" onclick="switchDataTable('cambiomezzo')">Cambi</button>
+                    <button class="filter-btn" onclick="switchDataTable('contacts')">Contatti</button>
                 </div>
                 <div class="modal-body-mgmt">
                     <div id="data-table-container">
@@ -501,9 +502,10 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <!-- Useful Contacts Modal -->
     <div id="contacts-modal" class="modal hidden">
-        <div class="modal-content" style="max-width: 900px; width: 95%; height: auto; max-height: 90vh;">
+        <div class="modal-content"
+            style="max-width: 900px; width: 95%; max-height: 90vh; display: flex; flex-direction: column;">
             <span class="close-modal" onclick="closeContactsModal()">&times;</span>
-            <div style="padding: 1.5rem;">
+            <div style="padding: 1.5rem; overflow-y: auto; flex: 1;">
                 <h2 style="margin-bottom: 1.5rem; color: var(--text-primary); text-align: center;">Numeri Utili
                     Postazioni</h2>
 

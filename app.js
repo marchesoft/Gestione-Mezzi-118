@@ -1724,6 +1724,43 @@ window.switchDataTable = async function (type) {
                         </tbody>
                     </table>
                 </div>`;
+        } else if (type === 'contacts') {
+            data = await store.getContacts();
+            const catLabel = { sedi: 'Sedi Mezzi', officine: 'Officine', utili: 'Utili' };
+            html = `
+                <div style="margin-bottom: 1.5rem; background: #f8fafc; padding: 1rem; border-radius: 0.75rem; border: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center;">
+                    <h4 style="font-size: 0.9rem;">Elenco Contatti (${data.length})</h4>
+                    <button class="btn btn-primary" onclick="openContactForm()" style="padding: 0.5rem 1rem;"><i class="fa-solid fa-plus"></i> Nuovo</button>
+                </div>
+                <div style="overflow-x: auto;">
+                    <table class="mgmt-table">
+                        <thead>
+                            <tr>
+                                <th>CATEGORIA</th>
+                                <th>NOME / SIGLA</th>
+                                <th>CELLULARE</th>
+                                <th>CELL. MEDICO</th>
+                                <th>URBANO / INFO</th>
+                                <th class="col-actions">AZIONI</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${data.map(c => `
+                                <tr>
+                                    <td><span style="font-size:0.75rem; font-weight:700; padding: 0.2rem 0.5rem; border-radius: 0.3rem; background: ${c.category === 'sedi' ? '#dbeafe' : c.category === 'officine' ? '#fef3c7' : '#f0fdf4'}; color: ${c.category === 'sedi' ? '#1e40af' : c.category === 'officine' ? '#92400e' : '#166534'};">${catLabel[c.category] || c.category}</span></td>
+                                    <td style="font-weight:600;">${c.name}</td>
+                                    <td>${c.mobile || '-'}</td>
+                                    <td>${c.mobile_medical || '-'}</td>
+                                    <td>${c.urban || '-'}</td>
+                                    <td>
+                                        <button onclick="openContactForm('${c.id}')" style="cursor:pointer; background:none; border:none; color:var(--primary-color); margin-right:0.5rem;" title="Modifica"><i class="fa-solid fa-pen-to-square"></i></button>
+                                        <button onclick="if(confirm('Eliminare questo contatto?')){store.deleteContact('${c.id}').then(() => switchDataTable('contacts'))}" style="cursor:pointer; background:none; border:none; color:var(--status-to-repair);" title="Elimina"><i class="fa-solid fa-trash"></i></button>
+                                    </td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                </div>`;
         }
     } catch (e) {
         html = `<p style="color:red;">Errore caricamento dati: ${e.message}</p>`;
