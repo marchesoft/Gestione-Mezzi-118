@@ -1,4 +1,4 @@
-const APP_VERSION = "1.3.0 - 2026-02-20"; // Major Performance & Real-time Fix
+const APP_VERSION = "1.3.0 - 2026-02-22"; // Major Performance & Real-time Fix
 let isAdmin = false;
 let cachedVehicles = null;
 let cachedLocations = null;

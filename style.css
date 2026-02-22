@@ -662,22 +662,22 @@ select {
     font-weight: 500;
     font-family: inherit;
     font-size: inherit;
-    padding: 0.2rem;
+    padding: 0.1rem;
     border-radius: 0.25rem;
     cursor: pointer;
     transition: all 0.2s;
-    width: 100%;
+    width: 90%;
     max-width: none;
     text-align: center;
     text-align-last: center;
-    font-size: 1.7rem !important;
+    font-size: 1.1rem !important;
     font-weight: 900 !important;
     color: var(--text-primary);
     text-transform: uppercase;
 }
 
 .location-label {
-    font-size: 1.2rem !important;
+    font-size: 0.8rem !important;
     text-transform: uppercase;
     font-weight: 800;
     color: var(--text-secondary);
