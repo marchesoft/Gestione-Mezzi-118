@@ -1771,25 +1771,25 @@ window.switchDataTable = async function (type) {
                         </thead>
                         <tbody>
                             ${data.map(c => {
+                const bg = c.category === 'sedi' ? '#dbeafe' : c.category === 'officine' ? '#fef3c7' : '#f0fdf4';
+                const fg = c.category === 'sedi' ? '#1e40af' : c.category === 'officine' ? '#92400e' : '#166534';
                 const pCell = (num, lbl) => {
                     if (!num) return '<span style="color:#cbd5e1">-</span>';
-                    const tag = lbl ? `<span style="font-size:0.7rem;color:var(--text-secondary);display:block;">${lbl}</span>` : '';
-                    return `${tag}${num}`;
+                    const tag = lbl ? `<span style="font-size:0.7rem;color:#64748b;display:block;">${lbl}</span>` : '';
+                    return tag + num;
                 };
-                return `
-                                <tr>
-                                    <td style="white-space:nowrap;"><span style="font-size:0.75rem; font-weight:700; padding: 0.2rem 0.5rem; border-radius: 0.3rem; background: ${c.category === 'sedi' ? '#dbeafe' : c.category === 'officine' ? '#fef3c7' : '#f0fdf4'}; color: ${c.category === 'sedi' ? '#1e40af' : c.category === 'officine' ? '#92400e' : '#166534'};">${catLabel[c.category] || c.category}</span></td>
-                                    <td style="font-weight:600;">${c.name}</td>
-                                    <td>${pCell(c.urban, c.urban_label)}</td>
-                                    <td style="white-space:nowrap;">${pCell(c.mobile, c.mobile_label)}</td>
-                                    <td style="white-space:nowrap;">${pCell(c.mobile2, c.mobile2_label)}</td>
-                                    <td style="white-space:nowrap;">${c.mobile_medical || '<span style="color:#cbd5e1">-</span>'}</td>
-                                    <td style="white-space:nowrap;">
-                                        <button onclick="openContactForm('${c.id}')" style="cursor:pointer; background:none; border:none; color:var(--primary-color); margin-right:0.5rem;" title="Modifica"><i class="fa-solid fa-pen-to-square"></i></button>
-                                        <button onclick="if(confirm('Eliminare questo contatto?')){store.deleteContact('${c.id}').then(() => switchDataTable('contacts'))}" style="cursor:pointer; background:none; border:none; color:var(--status-to-repair);" title="Elimina"><i class="fa-solid fa-trash"></i></button>
-                                    </td>
-                                </tr>
-                            `)}).join('')}
+                return '<tr>'
+                    + `<td style="white-space:nowrap;"><span style="font-size:0.75rem;font-weight:700;padding:0.2rem 0.5rem;border-radius:0.3rem;background:${bg};color:${fg};">${catLabel[c.category] || c.category}</span></td>`
+                    + `<td style="font-weight:600;">${c.name}</td>`
+                    + `<td>${pCell(c.urban, c.urban_label)}</td>`
+                    + `<td style="white-space:nowrap;">${pCell(c.mobile, c.mobile_label)}</td>`
+                    + `<td style="white-space:nowrap;">${pCell(c.mobile2, c.mobile2_label)}</td>`
+                    + `<td style="white-space:nowrap;">${c.mobile_medical || '<span style="color:#cbd5e1">-</span>'}</td>`
+                    + `<td style="white-space:nowrap;">`
+                    + `<button onclick="openContactForm('${c.id}')" style="cursor:pointer;background:none;border:none;color:var(--primary-color);margin-right:0.5rem;" title="Modifica"><i class="fa-solid fa-pen-to-square"></i></button>`
+                    + `<button onclick="if(confirm('Eliminare questo contatto?')){store.deleteContact('${c.id}').then(() => switchDataTable('contacts'))}" style="cursor:pointer;background:none;border:none;color:var(--status-to-repair);" title="Elimina"><i class="fa-solid fa-trash"></i></button>`
+                    + '</td></tr>';
+            }).join('')}
                         </tbody>
                     </table>
                 </div>`;
