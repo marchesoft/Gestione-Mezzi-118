@@ -541,7 +541,7 @@ select {
     font-size: 2.2rem;
     font-weight: 900;
     color: #1e3a8a;
-    line-height: 1;
+    line-height: 0.9;
 }
 
 .model-text {
@@ -557,16 +557,16 @@ select {
     font-size: 1.6rem;
     color: var(--text-primary);
     font-weight: 800;
-    line-height: 1;
+    line-height: 0.9;
 }
 
 .km-text {
-    font-size: 0.85rem;
+    font-size: 0.8rem;
     color: var(--text-secondary);
     font-weight: 700;
     text-transform: uppercase;
-    line-height: 1.2;
-    margin-top: 0.1rem;
+    line-height: 1;
+    margin-top: 0.05rem;
 }
 
 .vehicle-card:hover {
