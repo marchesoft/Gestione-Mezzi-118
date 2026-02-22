@@ -1,4 +1,4 @@
-const APP_VERSION = "1.3.0 - 2026-02-22"; // Major Performance & Real-time Fix
+const APP_VERSION = "1.3.1 - 2026-02-22"; // Performance Fix & Location Optimizations
 let isAdmin = false;
 let cachedVehicles = null;
 let cachedLocations = null;
@@ -207,7 +207,7 @@ async function renderDashboard(forceRefresh = false) {
         // AUTO-CLEANUP: Only if admin (optimization)
         if (isAdmin && cachedVehicles) {
             const todayStr = getLocalISODate();
-            let needsDbUpdate = false;
+            const cleanupPromises = [];
 
             for (const vehicle of cachedVehicles) {
                 if (vehicle.appointment_date && vehicle.appointment_date < todayStr) {
@@ -215,11 +215,14 @@ async function renderDashboard(forceRefresh = false) {
                     vehicle.appointment_date = null;
                     vehicle.appointment_location = null;
                     vehicle.alert_ack_date = null;
-                    await store.updateVehicle(vehicle);
-                    needsDbUpdate = true;
+                    // Prepare batch update
+                    cleanupPromises.push(store.updateVehicle(vehicle));
                 }
             }
-            if (needsDbUpdate) {
+
+            if (cleanupPromises.length > 0) {
+                await Promise.all(cleanupPromises);
+                // Refresh cache once after all updates
                 cachedVehicles = await store.getVehicles();
                 sortVehiclesBySigla(cachedVehicles);
             }
@@ -914,13 +917,13 @@ window.addLocationHandler = async function (e) {
     const color = prompt("Colore (HEX, es: #3b82f6) o premi OK per default:", "#3b82f6");
     try {
         await store.addLocation(upper(name), color);
+        // Refresh directly
         await renderDashboard(true);
         if (!document.getElementById('data-management-modal').classList.contains('hidden')) {
             switchDataTable('locations');
         }
     } catch (err) {
         console.error("Error adding location:", err);
-        alert("Errore durante l'aggiunta del luogo.");
     }
 };
 
@@ -930,14 +933,14 @@ window.editLocationHandler = async function (oldName) {
 
     try {
         await store.updateLocation(upper(oldName), upper(newName));
-        alert("Luogo aggiornato con successo!");
+        // Refresh dashboard to reflect station changes in vehicle cards
         await renderDashboard(true);
         if (!document.getElementById('data-management-modal').classList.contains('hidden')) {
             switchDataTable('locations');
         }
+        console.log("Luogo aggiornato con successo!");
     } catch (err) {
         console.error("Error editing location:", err);
-        alert("Errore durante la modifica del luogo.");
     }
 };
 
