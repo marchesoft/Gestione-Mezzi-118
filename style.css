@@ -637,16 +637,16 @@ select {
 
 /* Edit Icon for Station */
 .location-select-container {
+    background: #e2e8f0;
+    padding: 0.1rem 0.25rem;
+    border-radius: var(--radius-md);
+    border: 1px solid #cbd5e1;
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 0;
-    color: var(--text-secondary);
-    font-size: 0.85rem;
-    cursor: pointer;
     width: 100%;
-    padding-bottom: 0.1rem;
-    /* Extra space below the selection */
+    gap: 0;
+    cursor: pointer;
 }
 
 .location-icon {
@@ -661,8 +661,7 @@ select {
     color: var(--text-secondary);
     font-weight: 500;
     font-family: inherit;
-    font-size: inherit;
-    padding: 0.1rem;
+    padding: 0;
     border-radius: 0.25rem;
     cursor: pointer;
     transition: all 0.2s;
@@ -674,15 +673,16 @@ select {
     font-weight: 900 !important;
     color: var(--text-primary);
     text-transform: uppercase;
+    line-height: 1 !important;
 }
 
 .location-label {
-    font-size: 1.2rem !important;
+    font-size: 1rem !important;
     text-transform: uppercase;
     font-weight: 800;
     color: var(--text-secondary);
     margin: 0 !important;
-    line-height: 0.9 !important;
+    line-height: 0.8 !important;
 }
 
 .location-select:hover {
@@ -1075,27 +1075,6 @@ body.is-admin #admin-hint-text {
     gap: 1rem;
 }
 
-.location-select-container {
-    background: #e2e8f0;
-    padding: 0.15rem 0.5rem;
-    border-radius: var(--radius-md);
-    border: 1px solid #cbd5e1;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    width: 100%;
-}
-
-/* Desktop override for location text size */
-.location-select-container span {
-    font-size: 2.2rem !important;
-    line-height: 1.2;
-}
-
-/* Slightly larger label on desktop */
-.location-select-container div:first-child {
-    font-size: 0.8rem !important;
-}
 
 .search-bar {
     background: #FAF8F3;
