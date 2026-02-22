@@ -1373,7 +1373,7 @@ window.switchDataTable = async function (type) {
     const buttons = document.querySelectorAll('.filter-btn'); // Reuse existing class for styling
     buttons.forEach(btn => {
         if (btn.onclick && btn.onclick.toString().includes(type)) btn.classList.add('active');
-        else if (btn.parentElement && btn.parentElement.style.gap === '1rem') btn.classList.remove('active'); // Only target our specific buttons if possible, or use specific IDs
+        else if (btn.parentElement && btn.parentElement.classList.contains('modal-tabs-mgmt')) btn.classList.remove('active');
     });
 
     const container = document.getElementById('data-table-container');
@@ -1392,40 +1392,38 @@ window.switchDataTable = async function (type) {
                     <button class="btn btn-primary" onclick="openVehicleForm();" style="padding: 0.5rem 1rem;"><i class="fa-solid fa-plus"></i> Nuovo Mezzo</button>
                 </div>
                 <div style="overflow-x: auto;">
-                    <table style="width: 100%; border-collapse: collapse; min-width: 1200px;">
+                    <table class="mgmt-table">
                         <thead>
-                            <tr style="background: #f8fafc; border-bottom: 2px solid var(--border-color);">
-                                <th style="padding: 0.75rem; text-align: left;">Targa</th>
-                                <th style="padding: 0.75rem; text-align: left;">Modello</th>
-                                <th style="padding: 0.75rem; text-align: left;">Sigla</th>
-                                <th style="padding: 0.75rem; text-align: left;">Stazione</th>
-                                <th style="padding: 0.75rem; text-align: left;">Stato</th>
-                                <th style="padding: 0.75rem; text-align: left;">Km</th>
-                                <th style="padding: 0.75rem; text-align: left;">Mese Km</th>
-                                <th style="padding: 0.75rem; text-align: left;">Note</th>
-                                <th style="padding: 0.75rem; text-align: left;">Radio</th>
-
-                                <th style="padding: 0.75rem; text-align: left;">Rev. Scad.</th>
-                                <th style="padding: 0.75rem; text-align: left;">Rev. O2</th>
-                                <th style="padding: 0.75rem; text-align: right;">Azioni</th>
+                            <tr>
+                                <th class="col-shrink">Targa</th>
+                                <th>Modello</th>
+                                <th class="col-shrink">Sigla</th>
+                                <th class="col-shrink">Stazione</th>
+                                <th class="col-shrink">Stato</th>
+                                <th class="col-shrink">Km</th>
+                                <th class="col-shrink">Mese Km</th>
+                                <th class="col-expand">Note</th>
+                                <th class="col-shrink">Radio</th>
+                                <th class="col-shrink">Rev. Scad.</th>
+                                <th class="col-shrink">Rev. O2</th>
+                                <th class="col-actions">Azioni</th>
                             </tr>
                         </thead>
                         <tbody>
                             ${data.map(v => `
-                                <tr style="border-bottom: 1px solid var(--border-color);">
-                                    <td style="padding: 0.75rem;">${v.plate}</td>
-                                    <td style="padding: 0.75rem;">${v.model}</td>
-                                    <td style="padding: 0.75rem; font-weight: bold; color: var(--primary-color);">${v.sigla || '-'}</td>
-                                    <td style="padding: 0.75rem;">${v.station}</td>
-                                    <td style="padding: 0.75rem;">${v.status}</td>
-                                    <td style="padding: 0.75rem;">${v.mileage}</td>
-                                    <td style="padding: 0.75rem;">${v.mileage_month || '-'}</td>
-                                    <td style="padding: 0.75rem; max-width: 150px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${v.notes || ''}">${v.notes || '-'}</td>
-                                    <td style="padding: 0.75rem;">${v.radio_id || '-'}</td>
-
-                                    <td style="padding: 0.75rem;">${formatDate(v.inspection_expiry)}</td>
-                                    <td style="padding: 0.75rem;">${formatDate(v.revision_o2)}</td>
-                                    <td style="padding: 0.75rem; text-align: right;">
+                                <tr>
+                                    <td class="col-shrink">${v.plate}</td>
+                                    <td>${v.model}</td>
+                                    <td class="col-shrink text-bold text-primary">${v.sigla || '-'}</td>
+                                    <td class="col-shrink">${v.station}</td>
+                                    <td class="col-shrink">${v.status}</td>
+                                    <td class="col-shrink">${v.mileage}</td>
+                                    <td class="col-shrink">${v.mileage_month || '-'}</td>
+                                    <td class="col-expand">${v.notes || '-'}</td>
+                                    <td class="col-shrink">${v.radio_id || '-'}</td>
+                                    <td class="col-shrink">${formatDate(v.inspection_expiry)}</td>
+                                    <td class="col-shrink">${formatDate(v.revision_o2)}</td>
+                                    <td class="col-actions">
                                         <button onclick="openVehicleForm('${v.id}');" style="margin-right:0.5rem; cursor:pointer; background:none; border:none; color:var(--primary-color);"><i class="fa-solid fa-pen"></i></button>
                                         <button onclick="deleteVehicleHandler('${v.id}')" style="cursor:pointer; background:none; border:none; color:var(--status-to-repair);"><i class="fa-solid fa-trash"></i></button>
                                     </td>
@@ -1435,58 +1433,58 @@ window.switchDataTable = async function (type) {
                     </table>
                 </div>`;
         } else if (type === 'locations') {
-            data = await store.getLocations(); // Returns array of strings
+            data = await store.getLocations();
             html = `
-                <div style="margin-bottom: 1.5rem; background: #f8fafc; padding: 1rem; border-radius: 0.75rem; border: 1px solid var(--border-color);">
-                    <h4 style="margin-bottom: 0.75rem; font-size: 0.9rem;">Aggiungi Nuovo Luogo</h4>
-                    <form onsubmit="event.preventDefault(); const n = upper(this.querySelector('input').value); if(n){store.addLocation(n).then(() => switchDataTable('locations'))}" style="display: flex; gap: 0.5rem;">
-                        <input type="text" placeholder="Nome luogo..." required style="flex-grow: 1; padding: 0.5rem; border: 1px solid var(--border-color); border-radius: 0.4rem;">
-                            <button type="submit" class="btn btn-primary" style="padding: 0.5rem 1rem;"><i class="fa-solid fa-plus"></i> Aggiungi</button>
-                    </form>
+                <div style="margin-bottom: 1.5rem; background: #f8fafc; padding: 1rem; border-radius: 0.75rem; border: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center;">
+                    <h4 style="font-size: 0.9rem;">Elenco Luoghi</h4>
+                    <button class="btn btn-primary" onclick="window.addLocationHandler();" style="padding: 0.5rem 1rem;"><i class="fa-solid fa-plus"></i> Nuovo Luogo</button>
                 </div>
-                <table style="width: 100%; border-collapse: collapse;">
-                    <thead>
-                        <tr style="background: #f8fafc; border-bottom: 2px solid var(--border-color);">
-                            <th style="padding: 0.75rem; text-align: left;">Nome Luogo</th>
-                            <th style="padding: 0.75rem; text-align: right;">Azioni</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        ${data.map(l => `
-                            <tr style="border-bottom: 1px solid var(--border-color);">
-                                <td style="padding: 0.75rem;">${l}</td>
-                                <td style="padding: 0.75rem; text-align: right;">
-                                    <button onclick="let n = prompt('Modifica nome luogo:', '${l}'); if(n){ n = upper(n); if(n !== '${l}'){store.updateLocation('${l}', n).then(() => switchDataTable('locations'))}}" style="margin-right:0.5rem; cursor:pointer; background:none; border:none; color:var(--primary-color);"><i class="fa-solid fa-pen"></i></button>
-                                    <button onclick="if(confirm('Eliminare questo luogo?')){store.deleteLocation('${l}').then(() => switchDataTable('locations'))}" style="cursor:pointer; background:none; border:none; color:var(--status-to-repair);"><i class="fa-solid fa-trash"></i></button>
-                                </td>
+                <div style="overflow-x: auto;">
+                    <table class="mgmt-table">
+                        <thead>
+                            <tr>
+                                <th>Luogo</th>
+                                <th class="col-shrink">Colore</th>
+                                <th class="col-actions">Azioni</th>
                             </tr>
-                        `).join('')}
-                    </tbody>
-                </table>`;
+                        </thead>
+                        <tbody>
+                            ${data.map(l => `
+                                <tr>
+                                    <td>${l.luogo}</td>
+                                    <td class="col-shrink"><div style="width: 20px; height: 20px; border-radius: 50%; background-color: ${l.colore}; border: 1px solid #ddd;"></div></td>
+                                    <td class="col-actions">
+                                        <button onclick="if(confirm('Eliminare questo luogo?')){store.deleteLocation('${l.luogo}').then(() => switchDataTable('locations'))}" style="cursor:pointer; background:none; border:none; color:var(--status-to-repair);"><i class="fa-solid fa-trash"></i></button>
+                                    </td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                </div>`;
         } else if (type === 'interventions') {
             data = await store.getInterventions();
             html = `
                 <div style="overflow-x: auto;">
-                    <table style="width: 100%; border-collapse: collapse;">
+                    <table class="mgmt-table">
                         <thead>
-                            <tr style="background: #f8fafc; border-bottom: 2px solid var(--border-color);">
-                                <th style="padding: 0.75rem; text-align: left;">Data Entrata</th>
-                                <th style="padding: 0.75rem; text-align: left;">Data Uscita</th>
-                                <th style="padding: 0.75rem; text-align: left;">Mezzo</th>
-                                <th style="padding: 0.75rem; text-align: left;">Officina</th>
-                                <th style="padding: 0.75rem; text-align: left;">Descrizione</th>
-                                <th style="padding: 0.75rem; text-align: right;">Azioni</th>
+                            <tr>
+                                <th class="col-shrink">Data Entrata</th>
+                                <th class="col-shrink">Data Uscita</th>
+                                <th class="col-shrink">Mezzo</th>
+                                <th class="col-shrink">Officina</th>
+                                <th class="col-expand">Descrizione</th>
+                                <th class="col-actions">Azioni</th>
                             </tr>
                         </thead>
                         <tbody>
                             ${data.map(i => `
-                                <tr style="border-bottom: 1px solid var(--border-color);">
-                                    <td style="padding: 0.75rem;">${formatDate(i.date)}</td>
-                                    <td style="padding: 0.75rem;">${formatDate(i.date_out)}</td>
-                                    <td style="padding: 0.75rem; font-weight: bold; color: var(--primary-color);">${i.sigla || 'N/A'}</td>
-                                    <td style="padding: 0.75rem;">${i.workshop || '-'}</td>
-                                    <td style="padding: 0.75rem; max-width: 300px;">${i.description}</td>
-                                    <td style="padding: 0.75rem; text-align: right;">
+                                <tr>
+                                    <td class="col-shrink">${formatDate(i.date)}</td>
+                                    <td class="col-shrink">${formatDate(i.date_out)}</td>
+                                    <td class="col-shrink text-bold text-primary">${i.sigla || 'N/A'}</td>
+                                    <td class="col-shrink">${i.workshop || '-'}</td>
+                                    <td class="col-expand">${i.description}</td>
+                                    <td class="col-actions">
                                         <button onclick="editInterventionHandler('${i.id}')" style="margin-right:0.5rem; cursor:pointer; background:none; border:none; color:var(--primary-color);"><i class="fa-solid fa-pen"></i></button>
                                         <button onclick="if(confirm('Eliminare questo intervento?')){store.deleteIntervention('${i.id}').then(() => switchDataTable('interventions'))}" style="cursor:pointer; background:none; border:none; color:var(--status-to-repair);"><i class="fa-solid fa-trash"></i></button>
                                     </td>
@@ -1499,28 +1497,28 @@ window.switchDataTable = async function (type) {
             data = await store.getCambiMezzi();
             html = `
                 <div style="overflow-x: auto;">
-                    <table style="width: 100%; border-collapse: collapse;">
+                    <table class="mgmt-table">
                         <thead>
-                            <tr style="background: #f8fafc; border-bottom: 2px solid var(--border-color);">
-                                <th style="padding: 0.75rem; text-align: left;">Data</th>
-                                <th style="padding: 0.75rem; text-align: left;">Luogo</th>
-                                <th style="padding: 0.75rem; text-align: left;">Turno</th>
-                                <th style="padding: 0.75rem; text-align: left;">Equipaggio</th>
-                                <th style="padding: 0.75rem; text-align: left;">Dal Mezzo</th>
-                                <th style="padding: 0.75rem; text-align: left;">Al Mezzo</th>
-                                <th style="padding: 0.75rem; text-align: right;">Azioni</th>
+                            <tr>
+                                <th class="col-shrink">Data</th>
+                                <th class="col-shrink">Luogo</th>
+                                <th class="col-shrink">Turno</th>
+                                <th>Equipaggio</th>
+                                <th class="col-shrink">Dal Mezzo</th>
+                                <th class="col-shrink">Al Mezzo</th>
+                                <th class="col-actions">Azioni</th>
                             </tr>
                         </thead>
                         <tbody>
                             ${data.map(c => `
-                                <tr style="border-bottom: 1px solid var(--border-color);">
-                                    <td style="padding: 0.75rem;">${formatDate(c.data)}</td>
-                                    <td style="padding: 0.75rem;">${c.luogo || '-'}</td>
-                                    <td style="padding: 0.75rem;">${c.turno}</td>
-                                    <td style="padding: 0.75rem;">${c.equipaggio || '-'}</td>
-                                    <td style="padding: 0.75rem; font-weight: bold; color: var(--primary-color);">${c.dal_mezzo}</td>
-                                    <td style="padding: 0.75rem; font-weight: bold; color: var(--status-available);">${c.al_mezzo}</td>
-                                    <td style="padding: 0.75rem; text-align: right; display: flex; gap: 0.5rem; justify-content: flex-end;">
+                                <tr>
+                                    <td class="col-shrink">${formatDate(c.data)}</td>
+                                    <td class="col-shrink">${c.luogo || '-'}</td>
+                                    <td class="col-shrink">${c.turno}</td>
+                                    <td>${c.equipaggio || '-'}</td>
+                                    <td class="col-shrink text-bold text-primary">${c.dal_mezzo}</td>
+                                    <td class="col-shrink text-bold" style="color:var(--status-available);">${c.al_mezzo}</td>
+                                    <td class="col-actions" style="display: flex; gap: 0.5rem; justify-content: flex-end;">
                                         <button onclick="openCambioMezzoModal('${c.id}')" style="cursor:pointer; background:none; border:none; color:var(--primary-color);"><i class="fa-solid fa-edit"></i></button>
                                         <button onclick="if(confirm('Eliminare questo cambio?')){store.deleteCambioMezzo('${c.id}').then(() => switchDataTable('cambiomezzo'))}" style="cursor:pointer; background:none; border:none; color:var(--status-to-repair);"><i class="fa-solid fa-trash"></i></button>
                                     </td>
