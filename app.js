@@ -397,6 +397,7 @@ async function renderVehicleGrid(vehicles) {
                         ${vehicle.sigla ? `<div class="sigla-text">${vehicle.sigla}</div>` : ''}
                         <div class="model-text">${vehicle.model}</div>
                         <div class="plate-number">${vehicle.plate}</div>
+                        <div class="km-text">${parseInt(vehicle.mileage).toLocaleString()} KM</div>
                     </div>
                     <div class="card-actions" style="justify-content: center; flex-direction: column; align-items: center;">
                         ${locationHtml}
