@@ -354,7 +354,7 @@ async function renderVehicleGrid(vehicles) {
                 <div class="location-label">Posizione</div>
                 <div style="width: 100%;">
                     <select class="location-select" onchange="quickUpdateStationSelect(event, '${vehicle.id}')">
-                        ${cachedLocations.map(loc => `<option value="${loc}" ${vehicle.station === loc ? 'selected' : ''}>${loc}</option>`).join('')}
+                        ${cachedLocations.map(loc => `<option value="${loc.luogo}" ${vehicle.station === loc.luogo ? 'selected' : ''}>${loc.luogo}</option>`).join('')}
                     </select>
                 </div>
             </div>
@@ -586,8 +586,8 @@ window.openVehicleForm = async function (vehicleId = null) {
     if (cachedLocations) {
         cachedLocations.forEach(loc => {
             const option = document.createElement('option');
-            option.value = loc;
-            option.textContent = loc;
+            option.value = loc.luogo;
+            option.textContent = loc.luogo;
             stationSelect.appendChild(option);
         });
     }
@@ -659,8 +659,8 @@ window.openCambioMezzoModal = async function (cambioId = null) {
     if (cachedLocations) {
         cachedLocations.forEach(loc => {
             const option = document.createElement('option');
-            option.value = loc;
-            option.textContent = loc;
+            option.value = loc.luogo;
+            option.textContent = loc.luogo;
             luogoSelect.appendChild(option);
         });
     }
@@ -907,6 +907,23 @@ function setupEventListeners() {
     }
 }
 
+window.addLocationHandler = async function (e) {
+    if (e && e.preventDefault) e.preventDefault();
+    const name = prompt("Nome del nuovo luogo:");
+    if (!name) return;
+    const color = prompt("Colore (HEX, es: #3b82f6) o premi OK per default:", "#3b82f6");
+    try {
+        await store.addLocation(upper(name), color);
+        await renderDashboard(true);
+        if (!document.getElementById('data-management-modal').classList.contains('hidden')) {
+            switchDataTable('locations');
+        }
+    } catch (err) {
+        console.error("Error adding location:", err);
+        alert("Errore durante l'aggiunta del luogo.");
+    }
+};
+
 
 
 window.saveVehicleForm = async function () {
@@ -1085,7 +1102,7 @@ window.openVehicleModal = async function (id) {
                                 </div>
                                 <select id="admin-appointment-location" style="padding: 0.4rem; border: 1px solid #1e3a8a; border-radius: 0.4rem; font-size: 0.9rem; width: 100%;">
                                     <option value="">Seleziona Luogo...</option>
-                                    ${cachedLocations.map(loc => `<option value="${loc}" ${vehicle.appointment_location === loc ? 'selected' : ''}>${loc}</option>`).join('')}
+                                    ${cachedLocations.map(loc => `<option value="${loc.luogo}" ${vehicle.appointment_location === loc.luogo ? 'selected' : ''}>${loc.luogo}</option>`).join('')}
                                 </select>
                             </div>
                         ` : ''}

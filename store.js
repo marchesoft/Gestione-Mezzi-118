@@ -106,16 +106,17 @@ class Store {
     async getLocations() {
         const { data, error } = await this.supabase
             .from('locations')
-            .select('name');
+            .select('name, colore');
 
         if (error) return [];
-        return data.map(l => l.name);
+        // Map name to luogo for consistency with UI expectation
+        return data.map(l => ({ luogo: l.name, colore: l.colore }));
     }
 
-    async addLocation(name) {
+    async addLocation(name, colore = '#3b82f6') {
         const { error } = await this.supabase
             .from('locations')
-            .insert([{ name }]);
+            .insert([{ name, colore }]);
         if (error) console.error('Error adding location:', error);
     }
 
