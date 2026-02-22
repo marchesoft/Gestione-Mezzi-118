@@ -1632,25 +1632,24 @@ window.switchDataTable = async function (type) {
                             </tr>
                         </thead>
                         <tbody>
-                            ${data.map(v => `
-                                <tr>
-                                    <td class="col-shrink">${v.plate}</td>
-                                    <td>${v.model}</td>
-                                    <td class="col-shrink text-bold text-primary">${v.sigla || '-'}</td>
-                                    <td class="col-shrink">${v.station}</td>
-                                    <td class="col-shrink">${v.status}</td>
-                                    <td class="col-shrink">${v.mileage}</td>
-                                    <td class="col-shrink">${v.mileage_month || '-'}</td>
-                                    <td class="col-expand">${v.notes || '-'}</td>
-                                    <td class="col-shrink">${v.radio_id || '-'}</td>
-                                    <td class="col-shrink">${formatDate(v.inspection_expiry)}</td>
-                                    <td class="col-shrink">${formatDate(v.revision_o2)}</td>
-                                    <td class="col-actions">
-                                        <button onclick="openVehicleForm('${v.id}');" style="margin-right:0.5rem; cursor:pointer; background:none; border:none; color:var(--primary-color);"><i class="fa-solid fa-pen"></i></button>
-                                        <button onclick="deleteVehicleHandler('${v.id}')" style="cursor:pointer; background:none; border:none; color:var(--status-to-repair);"><i class="fa-solid fa-trash"></i></button>
-                                    </td>
-                                </tr>
-                            `)}).join('')}
+                            ${data.map(v =>
+                '<tr>'
+                + `<td class="col-shrink">${v.plate}</td>`
+                + `<td>${v.model}</td>`
+                + `<td class="col-shrink text-bold text-primary">${v.sigla || '-'}</td>`
+                + `<td class="col-shrink">${v.station}</td>`
+                + `<td class="col-shrink">${v.status}</td>`
+                + `<td class="col-shrink">${v.mileage}</td>`
+                + `<td class="col-shrink">${v.mileage_month || '-'}</td>`
+                + `<td class="col-expand">${v.notes || '-'}</td>`
+                + `<td class="col-shrink">${v.radio_id || '-'}</td>`
+                + `<td class="col-shrink">${formatDate(v.inspection_expiry)}</td>`
+                + `<td class="col-shrink">${formatDate(v.revision_o2)}</td>`
+                + '<td class="col-actions">'
+                + `<button onclick="openVehicleForm('${v.id}');" style="margin-right:0.5rem; cursor:pointer; background:none; border:none; color:var(--primary-color);"><i class="fa-solid fa-pen"></i></button>`
+                + `<button onclick="deleteVehicleHandler('${v.id}')" style="cursor:pointer; background:none; border:none; color:var(--status-to-repair);"><i class="fa-solid fa-trash"></i></button>`
+                + '</td></tr>'
+            ).join('')}
                         </tbody>
                     </table>
                 </div>`;
@@ -1670,15 +1669,14 @@ window.switchDataTable = async function (type) {
                             </tr>
                         </thead>
                         <tbody>
-                            ${data.map(l => `
-                                <tr>
-                                    <td>${l.luogo}</td>
-                                    <td class="col-actions">
-                                        <button onclick="window.editLocationHandler('${l.luogo}')" style="margin-right:0.5rem; cursor:pointer; background:none; border:none; color:var(--primary-color);"><i class="fa-solid fa-edit"></i></button>
-                                        <button onclick="if(confirm('Eliminare questo luogo?')){store.deleteLocation('${l.luogo}').then(() => switchDataTable('locations'))}" style="cursor:pointer; background:none; border:none; color:var(--status-to-repair);"><i class="fa-solid fa-trash"></i></button>
-                                    </td>
-                                </tr>
-                            `)}).join('')}
+                            ${data.map(l =>
+                '<tr>'
+                + `<td>${l.luogo}</td>`
+                + '<td class="col-actions">'
+                + `<button onclick="window.editLocationHandler('${l.luogo}')" style="margin-right:0.5rem; cursor:pointer; background:none; border:none; color:var(--primary-color);"><i class="fa-solid fa-edit"></i></button>`
+                + `<button onclick="if(confirm('Eliminare questo luogo?')){store.deleteLocation('${l.luogo}').then(() => switchDataTable('locations'))}" style="cursor:pointer; background:none; border:none; color:var(--status-to-repair);"><i class="fa-solid fa-trash"></i></button>`
+                + '</td></tr>'
+            ).join('')}
                         </tbody>
                     </table>
                 </div>`;
@@ -1706,19 +1704,18 @@ window.switchDataTable = async function (type) {
                             </tr>
                         </thead>
                         <tbody>
-                            ${data.map(i => `
-                                <tr>
-                                    <td class="col-shrink">${formatDate(i.date)}</td>
-                                    <td class="col-shrink">${formatDate(i.date_out)}</td>
-                                    <td class="col-shrink text-bold text-primary">${i.sigla || 'N/A'}</td>
-                                    <td class="col-shrink">${i.workshop || '-'}</td>
-                                    <td class="col-expand">${i.description}</td>
-                                    <td class="col-actions">
-                                        <button onclick="editInterventionHandler('${i.id}')" style="margin-right:0.5rem; cursor:pointer; background:none; border:none; color:var(--primary-color);"><i class="fa-solid fa-pen"></i></button>
-                                        <button onclick="if(confirm('Eliminare questo intervento?')){store.deleteIntervention('${i.id}').then(() => switchDataTable('interventions'))}" style="cursor:pointer; background:none; border:none; color:var(--status-to-repair);"><i class="fa-solid fa-trash"></i></button>
-                                    </td>
-                                </tr>
-                            `)}).join('')}
+                            ${data.map(i =>
+                '<tr>'
+                + `<td class="col-shrink">${formatDate(i.date)}</td>`
+                + `<td class="col-shrink">${formatDate(i.date_out)}</td>`
+                + `<td class="col-shrink text-bold text-primary">${i.sigla || 'N/A'}</td>`
+                + `<td class="col-shrink">${i.workshop || '-'}</td>`
+                + `<td class="col-expand">${i.description}</td>`
+                + '<td class="col-actions">'
+                + `<button onclick="editInterventionHandler('${i.id}')" style="margin-right:0.5rem; cursor:pointer; background:none; border:none; color:var(--primary-color);"><i class="fa-solid fa-pen"></i></button>`
+                + `<button onclick="if(confirm('Eliminare questo intervento?')){store.deleteIntervention('${i.id}').then(() => switchDataTable('interventions'))}" style="cursor:pointer; background:none; border:none; color:var(--status-to-repair);"><i class="fa-solid fa-trash"></i></button>`
+                + '</td></tr>'
+            ).join('')}
                         </tbody>
                     </table>
                 </div>`;
@@ -1739,20 +1736,19 @@ window.switchDataTable = async function (type) {
                             </tr>
                         </thead>
                         <tbody>
-                            ${data.map(c => `
-                                <tr>
-                                    <td class="col-shrink">${formatDate(c.data)}</td>
-                                    <td class="col-shrink">${c.luogo || '-'}</td>
-                                    <td class="col-shrink">${c.turno}</td>
-                                    <td>${c.equipaggio || '-'}</td>
-                                    <td class="col-shrink text-bold text-primary">${c.dal_mezzo}</td>
-                                    <td class="col-shrink text-bold" style="color:var(--status-available);">${c.al_mezzo}</td>
-                                    <td class="col-actions" style="display: flex; gap: 0.5rem; justify-content: flex-end;">
-                                        <button onclick="openCambioMezzoModal('${c.id}')" style="cursor:pointer; background:none; border:none; color:var(--primary-color);"><i class="fa-solid fa-edit"></i></button>
-                                        <button onclick="if(confirm('Eliminare questo cambio?')){store.deleteCambioMezzo('${c.id}').then(() => switchDataTable('cambiomezzo'))}" style="cursor:pointer; background:none; border:none; color:var(--status-to-repair);"><i class="fa-solid fa-trash"></i></button>
-                                    </td>
-                                </tr>
-                            `)}).join('')}
+                            ${data.map(c =>
+                '<tr>'
+                + `<td class="col-shrink">${formatDate(c.data)}</td>`
+                + `<td class="col-shrink">${c.luogo || '-'}</td>`
+                + `<td class="col-shrink">${c.turno}</td>`
+                + `<td>${c.equipaggio || '-'}</td>`
+                + `<td class="col-shrink text-bold text-primary">${c.dal_mezzo}</td>`
+                + `<td class="col-shrink text-bold" style="color:var(--status-available);">${c.al_mezzo}</td>`
+                + '<td class="col-actions" style="display: flex; gap: 0.5rem; justify-content: flex-end;">'
+                + `<button onclick="openCambioMezzoModal('${c.id}')" style="cursor:pointer; background:none; border:none; color:var(--primary-color);"><i class="fa-solid fa-edit"></i></button>`
+                + `<button onclick="if(confirm('Eliminare questo cambio?')){store.deleteCambioMezzo('${c.id}').then(() => switchDataTable('cambiomezzo'))}" style="cursor:pointer; background:none; border:none; color:var(--status-to-repair);"><i class="fa-solid fa-trash"></i></button>`
+                + '</td></tr>'
+            ).join('')}
                         </tbody>
                     </table>
                 </div>`;
