@@ -25,7 +25,7 @@
     <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <!-- App Styles -->
-    <link rel="stylesheet" href="style.css?v=1.4.1">
+    <link rel="stylesheet" href="style.css?v=1.4.2">
 </head>
 
 <body>
@@ -501,42 +501,175 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <!-- Useful Contacts Modal -->
     <div id="contacts-modal" class="modal hidden">
-        <div class="modal-content" style="max-width: 500px; height: auto; max-height: 90vh;">
+        <div class="modal-content" style="max-width: 900px; width: 95%; height: auto; max-height: 90vh;">
             <span class="close-modal" onclick="closeContactsModal()">&times;</span>
-            <div style="padding: 2rem;">
-                <h2 style="margin-bottom: 1.5rem; color: var(--text-primary); text-align: center;">Numeri Utili</h2>
+            <div style="padding: 1.5rem;">
+                <h2 style="margin-bottom: 1.5rem; color: var(--text-primary); text-align: center;">Numeri Utili
+                    Postazioni</h2>
 
-                <div class="contact-section">
-                    <h3 class="contact-group-title"><i class="fa-solid fa-house-medical"></i> Sedi / Centrali</h3>
-                    <div class="contacts-grid">
-                        <a href="tel:118" class="contact-card">
-                            <span class="contact-name">Centrale 118</span>
-                            <span class="contact-number">118</span>
-                            <i class="fa-solid fa-phone-flip call-icon"></i>
-                        </a>
-                        <a href="tel:0532236111" class="contact-card">
-                            <span class="contact-name">Sede Ferrara</span>
-                            <span class="contact-number">0532 236111</span>
-                            <i class="fa-solid fa-phone-flip call-icon"></i>
-                        </a>
-                        <!-- Add more site numbers here -->
-                    </div>
-                </div>
-
-                <div class="contact-section" style="margin-top: 2rem;">
-                    <h3 class="contact-group-title"><i class="fa-solid fa-wrench"></i> Officine / Soccorso</h3>
-                    <div class="contacts-grid">
-                        <a href="tel:000000000" class="contact-card">
-                            <span class="contact-name">Officina Esempio 1</span>
-                            <span class="contact-number">0532 ...</span>
-                            <i class="fa-solid fa-phone-flip call-icon"></i>
-                        </a>
-                        <a href="tel:000000000" class="contact-card">
-                            <span class="contact-name">Soccorso Stradale</span>
-                            <span class="contact-number">800 ...</span>
-                            <i class="fa-solid fa-phone-flip call-icon"></i>
-                        </a>
-                    </div>
+                <div class="contacts-table-container">
+                    <table class="contacts-table">
+                        <thead>
+                            <tr>
+                                <th>SIGLA RADIO</th>
+                                <th><i class="fa-solid fa-phone"></i> CELLULARE</th>
+                                <th><i class="fa-solid fa-user-md"></i> CELL. MEDICO</th>
+                                <th><i class="fa-solid fa-phone-office"></i> URBANO</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>FERRARA 101 - ALS</td>
+                                <td><a href="tel:3346262446" class="tel-link">3346262446</a></td>
+                                <td><a href="tel:3381063978" class="tel-link">3381063978</a></td>
+                                <td>-</td>
+                            </tr>
+                            <tr>
+                                <td>FERRARA 02 NOTTE - BLSD</td>
+                                <td><a href="tel:3346262445" class="tel-link">3346262445</a></td>
+                                <td>-</td>
+                                <td><a href="tel:0532977157" class="tel-link">0532 / 977157</a></td>
+                            </tr>
+                            <tr>
+                                <td>FERRARA 02 GIORNO - BLSD</td>
+                                <td><a href="tel:3357128608" class="tel-link">3357128608</a></td>
+                                <td>-</td>
+                                <td><a href="tel:0532773855" class="tel-link">0532 / 773855</a></td>
+                            </tr>
+                            <tr>
+                                <td>FERRARA 03 CRI - BLSD</td>
+                                <td><a href="tel:3357128609" class="tel-link">3357128609</a></td>
+                                <td>-</td>
+                                <td><a href="tel:0532773855" class="tel-link">0532 / 773855</a></td>
+                            </tr>
+                            <tr>
+                                <td>FERRARA 04 - BLSD</td>
+                                <td><a href="tel:3357128610" class="tel-link">3357128610</a></td>
+                                <td>-</td>
+                                <td><a href="tel:0532209400" class="tel-link">0532 / 209400</a></td>
+                            </tr>
+                            <tr>
+                                <td>FERRARA 05 - ILS</td>
+                                <td><a href="tel:3387555491" class="tel-link">3387555491</a></td>
+                                <td>-</td>
+                                <td>-</td>
+                            </tr>
+                            <tr>
+                                <td>BONDENO 01 - ILS</td>
+                                <td><a href="tel:3357128613" class="tel-link">3357128613</a></td>
+                                <td>-</td>
+                                <td>-</td>
+                            </tr>
+                            <tr>
+                                <td>CENTO 01 - ILS</td>
+                                <td><a href="tel:3357128607" class="tel-link">3357128607</a></td>
+                                <td>-</td>
+                                <td><a href="tel:0516838248" class="tel-link">051 / 6838248</a></td>
+                            </tr>
+                            <tr>
+                                <td>CASUMARO 103 - ALS</td>
+                                <td><a href="tel:3358315292" class="tel-link">3358315292</a></td>
+                                <td><a href="tel:3381155018" class="tel-link">3381155018</a></td>
+                                <td><a href="tel:0516849626" class="tel-link">051 / 6849626</a></td>
+                            </tr>
+                            <tr>
+                                <td>SANT'AGOSTINO 01 - BLSD</td>
+                                <td><a href="tel:3489046210" class="tel-link">3489046210</a></td>
+                                <td>-</td>
+                                <td><a href="tel:0532350544" class="tel-link">0532 / 350544</a></td>
+                            </tr>
+                            <tr>
+                                <td>CONA 105 - ALS</td>
+                                <td><a href="tel:3356737145" class="tel-link">3356737145</a></td>
+                                <td><a href="tel:3381157762" class="tel-link">3381157762</a></td>
+                                <td><a href="tel:0532871639" class="tel-link">0532 / 871639</a></td>
+                            </tr>
+                            <tr>
+                                <td>COPPARO 02 - ILS</td>
+                                <td><a href="tel:3357128614" class="tel-link">3357128614</a></td>
+                                <td>-</td>
+                                <td><a href="tel:0532871639" class="tel-link">0532 / 871639</a></td>
+                            </tr>
+                            <tr>
+                                <td>PORTOMAGGIORE 01 - ILS</td>
+                                <td><a href="tel:3357128619" class="tel-link">3357128619</a></td>
+                                <td>-</td>
+                                <td><a href="tel:0532817500" class="tel-link">0532 / 817500</a></td>
+                            </tr>
+                            <tr>
+                                <td>ARGENTA 01 - ALS</td>
+                                <td><a href="tel:3357128612" class="tel-link">3357128612</a></td>
+                                <td>-</td>
+                                <td><a href="tel:0532317712" class="tel-link">0532 / 317712</a></td>
+                            </tr>
+                            <tr>
+                                <td>COMACCHIO 02 - BLSD</td>
+                                <td><a href="tel:3314906327" class="tel-link">3314906327</a></td>
+                                <td>-</td>
+                                <td>-</td>
+                            </tr>
+                            <tr>
+                                <td>COMACCHIO 01 - ILS</td>
+                                <td><a href="tel:3357128615" class="tel-link">3357128615</a></td>
+                                <td>-</td>
+                                <td><a href="tel:0533310811" class="tel-link">0533 / 310811</a></td>
+                            </tr>
+                            <tr>
+                                <td>LAGOSANTO 104 - ALS</td>
+                                <td><a href="tel:3356838962" class="tel-link">3356838962</a></td>
+                                <td><a href="tel:3381155058" class="tel-link">3381155058</a></td>
+                                <td><a href="tel:0533723259" class="tel-link">0533 / 723259</a></td>
+                            </tr>
+                            <tr>
+                                <td>LAGOSANTO 02 - ILS</td>
+                                <td><a href="tel:3357128616" class="tel-link">3357128616</a></td>
+                                <td>-</td>
+                                <td><a href="tel:0533723259" class="tel-link">0533 / 723 259</a></td>
+                            </tr>
+                            <tr>
+                                <td>MIGLIARINO 01 - BLSD</td>
+                                <td><a href="tel:3357128606" class="tel-link">3357128606</a></td>
+                                <td>-</td>
+                                <td><a href="tel:053351149" class="tel-link">0533 / 51149</a></td>
+                            </tr>
+                            <tr>
+                                <td>BOSCO 01 - BLSD</td>
+                                <td><a href="tel:3357128617" class="tel-link">3357128617</a></td>
+                                <td>-</td>
+                                <td><a href="tel:0533795013" class="tel-link">0533 / 795013</a></td>
+                            </tr>
+                            <tr>
+                                <td>LIDO POMPOSA 01 - BLSD</td>
+                                <td><a href="tel:3314906327" class="tel-link">3314906327</a></td>
+                                <td>-</td>
+                                <td>-</td>
+                            </tr>
+                            <tr>
+                                <td>LIDO ESTENSI 01 - BLSD</td>
+                                <td><a href="tel:314906398" class="tel-link">314906398</a></td>
+                                <td>-</td>
+                                <td>-</td>
+                            </tr>
+                            <tr>
+                                <td>FERRARA 06 - ILS</td>
+                                <td><a href="tel:3207982308" class="tel-link">3207982308</a></td>
+                                <td>-</td>
+                                <td>-</td>
+                            </tr>
+                            <tr>
+                                <td>FERRARA 11 -ILS</td>
+                                <td><a href="tel:3346262447" class="tel-link">3346262447</a></td>
+                                <td>-</td>
+                                <td>-</td>
+                            </tr>
+                            <tr>
+                                <td>CENTO 02</td>
+                                <td><a href="tel:3314906383" class="tel-link">3314906383</a></td>
+                                <td>-</td>
+                                <td>-</td>
+                            </tr>
+                        </tbody>
+                    </table>
                 </div>
             </div>
         </div>
