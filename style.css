@@ -640,7 +640,7 @@ select {
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 0.1rem;
+    gap: 0;
     color: var(--text-secondary);
     font-size: 0.85rem;
     cursor: pointer;
@@ -670,19 +670,19 @@ select {
     max-width: none;
     text-align: center;
     text-align-last: center;
-    font-size: 1.1rem !important;
+    font-size: 1.7rem !important;
     font-weight: 900 !important;
     color: var(--text-primary);
     text-transform: uppercase;
 }
 
 .location-label {
-    font-size: 0.8rem !important;
+    font-size: 1.2rem !important;
     text-transform: uppercase;
     font-weight: 800;
     color: var(--text-secondary);
-    margin-bottom: 0 !important;
-    line-height: 1 !important;
+    margin: 0 !important;
+    line-height: 0.9 !important;
 }
 
 .location-select:hover {
