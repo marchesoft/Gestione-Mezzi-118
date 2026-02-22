@@ -1763,19 +1763,19 @@ window.switchDataTable = async function (type) {
                 <div style="overflow-x: auto;">
                     <table class="mgmt-table" style="table-layout: auto; width: 100%;">
                         <colgroup>
-                            <col style="width: 90px;">
-                            <col style="width: auto; min-width: 160px;">
-                            <col style="width: 160px;">
-                            <col style="width: 160px;">
-                            <col style="width: 160px;">
-                            <col style="width: 120px;">
-                            <col style="width: 70px;">
+                            <col style="width: 1%;">
+                            <col style="width: 1%;">
+                            <col style="width: 1%;">
+                            <col style="width: 1%;">
+                            <col style="width: 1%;">
+                            <col style="width: 1%;">
+                            <col style="width: 1%;">
                         </colgroup>
                         <thead>
                             <tr>
                                 <th style="white-space:nowrap;">CATEGORIA</th>
-                                <th>NOME / SIGLA</th>
-                                <th>FISSO</th>
+                                <th style="white-space:nowrap;">NOME / SIGLA</th>
+                                <th style="white-space:nowrap;">FISSO</th>
                                 <th style="white-space:nowrap;">CELLULARE 1</th>
                                 <th style="white-space:nowrap;">CELLULARE 2</th>
                                 <th style="white-space:nowrap;">CELL. MEDICO</th>
@@ -1793,8 +1793,8 @@ window.switchDataTable = async function (type) {
                 };
                 return '<tr>'
                     + `<td style="white-space:nowrap;"><span style="font-size:0.75rem;font-weight:700;padding:0.2rem 0.5rem;border-radius:0.3rem;background:${bg};color:${fg};">${catLabel[c.category] || c.category}</span></td>`
-                    + `<td style="font-weight:600;">${c.name}</td>`
-                    + `<td>${pCell(c.urban, c.urban_label)}</td>`
+                    + `<td style="font-weight:600; white-space:nowrap;">${c.name}</td>`
+                    + `<td style="white-space:nowrap;">${pCell(c.urban, c.urban_label)}</td>`
                     + `<td style="white-space:nowrap;">${pCell(c.mobile, c.mobile_label)}</td>`
                     + `<td style="white-space:nowrap;">${pCell(c.mobile2, c.mobile2_label)}</td>`
                     + `<td style="white-space:nowrap;">${c.mobile_medical || '<span style="color:#cbd5e1">-</span>'}</td>`
