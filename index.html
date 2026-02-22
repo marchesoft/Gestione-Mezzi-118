@@ -541,7 +541,7 @@
                 <input type="hidden" id="contact-edit-id">
                 <div class="form-group">
                     <label>Categoria</label>
-                    <select id="contact-category" required
+                    <select id="contact-category" required onchange="updateContactFormFields()"
                         style="width: 100%; padding: 0.5rem; border-radius: 0.3rem; border: 1px solid var(--border-color); margin-bottom: 1rem;">
                         <option value="sedi">Sedi Mezzi</option>
                         <option value="officine">Officine / Utili</option>
@@ -574,18 +574,20 @@
                         style="flex: 1.5; padding: 0.5rem; border-radius: 0.3rem; border: 1px solid var(--border-color);">
                 </div>
 
-                <!-- CELLULARE 2 -->
-                <label
-                    style="font-size: 0.8rem; font-weight: 700; color: var(--text-secondary); letter-spacing: 0.05em;">CELLULARE
-                    2</label>
-                <div style="display: flex; gap: 0.5rem; margin-bottom: 1rem;">
-                    <input type="text" id="contact-mobile2" placeholder="338 9876543"
-                        style="flex: 2; padding: 0.5rem; border-radius: 0.3rem; border: 1px solid var(--border-color);">
-                    <input type="text" id="contact-mobile2-label" placeholder="Etichetta (es. Segreteria)"
-                        style="flex: 1.5; padding: 0.5rem; border-radius: 0.3rem; border: 1px solid var(--border-color);">
+                <!-- CELLULARE 2 (solo Officine/Utili) -->
+                <div id="mobile2-field-group">
+                    <label
+                        style="font-size: 0.8rem; font-weight: 700; color: var(--text-secondary); letter-spacing: 0.05em;">CELLULARE
+                        2</label>
+                    <div style="display: flex; gap: 0.5rem; margin-bottom: 1rem;">
+                        <input type="text" id="contact-mobile2" placeholder="338 9876543"
+                            style="flex: 2; padding: 0.5rem; border-radius: 0.3rem; border: 1px solid var(--border-color);">
+                        <input type="text" id="contact-mobile2-label" placeholder="Etichetta (es. Segreteria)"
+                            style="flex: 1.5; padding: 0.5rem; border-radius: 0.3rem; border: 1px solid var(--border-color);">
+                    </div>
                 </div>
 
-                <!-- CELLULARE MEDICO (solo sedi) -->
+                <!-- CELLULARE MEDICO (solo Sedi) -->
                 <div id="medical-field-group">
                     <label
                         style="font-size: 0.8rem; font-weight: 700; color: var(--text-secondary); letter-spacing: 0.05em;">CELLULARE

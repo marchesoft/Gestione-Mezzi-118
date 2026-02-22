@@ -826,6 +826,14 @@ window.renderContacts = async function (category) {
     }
 };
 
+// Show/hide form fields based on selected category
+window.updateContactFormFields = function () {
+    const cat = document.getElementById('contact-category').value;
+    const isSedi = cat === 'sedi';
+    document.getElementById('mobile2-field-group').style.display = isSedi ? 'none' : 'block';
+    document.getElementById('medical-field-group').style.display = isSedi ? 'block' : 'none';
+};
+
 window.openContactForm = async function (id = null) {
     const modal = document.getElementById('contact-form-modal');
     const form = document.getElementById('contact-form');
@@ -858,6 +866,7 @@ window.openContactForm = async function (id = null) {
         }
     }
 
+    updateContactFormFields();
     modal.classList.remove('hidden');
 };
 
