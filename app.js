@@ -774,15 +774,23 @@ window.renderContacts = async function (category) {
 
         let html = `
             <div class="contacts-table-container">
-                <table class="contacts-table">
+                <table class="contacts-table" style="table-layout: auto; width: 100%;">
+                    <colgroup>
+                        <col style="width: 1%;">
+                        <col style="width: 1%;">
+                        <col style="width: 1%;">
+                        ${category !== 'sedi' ? '<col style="width: 1%;">' : ''}
+                        ${category === 'sedi' ? '<col style="width: 1%;">' : ''}
+                        <col style="width: 1%;">
+                    </colgroup>
                     <thead>
                         <tr>
-                            <th>NOME / SIGLA</th>
-                            <th>FISSO</th>
-                            <th>CELLULARE 1</th>
-                            ${category !== 'sedi' ? '<th>CELLULARE 2</th>' : ''}
-                            ${category === 'sedi' ? '<th>CELL. MEDICO</th>' : ''}
-                            <th class="admin-only">AZIONI</th>
+                            <th style="white-space:nowrap;">NOME / SIGLA</th>
+                            <th style="white-space:nowrap;">FISSO</th>
+                            <th style="white-space:nowrap;">CELLULARE 1</th>
+                            ${category !== 'sedi' ? '<th style="white-space:nowrap;">CELLULARE 2</th>' : ''}
+                            ${category === 'sedi' ? '<th style="white-space:nowrap;">CELL. MEDICO</th>' : ''}
+                            <th class="admin-only" style="white-space:nowrap;">AZIONI</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -799,12 +807,12 @@ window.renderContacts = async function (category) {
             const medicalClean = c.mobile_medical ? c.mobile_medical.replace(/\s+/g, '') : '';
             html += `
                 <tr>
-                    <td style="font-weight: 700; color: var(--text-primary);">${c.name}</td>
-                    <td>${phoneCell(c.urban, c.urban_label)}</td>
-                    <td>${phoneCell(c.mobile, c.mobile_label)}</td>
-                    ${category !== 'sedi' ? `<td>${phoneCell(c.mobile2, c.mobile2_label)}</td>` : ''}
-                    ${category === 'sedi' ? `<td>${c.mobile_medical ? `<a href="tel:${medicalClean}" class="tel-link">${c.mobile_medical}</a>` : '<span style="color: #cbd5e1">-</span>'}</td>` : ''}
-                    <td class="admin-only">
+                    <td style="font-weight: 700; color: var(--text-primary); white-space: nowrap;">${c.name}</td>
+                    <td style="white-space: nowrap;">${phoneCell(c.urban, c.urban_label)}</td>
+                    <td style="white-space: nowrap;">${phoneCell(c.mobile, c.mobile_label)}</td>
+                    ${category !== 'sedi' ? `<td style="white-space: nowrap;">${phoneCell(c.mobile2, c.mobile2_label)}</td>` : ''}
+                    ${category === 'sedi' ? `<td style="white-space: nowrap;">${c.mobile_medical ? `<a href="tel:${medicalClean}" class="tel-link">${c.mobile_medical}</a>` : '<span style="color: #cbd5e1">-</span>'}</td>` : ''}
+                    <td class="admin-only" style="white-space: nowrap;">
                         <div style="display: flex; gap: 0.4rem;">
                             <button onclick="openContactForm('${c.id}')" class="btn btn-sm" style="padding: 0.3rem 0.6rem; background: #f1f5f9; color: #475569; border: 1px solid #e2e8f0;" title="Modifica">
                                 <i class="fa-solid fa-pen-to-square"></i>
