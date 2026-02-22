@@ -25,7 +25,7 @@
     <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <!-- App Styles -->
-    <link rel="stylesheet" href="style.css?v=1.4.0">
+    <link rel="stylesheet" href="style.css?v=1.4.1">
 </head>
 
 <body>
@@ -48,6 +48,10 @@
                         <button class="btn admin-only" id="btn-cambi-mezzi"
                             style="background: #fbbf24; color: #1e293b; font-weight: 700;">
                             <i class="fa-solid fa-exchange-alt"></i> Cambi Mezzi
+                        </button>
+                        <button class="btn" id="btn-useful-contacts" onclick="openContactsModal()"
+                            style="background: #10b981; color: white; font-weight: 700;">
+                            <i class="fa-solid fa-phone"></i> Numeri Utili
                         </button>
                         <button class="btn admin-only" id="btn-manage-data" onclick="openDataManagement()"
                             style="background: var(--secondary-color); color: white;" title="Gestione Dati Database">
@@ -495,6 +499,49 @@
 
     <!-- Scripts -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <!-- Useful Contacts Modal -->
+    <div id="contacts-modal" class="modal hidden">
+        <div class="modal-content" style="max-width: 500px; height: auto; max-height: 90vh;">
+            <span class="close-modal" onclick="closeContactsModal()">&times;</span>
+            <div style="padding: 2rem;">
+                <h2 style="margin-bottom: 1.5rem; color: var(--text-primary); text-align: center;">Numeri Utili</h2>
+
+                <div class="contact-section">
+                    <h3 class="contact-group-title"><i class="fa-solid fa-house-medical"></i> Sedi / Centrali</h3>
+                    <div class="contacts-grid">
+                        <a href="tel:118" class="contact-card">
+                            <span class="contact-name">Centrale 118</span>
+                            <span class="contact-number">118</span>
+                            <i class="fa-solid fa-phone-flip call-icon"></i>
+                        </a>
+                        <a href="tel:0532236111" class="contact-card">
+                            <span class="contact-name">Sede Ferrara</span>
+                            <span class="contact-number">0532 236111</span>
+                            <i class="fa-solid fa-phone-flip call-icon"></i>
+                        </a>
+                        <!-- Add more site numbers here -->
+                    </div>
+                </div>
+
+                <div class="contact-section" style="margin-top: 2rem;">
+                    <h3 class="contact-group-title"><i class="fa-solid fa-wrench"></i> Officine / Soccorso</h3>
+                    <div class="contacts-grid">
+                        <a href="tel:000000000" class="contact-card">
+                            <span class="contact-name">Officina Esempio 1</span>
+                            <span class="contact-number">0532 ...</span>
+                            <i class="fa-solid fa-phone-flip call-icon"></i>
+                        </a>
+                        <a href="tel:000000000" class="contact-card">
+                            <span class="contact-name">Soccorso Stradale</span>
+                            <span class="contact-number">800 ...</span>
+                            <i class="fa-solid fa-phone-flip call-icon"></i>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script src="store.js"></script>
     <script src="app.js"></script>
 </body>

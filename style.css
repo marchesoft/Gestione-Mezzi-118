@@ -1646,3 +1646,87 @@ body.is-admin #admin-hint-text {
 .view-title {
     font-size: 1.5rem;
 }
+
+/* Useful Contacts Modal Styles */
+.contact-section {
+    margin-bottom: 2rem;
+}
+
+.contact-group-title {
+    font-size: 1rem;
+    color: var(--primary-color);
+    border-bottom: 2px solid #e2e8f0;
+    padding-bottom: 0.5rem;
+    margin-bottom: 1rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    text-transform: uppercase;
+    font-weight: 800;
+}
+
+.contacts-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.contact-card {
+    background: #f8fafc;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    padding: 1rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    text-decoration: none;
+    color: inherit;
+    transition: all 0.2s;
+    box-shadow: var(--shadow-sm);
+}
+
+.contact-card:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+    border-color: var(--primary-color);
+    background: white;
+}
+
+.contact-card:active {
+    transform: scale(0.98);
+}
+
+.contact-name {
+    font-weight: 700;
+    font-size: 1rem;
+    color: var(--text-primary);
+}
+
+.contact-number {
+    font-family: 'JetBrains Mono', monospace;
+    color: var(--primary-color);
+    font-weight: 800;
+    font-size: 1.1rem;
+}
+
+.call-icon {
+    color: #10b981;
+    font-size: 1.4rem;
+    background: #ecfdf5;
+    padding: 0.5rem;
+    border-radius: 50%;
+}
+
+@media (max-width: 768px) {
+    .contact-card {
+        padding: 1.25rem 1rem;
+    }
+
+    .contact-name {
+        font-size: 1.1rem;
+    }
+
+    .contact-number {
+        font-size: 1.2rem;
+    }
+}

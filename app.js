@@ -1,4 +1,4 @@
-const APP_VERSION = "1.3.2 - 2026-02-22"; // Performance Fix & Intervention Filter
+const APP_VERSION = "1.3.3 - 2026-02-22"; // Performance Fix & Useful Contacts
 let isAdmin = false;
 let cachedVehicles = null;
 let cachedLocations = null;
@@ -740,6 +740,14 @@ window.saveCambioMezzo = async function () {
         console.error("Error saving cambio mezzo:", error);
     }
 }
+
+window.openContactsModal = function () {
+    document.getElementById('contacts-modal').classList.remove('hidden');
+};
+
+window.closeContactsModal = function () {
+    document.getElementById('contacts-modal').classList.add('hidden');
+};
 
 function setupEventListeners() {
 
