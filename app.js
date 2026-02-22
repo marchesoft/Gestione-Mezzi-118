@@ -780,7 +780,7 @@ window.renderContacts = async function (category) {
                             <th>NOME / SIGLA</th>
                             <th>FISSO</th>
                             <th>CELLULARE 1</th>
-                            <th>CELLULARE 2</th>
+                            ${category !== 'sedi' ? '<th>CELLULARE 2</th>' : ''}
                             ${category === 'sedi' ? '<th>CELL. MEDICO</th>' : ''}
                             <th class="admin-only">AZIONI</th>
                         </tr>
@@ -802,7 +802,7 @@ window.renderContacts = async function (category) {
                     <td style="font-weight: 700; color: var(--text-primary);">${c.name}</td>
                     <td>${phoneCell(c.urban, c.urban_label)}</td>
                     <td>${phoneCell(c.mobile, c.mobile_label)}</td>
-                    <td>${phoneCell(c.mobile2, c.mobile2_label)}</td>
+                    ${category !== 'sedi' ? `<td>${phoneCell(c.mobile2, c.mobile2_label)}</td>` : ''}
                     ${category === 'sedi' ? `<td>${c.mobile_medical ? `<a href="tel:${medicalClean}" class="tel-link">${c.mobile_medical}</a>` : '<span style="color: #cbd5e1">-</span>'}</td>` : ''}
                     <td class="admin-only">
                         <div style="display: flex; gap: 0.4rem;">
