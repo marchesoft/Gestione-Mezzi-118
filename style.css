@@ -1504,6 +1504,15 @@ body.is-admin #admin-hint-text {
         border-radius: 0.75rem;
     }
 
+    /* Reset aspect-ratio for modal tabs to keep them normal buttons */
+    .modal-tabs-mgmt .filter-btn {
+        aspect-ratio: auto !important;
+        width: auto !important;
+        height: auto !important;
+        padding: 0.5rem 0.75rem !important;
+        font-size: 0.8rem !important;
+    }
+
     /* Mobile Notes Display - Always Visible */
     .mobile-notes {
         display: block !important;
