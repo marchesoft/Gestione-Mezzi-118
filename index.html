@@ -535,7 +535,7 @@
 
     <!-- Contact Form Modal (Small overlay) -->
     <div id="contact-form-modal" class="modal hidden" style="z-index: 2000;">
-        <div class="modal-content" style="max-width: 400px; padding: 2rem;">
+        <div class="modal-content" style="max-width: 480px; padding: 2rem;">
             <h3 id="contact-form-title" style="margin-bottom: 1.5rem;">Nuovo Contatto</h3>
             <form id="contact-form" onsubmit="saveContactHandler(event)">
                 <input type="hidden" id="contact-edit-id">
@@ -544,7 +544,7 @@
                     <select id="contact-category" required
                         style="width: 100%; padding: 0.5rem; border-radius: 0.3rem; border: 1px solid var(--border-color); margin-bottom: 1rem;">
                         <option value="sedi">Sedi Mezzi</option>
-                        <option value="officine">Officine / Altri</option>
+                        <option value="officine">Officine / Utili</option>
                     </select>
                 </div>
                 <div class="form-group">
@@ -552,22 +552,51 @@
                     <input type="text" id="contact-name" required placeholder="es. FERRARA 101"
                         style="width: 100%; padding: 0.5rem; border-radius: 0.3rem; border: 1px solid var(--border-color); margin-bottom: 1rem;">
                 </div>
-                <div class="form-group">
-                    <label>Cellulare</label>
-                    <input type="text" id="contact-mobile" placeholder="334..."
-                        style="width: 100%; padding: 0.5rem; border-radius: 0.3rem; border: 1px solid var(--border-color); margin-bottom: 1rem;">
+
+                <!-- FISSO -->
+                <label
+                    style="font-size: 0.8rem; font-weight: 700; color: var(--text-secondary); letter-spacing: 0.05em;">FISSO</label>
+                <div style="display: flex; gap: 0.5rem; margin-bottom: 1rem;">
+                    <input type="text" id="contact-urban" placeholder="0532 123456"
+                        style="flex: 2; padding: 0.5rem; border-radius: 0.3rem; border: 1px solid var(--border-color);">
+                    <input type="text" id="contact-urban-label" placeholder="Etichetta (es. Ufficio)"
+                        style="flex: 1.5; padding: 0.5rem; border-radius: 0.3rem; border: 1px solid var(--border-color);">
                 </div>
-                <div class="form-group">
-                    <label>Cellulare Medico</label>
-                    <input type="text" id="contact-mobile-medical" placeholder="338..."
-                        style="width: 100%; padding: 0.5rem; border-radius: 0.3rem; border: 1px solid var(--border-color); margin-bottom: 1rem;">
+
+                <!-- CELLULARE 1 -->
+                <label
+                    style="font-size: 0.8rem; font-weight: 700; color: var(--text-secondary); letter-spacing: 0.05em;">CELLULARE
+                    1</label>
+                <div style="display: flex; gap: 0.5rem; margin-bottom: 1rem;">
+                    <input type="text" id="contact-mobile" placeholder="334 1234567"
+                        style="flex: 2; padding: 0.5rem; border-radius: 0.3rem; border: 1px solid var(--border-color);">
+                    <input type="text" id="contact-mobile-label" placeholder="Etichetta (es. Dott. Rossi)"
+                        style="flex: 1.5; padding: 0.5rem; border-radius: 0.3rem; border: 1px solid var(--border-color);">
                 </div>
-                <div class="form-group">
-                    <label>Urbano</label>
-                    <input type="text" id="contact-urban" placeholder="0532..."
-                        style="width: 100%; padding: 0.5rem; border-radius: 0.3rem; border: 1px solid var(--border-color); margin-bottom: 1rem;">
+
+                <!-- CELLULARE 2 -->
+                <label
+                    style="font-size: 0.8rem; font-weight: 700; color: var(--text-secondary); letter-spacing: 0.05em;">CELLULARE
+                    2</label>
+                <div style="display: flex; gap: 0.5rem; margin-bottom: 1rem;">
+                    <input type="text" id="contact-mobile2" placeholder="338 9876543"
+                        style="flex: 2; padding: 0.5rem; border-radius: 0.3rem; border: 1px solid var(--border-color);">
+                    <input type="text" id="contact-mobile2-label" placeholder="Etichetta (es. Segreteria)"
+                        style="flex: 1.5; padding: 0.5rem; border-radius: 0.3rem; border: 1px solid var(--border-color);">
                 </div>
-                <div style="display: flex; gap: 1rem; margin-top: 2rem;">
+
+                <!-- CELLULARE MEDICO (solo sedi) -->
+                <div id="medical-field-group">
+                    <label
+                        style="font-size: 0.8rem; font-weight: 700; color: var(--text-secondary); letter-spacing: 0.05em;">CELLULARE
+                        MEDICO (solo Sedi)</label>
+                    <div style="display: flex; gap: 0.5rem; margin-bottom: 1rem;">
+                        <input type="text" id="contact-mobile-medical" placeholder="338..."
+                            style="flex: 1; padding: 0.5rem; border-radius: 0.3rem; border: 1px solid var(--border-color);">
+                    </div>
+                </div>
+
+                <div style="display: flex; gap: 1rem; margin-top: 1rem;">
                     <button type="button" class="btn" onclick="closeContactForm()" style="flex: 1;">Annulla</button>
                     <button type="submit" class="btn btn-primary" style="flex: 1;">Salva</button>
                 </div>
