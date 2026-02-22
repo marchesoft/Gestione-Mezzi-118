@@ -448,22 +448,20 @@
         </main>
 
 
-        <!-- Data Management Modal -->
         <div id="data-management-modal" class="modal hidden">
             <div class="modal-content data-mgmt-content">
-                <div
-                    style="padding: 1.5rem; border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center;">
-                    <h2 style="font-size: 1.5rem; font-weight: 700;">Gestione Database</h2>
+                <div class="modal-header-mgmt">
+                    <h2 class="modal-title-mgmt">Gestione Database</h2>
                     <button onclick="document.getElementById('data-management-modal').classList.add('hidden')"
-                        style="background: none; border: none; font-size: 1.5rem; cursor: pointer;">&times;</button>
+                        class="close-modal-btn-mgmt">&times;</button>
                 </div>
-                <div style="padding: 1rem; border-bottom: 1px solid var(--border-color); display: flex; gap: 1rem;">
+                <div class="modal-tabs-mgmt">
                     <button class="filter-btn active" onclick="switchDataTable('vehicles')">Mezzi</button>
                     <button class="filter-btn" onclick="switchDataTable('locations')">Luoghi</button>
                     <button class="filter-btn" onclick="switchDataTable('interventions')">Interventi</button>
                     <button class="filter-btn" onclick="switchDataTable('cambiomezzo')">Cambi</button>
                 </div>
-                <div style="flex-grow: 1; overflow-y: auto; padding: 1.5rem;">
+                <div class="modal-body-mgmt">
                     <div id="data-table-container">
                         <!-- Dynamic Table -->
                     </div>

@@ -866,10 +866,59 @@ select {
     display: flex;
     flex-direction: column;
     resize: both;
-    overflow: auto;
+    overflow: hidden;
+    /* Prevent modal body from scrolling in favor of internal parts */
     min-width: 600px;
     min-height: 400px;
     max-height: 95vh;
+}
+
+.modal-header-mgmt {
+    padding: 1.5rem;
+    border-bottom: 1px solid var(--border-color);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-shrink: 0;
+}
+
+.modal-title-mgmt {
+    font-size: 1.5rem;
+    font-weight: 700;
+    margin: 0;
+    color: var(--text-primary);
+}
+
+.close-modal-btn-mgmt {
+    background: none;
+    border: none;
+    font-size: 1.5rem;
+    cursor: pointer;
+    color: var(--text-primary);
+}
+
+.modal-tabs-mgmt {
+    padding: 1rem;
+    border-bottom: 1px solid var(--border-color);
+    display: flex;
+    gap: 1rem;
+    flex-shrink: 0;
+    overflow-x: auto;
+    /* Allow tabs to scroll on very small screens */
+}
+
+.modal-body-mgmt {
+    flex-grow: 1;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+
+#data-table-container {
+    flex-grow: 1;
+    overflow: auto;
+    /* This allows both vertical and horizontal table scroll */
+    padding: 1.5rem;
 }
 
 .close-modal {
@@ -1235,6 +1284,36 @@ body.is-admin #admin-hint-text {
         min-width: 0;
         min-height: 0;
         resize: none;
+        overflow: hidden;
+    }
+
+    .modal-title-mgmt {
+        font-size: 1.1rem !important;
+    }
+
+    .modal-header-mgmt {
+        padding: 0.75rem 1rem !important;
+    }
+
+    .modal-tabs-mgmt {
+        padding: 0.5rem !important;
+        gap: 0.5rem !important;
+    }
+
+    .modal-body-mgmt {
+        overflow: hidden;
+    }
+
+    #data-table-container {
+        padding: 0.5rem !important;
+        overflow: auto !important;
+        /* Critical for horizontal scroll */
+        -webkit-overflow-scrolling: touch;
+    }
+
+    #data-table-container table {
+        margin-bottom: 2rem;
+        /* Add space at bottom to ensure last row is scrollable above edges */
     }
 
     #data-table-container {
