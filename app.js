@@ -549,7 +549,7 @@ window.toggleAdminMode = function () {
         localStorage.removeItem('isAdmin'); // Remove from localStorage
         document.body.classList.remove('is-admin');
         document.getElementById('admin-lock-icon').className = 'fa-solid fa-lock';
-        if (hintText) hintText.textContent = 'Modalita visualizzazione,';
+        if (hintText) hintText.textContent = 'Modalita visualizzazione';
         alert("Modalità Amministratore Disattivata.");
         renderDashboard();
     } else {
@@ -923,7 +923,6 @@ window.saveVehicleForm = async function () {
 
     const inspection_expiry = document.getElementById('vehicle-inspection').value;
     const revision_o2 = document.getElementById('vehicle-revision-o2').value;
-    const appointment_date = document.getElementById('vehicle-appointment').value;
     const notes = document.getElementById('vehicle-notes').value;
 
     const vehicleData = {
