@@ -924,6 +924,23 @@ window.addLocationHandler = async function (e) {
     }
 };
 
+window.editLocationHandler = async function (oldName) {
+    const newName = prompt("Inserisci il nuovo nome per questo luogo:", oldName);
+    if (!newName || newName.trim() === '' || upper(newName) === upper(oldName)) return;
+
+    try {
+        await store.updateLocation(upper(oldName), upper(newName));
+        alert("Luogo aggiornato con successo!");
+        await renderDashboard(true);
+        if (!document.getElementById('data-management-modal').classList.contains('hidden')) {
+            switchDataTable('locations');
+        }
+    } catch (err) {
+        console.error("Error editing location:", err);
+        alert("Errore durante la modifica del luogo.");
+    }
+};
+
 
 
 window.saveVehicleForm = async function () {
@@ -1462,7 +1479,6 @@ window.switchDataTable = async function (type) {
                         <thead>
                             <tr>
                                 <th>Luogo</th>
-                                <th class="col-shrink">Colore</th>
                                 <th class="col-actions">Azioni</th>
                             </tr>
                         </thead>
@@ -1470,8 +1486,8 @@ window.switchDataTable = async function (type) {
                             ${data.map(l => `
                                 <tr>
                                     <td>${l.luogo}</td>
-                                    <td class="col-shrink"><div style="width: 20px; height: 20px; border-radius: 50%; background-color: ${l.colore}; border: 1px solid #ddd;"></div></td>
                                     <td class="col-actions">
+                                        <button onclick="window.editLocationHandler('${l.luogo}')" style="margin-right:0.5rem; cursor:pointer; background:none; border:none; color:var(--primary-color);"><i class="fa-solid fa-edit"></i></button>
                                         <button onclick="if(confirm('Eliminare questo luogo?')){store.deleteLocation('${l.luogo}').then(() => switchDataTable('locations'))}" style="cursor:pointer; background:none; border:none; color:var(--status-to-repair);"><i class="fa-solid fa-trash"></i></button>
                                     </td>
                                 </tr>
