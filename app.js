@@ -1,4 +1,4 @@
-const APP_VERSION = "1.3.1 - 2026-02-22"; // Performance Fix & Location Optimizations
+const APP_VERSION = "1.3.2 - 2026-02-22"; // Performance Fix & Intervention Filter
 let isAdmin = false;
 let cachedVehicles = null;
 let cachedLocations = null;
@@ -1501,8 +1501,16 @@ window.switchDataTable = async function (type) {
         } else if (type === 'interventions') {
             data = await store.getInterventions();
             html = `
+                <div style="margin-bottom: 1rem; background: #f8fafc; padding: 1rem; border-radius: 0.75rem; border: 1px solid var(--border-color); display: flex; gap: 1rem; align-items: center;">
+                    <div style="flex-grow: 1; position: relative;">
+                        <i class="fa-solid fa-search" style="position: absolute; left: 1rem; top: 50%; transform: translateY(-50%); color: var(--text-secondary);"></i>
+                        <input type="text" id="intervention-search" placeholder="Filtra per Mezzo (Sigla)..." 
+                               oninput="window.filterInterventionTable(this.value)"
+                               style="width: 100%; padding: 0.5rem 1rem 0.5rem 2.5rem; border-radius: 0.5rem; border: 1px solid var(--border-color); outline: none;">
+                    </div>
+                </div>
                 <div style="overflow-x: auto;">
-                    <table class="mgmt-table">
+                    <table class="mgmt-table" id="interventions-table">
                         <thead>
                             <tr>
                                 <th class="col-shrink">Data Entrata</th>
@@ -1570,4 +1578,24 @@ window.switchDataTable = async function (type) {
     }
 
     container.innerHTML = html;
+}
+
+window.filterInterventionTable = function (query) {
+    const table = document.getElementById('interventions-table');
+    if (!table) return;
+    const rows = table.querySelectorAll('tbody tr');
+    const q = upper(query).trim();
+
+    rows.forEach(row => {
+        // The sigla is in the 3rd column (index 2)
+        const siglaCell = row.cells[2];
+        if (siglaCell) {
+            const sigla = upper(siglaCell.textContent);
+            if (sigla.includes(q)) {
+                row.style.display = '';
+            } else {
+                row.style.display = 'none';
+            }
+        }
+    });
 }
