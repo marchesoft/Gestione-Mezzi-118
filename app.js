@@ -1,4 +1,4 @@
-const APP_VERSION = "1.3.3 - 2026-02-22"; // Performance Fix & Useful Contacts
+const APP_VERSION = "1.3.4 - 2026-02-22"; // Dynamic Contacts Management
 let isAdmin = false;
 let cachedVehicles = null;
 let cachedLocations = null;
@@ -741,12 +741,156 @@ window.saveCambioMezzo = async function () {
     }
 }
 
-window.openContactsModal = function () {
+window.openContactsModal = async function () {
     document.getElementById('contacts-modal').classList.remove('hidden');
+    await switchContactCategory('sedi');
 };
 
 window.closeContactsModal = function () {
     document.getElementById('contacts-modal').classList.add('hidden');
+};
+
+window.switchContactCategory = async function (category) {
+    document.querySelectorAll('.contact-tab').forEach(t => t.classList.remove('active'));
+    const activeTab = document.getElementById(`tab-${category}`);
+    if (activeTab) activeTab.classList.add('active');
+    await renderContacts(category);
+};
+
+window.renderContacts = async function (category) {
+    const container = document.getElementById('contacts-list-container');
+    container.innerHTML = '<p style="text-align: center; padding: 2rem; color: var(--text-secondary);"><i class="fa-solid fa-spinner fa-spin"></i> Caricamento in corso...</p>';
+
+    try {
+        const allContacts = await store.getContacts();
+        const filtered = allContacts.filter(c => c.category === category);
+
+        if (filtered.length === 0) {
+            container.innerHTML = '<p style="text-align: center; padding: 3rem; color: var(--text-secondary); background: #f8fafc; border-radius: 0.75rem; border: 1px dotted var(--border-color);">Nessun contatto presente in questa categoria.</p>';
+            return;
+        }
+
+        let html = `
+            <div class="contacts-table-container">
+                <table class="contacts-table">
+                    <thead>
+                        <tr>
+                            <th>NOME / SIGLA</th>
+                            <th>CELLULARE</th>
+                            ${category === 'sedi' ? '<th>CELL. MEDICO</th>' : ''}
+                            <th>URBANO</th>
+                            <th class="admin-only">AZIONI</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+        `;
+
+        filtered.forEach(c => {
+            const mobileClean = c.mobile ? c.mobile.replace(/\s+/g, '') : '';
+            const medicalClean = c.mobile_medical ? c.mobile_medical.replace(/\s+/g, '') : '';
+            const urbanClean = c.urban ? c.urban.replace(/[\/\s+]/g, '') : '';
+
+            html += `
+                <tr>
+                    <td style="font-weight: 700; color: var(--text-primary);">${c.name}</td>
+                    <td>${c.mobile ? `<a href="tel:${mobileClean}" class="tel-link">${c.mobile}</a>` : '<span style="color: #cbd5e1">-</span>'}</td>
+                    ${category === 'sedi' ? `<td>${c.mobile_medical ? `<a href="tel:${medicalClean}" class="tel-link">${c.mobile_medical}</a>` : '<span style="color: #cbd5e1">-</span>'}</td>` : ''}
+                    <td>${c.urban ? `<a href="tel:${urbanClean}" class="tel-link">${c.urban}</a>` : '<span style="color: #cbd5e1">-</span>'}</td>
+                    <td class="admin-only">
+                        <div style="display: flex; gap: 0.4rem;">
+                            <button onclick="openContactForm('${c.id}')" class="btn btn-sm" style="padding: 0.3rem 0.6rem; background: #f1f5f9; color: #475569; border: 1px solid #e2e8f0;" title="Modifica">
+                                <i class="fa-solid fa-pen-to-square"></i>
+                            </button>
+                            <button onclick="deleteContactHandler('${c.id}')" class="btn btn-sm" style="padding: 0.3rem 0.6rem; background: #fef2f2; color: #ef4444; border: 1px solid #fee2e2;" title="Elimina">
+                                <i class="fa-solid fa-trash"></i>
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+            `;
+        });
+
+        html += `</tbody></table></div>`;
+        container.innerHTML = html;
+    } catch (err) {
+        console.error("Error rendering contacts:", err);
+        container.innerHTML = '<p style="text-align: center; color: var(--danger-color);">Errore nel caricamento dei contatti.</p>';
+    }
+};
+
+window.openContactForm = async function (id = null) {
+    const modal = document.getElementById('contact-form-modal');
+    const form = document.getElementById('contact-form');
+    const title = document.getElementById('contact-form-title');
+
+    form.reset();
+    document.getElementById('contact-edit-id').value = id || '';
+
+    if (id) {
+        title.innerText = "Modifica Contatto";
+        const contacts = await store.getContacts();
+        const contact = contacts.find(c => c.id === id);
+        if (contact) {
+            document.getElementById('contact-category').value = contact.category;
+            document.getElementById('contact-name').value = contact.name;
+            document.getElementById('contact-mobile').value = contact.mobile || '';
+            document.getElementById('contact-mobile-medical').value = contact.mobile_medical || '';
+            document.getElementById('contact-urban').value = contact.urban || '';
+        }
+    } else {
+        title.innerText = "Nuovo Contatto";
+        // Default category to current active tab if possible, or 'sedi'
+        const activeTab = document.querySelector('.contact-tab.active');
+        if (activeTab) {
+            const cat = activeTab.id.replace('tab-', '');
+            document.getElementById('contact-category').value = cat;
+        }
+    }
+
+    modal.classList.remove('hidden');
+};
+
+window.closeContactForm = function () {
+    document.getElementById('contact-form-modal').classList.add('hidden');
+};
+
+window.saveContactHandler = async function (e) {
+    e.preventDefault();
+    const id = document.getElementById('contact-edit-id').value;
+    const contact = {
+        category: document.getElementById('contact-category').value,
+        name: document.getElementById('contact-name').value.toUpperCase(),
+        mobile: document.getElementById('contact-mobile').value.trim() || null,
+        mobile_medical: document.getElementById('contact-mobile-medical').value.trim() || null,
+        urban: document.getElementById('contact-urban').value.trim() || null
+    };
+
+    try {
+        if (id) {
+            await store.updateContact(id, contact);
+        } else {
+            await store.addContact(contact);
+        }
+        closeContactForm();
+        await renderContacts(contact.category);
+    } catch (err) {
+        console.error("Error saving contact:", err);
+    }
+};
+
+window.deleteContactHandler = async function (id) {
+    if (!confirm("Sei sicuro di voler eliminare questo contatto?")) return;
+
+    try {
+        const allContacts = await store.getContacts();
+        const contact = allContacts.find(c => c.id === id);
+        const categoryToRefresh = contact ? contact.category : 'sedi';
+
+        await store.deleteContact(id);
+        await renderContacts(categoryToRefresh);
+    } catch (err) {
+        console.error("Error deleting contact:", err);
+    }
 };
 
 function setupEventListeners() {

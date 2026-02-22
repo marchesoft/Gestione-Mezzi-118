@@ -248,6 +248,60 @@ class Store {
             alert("Errore eliminazione cambio mezzo: " + error.message);
         }
     }
+
+    // --- Contacts ---
+
+    async getContacts() {
+        const { data, error } = await this.supabase
+            .from('contacts')
+            .select('*')
+            .order('category', { ascending: false }) // 'sedi' before 'officine'
+            .order('name', { ascending: true });
+
+        if (error) {
+            console.error('Error fetching contacts:', error);
+            return [];
+        }
+        return data;
+    }
+
+    async addContact(contact) {
+        const { error } = await this.supabase
+            .from('contacts')
+            .insert([contact]);
+
+        if (error) {
+            console.error('Error adding contact:', error);
+            alert("Errore salvataggio contatto: " + error.message);
+            throw error;
+        }
+    }
+
+    async updateContact(id, data) {
+        const { error } = await this.supabase
+            .from('contacts')
+            .update(data)
+            .eq('id', id);
+
+        if (error) {
+            console.error('Error updating contact:', error);
+            alert("Errore aggiornamento contatto: " + error.message);
+            throw error;
+        }
+    }
+
+    async deleteContact(id) {
+        const { error } = await this.supabase
+            .from('contacts')
+            .delete()
+            .eq('id', id);
+
+        if (error) {
+            console.error('Error deleting contact:', error);
+            alert("Errore eliminazione contatto: " + error.message);
+            throw error;
+        }
+    }
 }
 
 const store = new Store();

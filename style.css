@@ -1721,3 +1721,46 @@ body.is-admin #admin-hint-text {
         font-size: 0.8rem;
     }
 }
+
+/* Useful Contacts Modal Tabs */
+.contact-tab {
+    padding: 0.6rem 1.25rem;
+    border: 1px solid transparent;
+    border-radius: 0.5rem;
+    background: transparent;
+    color: var(--text-secondary);
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.contact-tab:hover {
+    background: #f1f5f9;
+    color: var(--primary-color);
+}
+
+.contact-tab.active {
+    background: #eff6ff;
+    color: var(--primary-color);
+    border-color: #dbeafe;
+}
+
+.btn-sm i {
+    font-size: 0.85rem;
+}
+
+@media (max-width: 768px) {
+    .modal-tabs-contacts {
+        overflow-x: auto;
+        padding-bottom: 0.75rem;
+    }
+
+    .contact-tab {
+        padding: 0.5rem 0.75rem;
+        font-size: 0.8rem;
+        white-space: nowrap;
+    }
+}
