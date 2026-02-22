@@ -645,7 +645,7 @@ select {
     font-size: 0.85rem;
     cursor: pointer;
     width: 100%;
-    padding-bottom: 0.6rem;
+    padding-bottom: 0.1rem;
     /* Extra space below the selection */
 }
 
@@ -681,8 +681,8 @@ select {
     text-transform: uppercase;
     font-weight: 800;
     color: var(--text-secondary);
-    margin-bottom: 2px !important;
-    line-height: 1.2 !important;
+    margin-bottom: 0 !important;
+    line-height: 1 !important;
 }
 
 .location-select:hover {
@@ -1077,7 +1077,7 @@ body.is-admin #admin-hint-text {
 
 .location-select-container {
     background: #e2e8f0;
-    padding: 0.25rem 0.5rem;
+    padding: 0.15rem 0.5rem;
     border-radius: var(--radius-md);
     border: 1px solid #cbd5e1;
     display: flex;
