@@ -1,4 +1,4 @@
-const APP_VERSION = "1.4.2 - 2026-02-23"; // Tooltip Overlap Fixed
+const APP_VERSION = "1.4.3 - 2026-02-23"; // Layout Optimized
 let isAdmin = false;
 let cachedVehicles = null;
 let cachedLocations = null;
