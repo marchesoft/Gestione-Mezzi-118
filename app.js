@@ -1,4 +1,4 @@
-const APP_VERSION = "1.4.3 - 2026-02-23"; // Layout Optimized
+const APP_VERSION = "1.4.4 - 2026-02-23"; // Ultra-Compact Mobile
 let isAdmin = false;
 let cachedVehicles = null;
 let cachedLocations = null;
