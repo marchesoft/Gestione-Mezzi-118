@@ -382,7 +382,7 @@ async function renderVehicleGrid(vehicles) {
         }
 
         // Notes
-        let noteContent = vehicle.notes || '';
+        let noteContent = (vehicle.notes || '').trim();
         if (vehicle.appointment_date) {
             const locText = vehicle.appointment_location ? ` @ ${vehicle.appointment_location}` : '';
             const apptText = `APPUNTAMENTO: ${formatDate(vehicle.appointment_date)}${locText}`;
