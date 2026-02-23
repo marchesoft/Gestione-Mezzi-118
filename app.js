@@ -1,4 +1,4 @@
-const APP_VERSION = "1.4.0 - 2026-02-23"; // Mobile Refresh Enhanced
+const APP_VERSION = "1.4.1 - 2026-02-23"; // Refresh Layout Adjusted
 let isAdmin = false;
 let cachedVehicles = null;
 let cachedLocations = null;
