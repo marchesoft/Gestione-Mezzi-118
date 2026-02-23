@@ -1,8 +1,9 @@
-const APP_VERSION = "1.3.9 - 2026-02-23"; // Tooltip Restored on Overlay
+const APP_VERSION = "1.4.0 - 2026-02-23"; // Mobile Refresh Enhanced
 let isAdmin = false;
 let cachedVehicles = null;
 let cachedLocations = null;
 let currentOpenedVehicleId = null;
+let lastRefreshTime = new Date();
 
 // Helper to ensure strings are uppercase
 const upper = (str) => (str || '').toString().toUpperCase().trim();
@@ -98,9 +99,21 @@ function setupIdleRefresh() {
 
 function setupAutoRefresh() {
     setInterval(() => {
-        console.log('1-minute auto-refresh triggered...');
-        renderDashboard(true); // Sync from DB
-    }, 60 * 1000); // Every 60 seconds
+        console.log('Auto-refresh triggered...');
+        renderDashboard(true);
+    }, 60 * 1000); // 1 minute
+}
+
+window.manualRefresh = async function () {
+    console.log('Manual refresh requested...');
+    const refreshBtn = document.getElementById('manual-refresh-btn');
+    if (refreshBtn) refreshBtn.classList.add('syncing');
+
+    await renderDashboard(true);
+
+    if (refreshBtn) {
+        setTimeout(() => refreshBtn.classList.remove('syncing'), 500);
+    }
 }
 
 let isSyncing = false; // Prevents race conditions during fetch
@@ -239,10 +252,23 @@ async function renderDashboard(forceRefresh = false) {
         updateStats(cachedVehicles);
         renderVehicleGrid(cachedVehicles);
 
+        lastRefreshTime = new Date();
+        updateLastRefreshDisplay();
+
     } catch (err) {
         console.error("Dashboard render error:", err);
     } finally {
         isSyncing = false;
+    }
+}
+
+function updateLastRefreshDisplay() {
+    const display = document.getElementById('last-update-time');
+    if (display) {
+        const hours = String(lastRefreshTime.getHours()).padStart(2, '0');
+        const minutes = String(lastRefreshTime.getMinutes()).padStart(2, '0');
+        const seconds = String(lastRefreshTime.getSeconds()).padStart(2, '0');
+        display.textContent = `${hours}:${minutes}:${seconds}`;
     }
 }
 
