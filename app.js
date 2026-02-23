@@ -1,4 +1,4 @@
-const APP_VERSION = "1.3.6 - 2026-02-23"; // Overlay Notes Removed
+const APP_VERSION = "1.3.7 - 2026-02-23"; // Force cache flush
 let isAdmin = false;
 let cachedVehicles = null;
 let cachedLocations = null;
