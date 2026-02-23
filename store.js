@@ -228,7 +228,7 @@ class Store {
     }
 
     async updateCambioMezzo(id, data) {
-        const { error } = await this.client
+        const { error } = await this.supabase
             .from('cambiomezzo')
             .update(data)
             .eq('id', id);

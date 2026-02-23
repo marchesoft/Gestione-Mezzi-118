@@ -1,4 +1,4 @@
-const APP_VERSION = "1.3.4 - 2026-02-22"; // Dynamic Contacts Management
+const APP_VERSION = "1.3.5 - 2026-02-23"; // Auto-refresh & UI Polish
 let isAdmin = false;
 let cachedVehicles = null;
 let cachedLocations = null;
@@ -63,6 +63,7 @@ async function initApp() {
     await renderDashboard(true); // Force initial fetch
     setupRealtimeSubscription();
     setupIdleRefresh();
+    setupAutoRefresh();
 
     // Refresh on return to focus (important for mobile)
     document.addEventListener('visibilitychange', () => {
@@ -93,6 +94,13 @@ function setupIdleRefresh() {
     window.addEventListener('scroll', resetTimer);
 
     resetTimer(); // Start timer initially
+}
+
+function setupAutoRefresh() {
+    setInterval(() => {
+        console.log('1-minute auto-refresh triggered...');
+        renderDashboard(true); // Sync from DB
+    }, 60 * 1000); // Every 60 seconds
 }
 
 let isSyncing = false; // Prevents race conditions during fetch
@@ -798,8 +806,12 @@ window.renderContacts = async function (category) {
 
         const phoneCell = (num, label) => {
             if (!num) return '<span style="color: #cbd5e1">-</span>';
-            const clean = num.replace(/[\\/\s+]/g, '');
+            const isAdmin = localStorage.getItem('adminMode') === 'true';
             const lbl = label ? `<span style="font-size:0.7rem; color:var(--text-secondary); display:block;">${label}</span>` : '';
+
+            if (!isAdmin) return `${lbl}${num}`;
+
+            const clean = num.replace(/[\\/\s+]/g, '');
             return `${lbl}<a href="tel:${clean}" class="tel-link">${num}</a>`;
         };
 
@@ -811,7 +823,7 @@ window.renderContacts = async function (category) {
                     <td style="white-space: nowrap;">${phoneCell(c.urban, c.urban_label)}</td>
                     <td style="white-space: nowrap;">${phoneCell(c.mobile, c.mobile_label)}</td>
                     ${category !== 'sedi' ? `<td style="white-space: nowrap;">${phoneCell(c.mobile2, c.mobile2_label)}</td>` : ''}
-                    ${category === 'sedi' ? `<td style="white-space: nowrap;">${c.mobile_medical ? `<a href="tel:${medicalClean}" class="tel-link">${c.mobile_medical}</a>` : '<span style="color: #cbd5e1">-</span>'}</td>` : ''}
+                    ${category === 'sedi' ? `<td style="white-space: nowrap;">${c.mobile_medical ? (localStorage.getItem('adminMode') === 'true' ? `<a href="tel:${medicalClean}" class="tel-link">${c.mobile_medical}</a>` : c.mobile_medical) : '<span style="color: #cbd5e1">-</span>'}</td>` : ''}
                     <td class="admin-only" style="white-space: nowrap;">
                         <div style="display: flex; gap: 0.4rem;">
                             <button onclick="openContactForm('${c.id}')" class="btn btn-sm" style="padding: 0.3rem 0.6rem; background: #f1f5f9; color: #475569; border: 1px solid #e2e8f0;" title="Modifica">
@@ -1098,7 +1110,7 @@ window.addLocationHandler = async function (e) {
     if (e && e.preventDefault) e.preventDefault();
     const name = prompt("Nome del nuovo luogo:");
     if (!name) return;
-    const color = prompt("Colore (HEX, es: #3b82f6) o premi OK per default:", "#3b82f6");
+    const color = "#3b82f6";
     try {
         await store.addLocation(upper(name), color);
         // Refresh directly
@@ -1357,7 +1369,7 @@ window.openVehicleModal = async function (id) {
                                         <button class="btn" style="padding: 0.25rem 0.5rem; font-size: 0.8rem; background: var(--status-to-repair); color: white;" onclick="deleteMaintenanceRecord('${record.id}', '${vehicle.id}')"><i class="fa-solid fa-trash"></i></button>
                                     </td>
                                 </tr>
-                            `)}).join('')}
+                            `).join('')}
                         </tbody>
                     </table>
                 ` : '<p style="padding: 2rem; text-align: center; color: var(--text-secondary);">Nessun record di manutenzione trovato.</p>'}
@@ -1394,7 +1406,7 @@ window.openMaintenanceForm = function (vehicleId, vehicleSigla, record = null) {
 
     // Populate Workshop dropdown from cachedLocations
     workshopSelect.innerHTML = '<option value="">-- Seleziona Officina --</option>' +
-        (cachedLocations || []).map(loc => `<option value="${loc}">${loc}</option>`).join('');
+        (cachedLocations || []).map(loc => `<option value="${loc.luogo}">${loc.luogo}</option>`).join('');
 
     if (record) {
         // Edit Mode
@@ -1762,43 +1774,37 @@ window.switchDataTable = async function (type) {
                 </div>
                 <div style="overflow-x: auto;">
                     <table class="mgmt-table" style="table-layout: auto; width: 100%;">
-                        <colgroup>
-                            <col style="width: 1%;">
-                            <col style="width: 1%;">
-                            <col style="width: 1%;">
-                            <col style="width: 1%;">
-                            <col style="width: 1%;">
-                            <col style="width: 1%;">
-                            <col style="width: 1%;">
-                        </colgroup>
                         <thead>
                             <tr>
-                                <th style="white-space:nowrap;">CATEGORIA</th>
-                                <th style="white-space:nowrap;">NOME / SIGLA</th>
-                                <th style="white-space:nowrap;">FISSO</th>
-                                <th style="white-space:nowrap;">CELLULARE 1</th>
-                                <th style="white-space:nowrap;">CELLULARE 2</th>
-                                <th style="white-space:nowrap;">CELL. MEDICO</th>
-                                <th class="col-actions" style="white-space:nowrap;">AZIONI</th>
+                                <th class="col-shrink">CATEGORIA</th>
+                                <th>NOME / SIGLA</th>
+                                <th class="col-shrink">FISSO</th>
+                                <th class="col-shrink">CELLULARE 1</th>
+                                <th class="col-shrink">CELLULARE 2</th>
+                                <th class="col-shrink">CELL. MEDICO</th>
+                                <th class="col-actions">AZIONI</th>
                             </tr>
                         </thead>
                         <tbody>
                             ${data.map(c => {
+                const isAdmin = localStorage.getItem('adminMode') === 'true';
                 const bg = c.category === 'sedi' ? '#dbeafe' : c.category === 'officine' ? '#fef3c7' : '#f0fdf4';
                 const fg = c.category === 'sedi' ? '#1e40af' : c.category === 'officine' ? '#92400e' : '#166534';
                 const pCell = (num, lbl) => {
                     if (!num) return '<span style="color:#cbd5e1">-</span>';
                     const tag = lbl ? `<span style="font-size:0.7rem;color:#64748b;display:block;">${lbl}</span>` : '';
-                    return tag + num;
+                    if (!isAdmin) return tag + num;
+                    const clean = num.replace(/[\\/\s+]/g, '');
+                    return `${tag}<a href="tel:${clean}" class="tel-link" style="display:inline-block; padding:0.2rem 0.5rem; background:#ecfdf5; color:#059669; text-decoration:none; border-radius:0.3rem; font-weight:700; font-size:0.8rem;">${num}</a>`;
                 };
                 return '<tr>'
-                    + `<td style="white-space:nowrap;"><span style="font-size:0.75rem;font-weight:700;padding:0.2rem 0.5rem;border-radius:0.3rem;background:${bg};color:${fg};">${catLabel[c.category] || c.category}</span></td>`
+                    + `<td class="col-shrink"><span style="font-size:0.75rem;font-weight:700;padding:0.2rem 0.5rem;border-radius:0.3rem;background:${bg};color:${fg};">${catLabel[c.category] || c.category}</span></td>`
                     + `<td style="font-weight:600; white-space:nowrap;">${c.name}</td>`
-                    + `<td style="white-space:nowrap;">${pCell(c.urban, c.urban_label)}</td>`
-                    + `<td style="white-space:nowrap;">${pCell(c.mobile, c.mobile_label)}</td>`
-                    + `<td style="white-space:nowrap;">${pCell(c.mobile2, c.mobile2_label)}</td>`
-                    + `<td style="white-space:nowrap;">${c.mobile_medical || '<span style="color:#cbd5e1">-</span>'}</td>`
-                    + `<td style="white-space:nowrap;">`
+                    + `<td class="col-shrink">${pCell(c.urban, c.urban_label)}</td>`
+                    + `<td class="col-shrink">${pCell(c.mobile, c.mobile_label)}</td>`
+                    + `<td class="col-shrink">${pCell(c.mobile2, c.mobile2_label)}</td>`
+                    + `<td class="col-shrink">${c.mobile_medical ? (isAdmin ? `<a href="tel:${c.mobile_medical.replace(/[\\/\s+]/g, '')}" class="tel-link" style="display:inline-block; padding:0.2rem 0.5rem; background:#ecfdf5; color:#059669; text-decoration:none; border-radius:0.3rem; font-weight:700; font-size:0.8rem;">${c.mobile_medical}</a>` : c.mobile_medical) : '<span style="color:#cbd5e1">-</span>'}</td>`
+                    + `<td class="col-actions">`
                     + `<button onclick="openContactForm('${c.id}')" style="cursor:pointer;background:none;border:none;color:var(--primary-color);margin-right:0.5rem;" title="Modifica"><i class="fa-solid fa-pen-to-square"></i></button>`
                     + `<button onclick="if(confirm('Eliminare questo contatto?')){store.deleteContact('${c.id}').then(() => switchDataTable('contacts'))}" style="cursor:pointer;background:none;border:none;color:var(--status-to-repair);" title="Elimina"><i class="fa-solid fa-trash"></i></button>`
                     + '</td></tr>';

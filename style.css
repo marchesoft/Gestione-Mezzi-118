@@ -697,6 +697,15 @@ select {
     border-color: var(--primary-color);
 }
 
+/* Hide admin hint text when logged in */
+body.is-admin #admin-hint-text {
+    display: none;
+}
+
+.location-select option {
+    font-weight: normal !important;
+}
+
 .status-operative {
     color: var(--status-operative);
     background-color: var(--status-operative-bg);
@@ -852,7 +861,8 @@ select {
 
 /* Form Modals should be in front of Management Modals */
 #vehicle-form-modal,
-#maintenance-form-modal {
+#maintenance-form-modal,
+#cambio-mezzo-modal {
     z-index: 2000;
 }
 
@@ -967,6 +977,7 @@ select {
     text-transform: uppercase;
     font-size: 0.75rem;
     letter-spacing: 0.05em;
+    white-space: nowrap;
 }
 
 /* Column behaviors */
@@ -978,7 +989,6 @@ select {
 .col-expand {
     width: auto;
     white-space: normal;
-    min-width: 250px;
     line-height: 1.4;
 }
 
