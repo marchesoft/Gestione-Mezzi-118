@@ -1,4 +1,4 @@
-const APP_VERSION = "1.3.7 - 2026-02-23"; // Force cache flush
+const APP_VERSION = "1.3.8 - 2026-02-23"; // Tooltip Suppressed on Overlay
 let isAdmin = false;
 let cachedVehicles = null;
 let cachedLocations = null;
