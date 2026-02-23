@@ -1,4 +1,4 @@
-const APP_VERSION = "1.3.5 - 2026-02-23"; // Auto-refresh & UI Polish
+const APP_VERSION = "1.3.6 - 2026-02-23"; // Overlay Notes Removed
 let isAdmin = false;
 let cachedVehicles = null;
 let cachedLocations = null;
