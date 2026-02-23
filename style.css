@@ -577,6 +577,7 @@ select {
     transform: translateY(-8px) scale(1.02);
     box-shadow: 0 24px 48px -5px rgb(0 0 0 / 0.40), 0 16px 24px -5px rgb(0 0 0 / 0.30), 0 4px 10px 0 rgb(0 0 0 / 0.20);
     border-color: var(--primary-color);
+    z-index: 1000 !important;
 }
 
 .vehicle-card.dragging {
