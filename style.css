@@ -370,11 +370,6 @@ select {
     animation: alert-fade-in 0.3s ease-out;
 }
 
-/* Hide tooltip when overlay is active to avoid confusion */
-.appointment-alert-overlay~.note-tooltip {
-    display: none !important;
-}
-
 @keyframes alert-fade-in {
     from {
         opacity: 0;

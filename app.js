@@ -1,4 +1,4 @@
-const APP_VERSION = "1.3.8 - 2026-02-23"; // Tooltip Suppressed on Overlay
+const APP_VERSION = "1.3.9 - 2026-02-23"; // Tooltip Restored on Overlay
 let isAdmin = false;
 let cachedVehicles = null;
 let cachedLocations = null;
