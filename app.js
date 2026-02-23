@@ -1756,8 +1756,8 @@ window.switchDataTable = async function (type) {
                 + `<td>${c.equipaggio || '-'}</td>`
                 + `<td class="col-shrink text-bold text-primary">${c.dal_mezzo}</td>`
                 + `<td class="col-shrink text-bold" style="color:var(--status-available);">${c.al_mezzo}</td>`
-                + '<td class="col-actions" style="display: flex; gap: 0.5rem; justify-content: flex-end;">'
-                + `<button onclick="openCambioMezzoModal('${c.id}')" style="cursor:pointer; background:none; border:none; color:var(--primary-color);"><i class="fa-solid fa-edit"></i></button>`
+                + '<td class="col-actions">'
+                + `<button onclick="openCambioMezzoModal('${c.id}')" style="cursor:pointer; background:none; border:none; color:var(--primary-color); margin-right: 0.5rem;"><i class="fa-solid fa-edit"></i></button>`
                 + `<button onclick="if(confirm('Eliminare questo cambio?')){store.deleteCambioMezzo('${c.id}').then(() => switchDataTable('cambiomezzo'))}" style="cursor:pointer; background:none; border:none; color:var(--status-to-repair);"><i class="fa-solid fa-trash"></i></button>`
                 + '</td></tr>'
             ).join('')}

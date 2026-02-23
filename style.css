@@ -996,6 +996,8 @@ body.is-admin #admin-hint-text {
     text-align: right !important;
     width: 1%;
     white-space: nowrap;
+    padding-left: 1.5rem !important;
+    min-width: 90px;
 }
 
 .text-bold {
