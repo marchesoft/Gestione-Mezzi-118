@@ -322,10 +322,12 @@ async function renderVehicleGrid(vehicles) {
         const alreadyAcked = vehicle.alert_ack_date === todayStr;
 
         if ((isToday || isTomorrow) && !alreadyAcked) {
+            const noteContentForAlert = (vehicle.notes || '').trim();
             alertHTML = `
                 <div class="appointment-alert-overlay">
                     <div class="alert-title">${isToday ? 'OGGI' : 'DOMANI'} APPUNTAMENTO</div>
                     <div class="alert-subtitle">${vehicle.appointment_location || 'Luogo non specificato'}</div>
+                    ${noteContentForAlert ? `<div class="alert-note">${noteContentForAlert.replace(/\n/g, '<br>')}</div>` : ''}
                     <button class="alert-ack-btn" onclick="acknowledgeAppointmentAlert(event, '${vehicle.id}')">PRESA VISIONE</button>
                 </div>
             `;
