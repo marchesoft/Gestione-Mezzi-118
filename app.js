@@ -832,13 +832,10 @@ window.renderContacts = async function (category) {
 
         const phoneCell = (num, label) => {
             if (!num) return '<span style="color: #cbd5e1">-</span>';
-            const isAdmin = localStorage.getItem('adminMode') === 'true';
             const lbl = label ? `<span style="font-size:0.7rem; color:var(--text-secondary); display:block;">${label}</span>` : '';
 
-            if (!isAdmin) return `${lbl}${num}`;
-
             const clean = num.replace(/[\\/\s+]/g, '');
-            return `${lbl}<a href="tel:${clean}" class="tel-link">${num}</a>`;
+            return `${lbl}<a href="tel:${clean}" class="tel-link"><i class="fa-solid fa-phone"></i> ${num}</a>`;
         };
 
         filtered.forEach(c => {
@@ -849,7 +846,7 @@ window.renderContacts = async function (category) {
                     <td style="white-space: nowrap;">${phoneCell(c.urban, c.urban_label)}</td>
                     <td style="white-space: nowrap;">${phoneCell(c.mobile, c.mobile_label)}</td>
                     ${category !== 'sedi' ? `<td style="white-space: nowrap;">${phoneCell(c.mobile2, c.mobile2_label)}</td>` : ''}
-                    ${category === 'sedi' ? `<td style="white-space: nowrap;">${c.mobile_medical ? (localStorage.getItem('adminMode') === 'true' ? `<a href="tel:${medicalClean}" class="tel-link">${c.mobile_medical}</a>` : c.mobile_medical) : '<span style="color: #cbd5e1">-</span>'}</td>` : ''}
+                    ${category === 'sedi' ? `<td style="white-space: nowrap;">${c.mobile_medical ? `<a href="tel:${medicalClean}" class="tel-link"><i class="fa-solid fa-user-doctor"></i> ${c.mobile_medical}</a>` : '<span style="color: #cbd5e1">-</span>'}</td>` : ''}
                     <td class="admin-only" style="white-space: nowrap;">
                         <div style="display: flex; gap: 0.4rem;">
                             <button onclick="openContactForm('${c.id}')" class="btn btn-sm" style="padding: 0.3rem 0.6rem; background: #f1f5f9; color: #475569; border: 1px solid #e2e8f0;" title="Modifica">
