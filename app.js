@@ -4,6 +4,7 @@ let cachedVehicles = null;
 let cachedLocations = null;
 let currentOpenedVehicleId = null;
 let lastRefreshTime = new Date();
+let currentFilter = 'all';
 
 // Helper to ensure strings are uppercase
 const upper = (str) => (str || '').toString().toUpperCase().trim();
@@ -250,7 +251,15 @@ async function renderDashboard(forceRefresh = false) {
         }
 
         updateStats(cachedVehicles);
-        renderVehicleGrid(cachedVehicles);
+
+        // Preserve active filter
+        if (currentFilter === 'all') {
+            renderVehicleGrid(cachedVehicles);
+        } else {
+            const filtered = cachedVehicles.filter(v => v.status === currentFilter);
+            sortVehiclesBySigla(filtered);
+            renderVehicleGrid(filtered);
+        }
 
         lastRefreshTime = new Date();
         updateLastRefreshDisplay();
@@ -297,8 +306,11 @@ window.setDashboardFilter = async function (status) {
         }
     });
 
+    currentFilter = status;
+
     if (!cachedVehicles) {
         await renderDashboard(true);
+        return; // renderDashboard handles the rendering with currentFilter
     }
 
     if (status === 'all') {
