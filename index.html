@@ -231,18 +231,18 @@
                                     <select id="vehicle-mileage-month"
                                         style="width: 100%; padding: 0.6rem; border: 1px solid var(--border-color); border-radius: 0.5rem;">
                                         <option value="">-- Seleziona --</option>
-                                        <option value="Gennaio">Gennaio</option>
-                                        <option value="Febbraio">Febbraio</option>
-                                        <option value="Marzo">Marzo</option>
-                                        <option value="Aprile">Aprile</option>
-                                        <option value="Maggio">Maggio</option>
-                                        <option value="Giugno">Giugno</option>
-                                        <option value="Luglio">Luglio</option>
-                                        <option value="Agosto">Agosto</option>
-                                        <option value="Settembre">Settembre</option>
-                                        <option value="Ottobre">Ottobre</option>
-                                        <option value="Novembre">Novembre</option>
-                                        <option value="Dicembre">Dicembre</option>
+                                        <option value="GENNAIO">Gennaio</option>
+                                        <option value="FEBBRAIO">Febbraio</option>
+                                        <option value="MARZO">Marzo</option>
+                                        <option value="APRILE">Aprile</option>
+                                        <option value="MAGGIO">Maggio</option>
+                                        <option value="GIUGNO">Giugno</option>
+                                        <option value="LUGLIO">Luglio</option>
+                                        <option value="AGOSTO">Agosto</option>
+                                        <option value="SETTEMBRE">Settembre</option>
+                                        <option value="OTTOBRE">Ottobre</option>
+                                        <option value="NOVEMBRE">Novembre</option>
+                                        <option value="DICEMBRE">Dicembre</option>
                                     </select>
                                 </div>
                             </div>
@@ -278,9 +278,8 @@
                                             style="width: 100%; padding: 0.5rem; border: 1px solid var(--border-color); border-radius: 0.4rem; font-size: 0.9rem;">
                                     </div>
                                     <div class="form-group">
-                                        <label
-                                            style="display: block; margin-bottom: 0.3rem; font-size: 0.8rem;">Scadenza
-                                            Rev. O2</label>
+                                        <label style="display: block; margin-bottom: 0.3rem; font-size: 0.8rem;">Ultima
+                                            revisione O2</label>
                                         <input type="date" id="vehicle-revision-o2"
                                             style="width: 100%; padding: 0.5rem; border: 1px solid var(--border-color); border-radius: 0.4rem; font-size: 0.9rem;">
                                     </div>
@@ -466,8 +465,14 @@
             <div class="modal-content data-mgmt-content">
                 <div class="modal-header-mgmt">
                     <h2 class="modal-title-mgmt">Gestione Database</h2>
-                    <button onclick="document.getElementById('data-management-modal').classList.add('hidden')"
-                        class="close-modal-btn-mgmt">&times;</button>
+                    <div style="display: flex; gap: 0.5rem; align-items: center;">
+                        <button class="btn btn-export" onclick="exportCurrentTableToCSV()"
+                            title="Esporta Tabella Attuale in Excel">
+                            <i class="fa-solid fa-file-excel"></i> Esporta Excel
+                        </button>
+                        <button onclick="document.getElementById('data-management-modal').classList.add('hidden')"
+                            class="close-modal-btn-mgmt">&times;</button>
+                    </div>
                 </div>
                 <div class="modal-tabs-mgmt">
                     <button class="filter-btn active" onclick="switchDataTable('vehicles')">Mezzi</button>

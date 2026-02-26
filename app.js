@@ -1324,7 +1324,7 @@ window.openVehicleModal = async function (id) {
                             <div style="font-size: 0.95rem; font-weight: 600; color: black;">${vehicle.inspection_expiry ? formatDate(vehicle.inspection_expiry) : '-'}</div>
                         </div>
                         <div>
-                            <div style="font-size: 0.75rem; text-transform: uppercase; color: black; font-weight: 600; margin-bottom: 0.25rem;">Rev. O2</div>
+                            <div style="font-size: 0.75rem; text-transform: uppercase; color: black; font-weight: 600; margin-bottom: 0.25rem;">Ultima revisione O2</div>
                             <div style="font-size: 0.95rem; font-weight: 600; color: black;">${vehicle.revision_o2 ? formatDate(vehicle.revision_o2) : '-'}</div>
                         </div>
                     </div>
@@ -1614,6 +1614,67 @@ window.saveVehicleNote = async function (id, text, showFeedback = false) {
     } catch (e) {
         console.error('Error saving note:', e);
         alert('Errore nel salvataggio della nota');
+    }
+}
+
+// --- CSV Export Utility ---
+window.exportCurrentTableToCSV = async function () {
+    const type = window.lastDataManagerTab || 'vehicles';
+    console.log(`Exporting ${type} to CSV...`);
+
+    try {
+        let data = [];
+        let filename = `export_${type}_${new Date().toISOString().split('T')[0]}.csv`;
+
+        // Fetch fresh data for export
+        if (type === 'vehicles') data = await store.getVehicles();
+        else if (type === 'locations') data = await store.getLocations();
+        else if (type === 'interventions') data = await store.getInterventions();
+        else if (type === 'cambiomezzo') data = await store.getCambiMezzi();
+        else if (type === 'contacts') data = await store.getContacts();
+
+        if (!data || data.length === 0) {
+            alert("Nessun dato da esportare.");
+            return;
+        }
+
+        // Generate CSV
+        const headers = Object.keys(data[0]);
+        const csvRows = [];
+
+        // Add headers row
+        csvRows.push(headers.join(';'));
+
+        // Add data rows
+        for (const row of data) {
+            const values = headers.map(header => {
+                let val = row[header];
+                if (val === null || val === undefined) return '';
+                // Escape semicolons and handle strings
+                let escaped = ('' + val).replace(/;/g, ',').replace(/\n/g, ' ');
+                return `"${escaped}"`;
+            });
+            csvRows.push(values.join(';'));
+        }
+
+        const csvString = csvRows.join('\n');
+        const blob = new Blob([csvString], { type: 'text/csv;charset=utf-8;' });
+        const link = document.createElement("a");
+
+        if (navigator.msSaveBlob) { // IE 10+
+            navigator.msSaveBlob(blob, filename);
+        } else {
+            const url = URL.createObjectURL(blob);
+            link.setAttribute("href", url);
+            link.setAttribute("download", filename);
+            link.style.visibility = 'hidden';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+    } catch (err) {
+        console.error("Export error:", err);
+        alert("Errore durante l'esportazione dei dati.");
     }
 }
 

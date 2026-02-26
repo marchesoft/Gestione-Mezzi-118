@@ -99,6 +99,26 @@ select {
     background-color: var(--primary-dark);
 }
 
+.btn-export {
+    background-color: #10b981;
+    /* Emerald green for Excel */
+    color: white;
+    padding: 0.4rem 0.8rem;
+    font-size: 0.85rem;
+    border-radius: var(--radius-md);
+    border: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-weight: 600;
+    transition: background-color 0.2s;
+}
+
+.btn-export:hover {
+    background-color: #059669;
+}
+
 /* Dashboard */
 .view-title {
     font-size: 1.75rem;
