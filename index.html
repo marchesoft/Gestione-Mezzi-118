@@ -465,14 +465,8 @@
             <div class="modal-content data-mgmt-content">
                 <div class="modal-header-mgmt">
                     <h2 class="modal-title-mgmt">Gestione Database</h2>
-                    <div style="display: flex; gap: 0.5rem; align-items: center;">
-                        <button class="btn btn-export" onclick="exportCurrentTableToCSV()"
-                            title="Esporta Tabella Attuale in Excel">
-                            <i class="fa-solid fa-file-excel"></i> Esporta Excel
-                        </button>
-                        <button onclick="document.getElementById('data-management-modal').classList.add('hidden')"
-                            class="close-modal-btn-mgmt">&times;</button>
-                    </div>
+                    <button onclick="document.getElementById('data-management-modal').classList.add('hidden')"
+                        class="close-modal-btn-mgmt">&times;</button>
                 </div>
                 <div class="modal-tabs-mgmt">
                     <button class="filter-btn active" onclick="switchDataTable('vehicles')">Mezzi</button>

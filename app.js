@@ -1807,6 +1807,9 @@ window.switchDataTable = async function (type) {
                                oninput="window.filterInterventionTable(this.value)"
                                style="width: 100%; padding: 0.5rem 1rem 0.5rem 2.5rem; border-radius: 0.5rem; border: 1px solid var(--border-color); outline: none;">
                     </div>
+                    <button class="btn btn-export" onclick="exportCurrentTableToCSV()" style="white-space: nowrap;">
+                        <i class="fa-solid fa-file-excel"></i> Esporta Excel
+                    </button>
                 </div>
                 <div style="overflow-x: auto;">
                     <table class="mgmt-table" id="interventions-table">
