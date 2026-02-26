@@ -1638,12 +1638,18 @@ window.exportCurrentTableToCSV = async function () {
             return;
         }
 
-        // Generate CSV
-        const headers = Object.keys(data[0]);
-        const csvRows = [];
+        let headers = [];
+        let csvRows = [];
 
-        // Add headers row
-        csvRows.push(headers.join(';'));
+        // Specific mapping for Interventions as requested
+        if (type === 'interventions') {
+            headers = ['date', 'date_out', 'sigla', 'workshop', 'description'];
+            const italianHeaders = ['Data Entrata', 'Data Uscita', 'Mezzo (Sigla)', 'Officina', 'Descrizione Intervento'];
+            csvRows.push(italianHeaders.join(';'));
+        } else {
+            headers = Object.keys(data[0]);
+            csvRows.push(headers.join(';'));
+        }
 
         // Add data rows
         for (const row of data) {
@@ -1657,7 +1663,10 @@ window.exportCurrentTableToCSV = async function () {
             csvRows.push(values.join(';'));
         }
 
-        const csvString = csvRows.join('\n');
+        // Prepend UTF-8 BOM for Excel compatibility (mandatory for Italian characters)
+        const BOM = '\uFEFF';
+        const csvString = BOM + csvRows.join('\n');
+
         const blob = new Blob([csvString], { type: 'text/csv;charset=utf-8;' });
         const link = document.createElement("a");
 

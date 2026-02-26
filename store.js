@@ -151,14 +151,19 @@ class Store {
     async getInterventions() {
         const { data, error } = await this.supabase
             .from('interventions')
-            .select('*')
+            .select('*, vehicles(sigla)')
             .order('date', { ascending: false });
 
         if (error) {
             console.error('Error fetching interventions:', error);
             return [];
         }
-        return data;
+
+        // Flatten the data to have sigla at the top level
+        return data.map(i => ({
+            ...i,
+            sigla: i.vehicles ? i.vehicles.sigla : 'N/A'
+        }));
     }
 
     async deleteIntervention(id) {
