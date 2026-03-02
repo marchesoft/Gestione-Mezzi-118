@@ -593,6 +593,15 @@ select {
     margin-top: 0.05rem;
 }
 
+.month-text {
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    font-weight: 600;
+    text-transform: uppercase;
+    line-height: 1;
+    opacity: 0.8;
+}
+
 .vehicle-card:hover {
     transform: translateY(-8px) scale(1.02);
     box-shadow: 0 24px 48px -5px rgb(0 0 0 / 0.40), 0 16px 24px -5px rgb(0 0 0 / 0.30), 0 4px 10px 0 rgb(0 0 0 / 0.20);
@@ -1867,4 +1876,45 @@ body.is-admin #admin-hint-text {
         font-size: 0.8rem;
         white-space: nowrap;
     }
+}
+
+/* Desktop only visibility */
+@media (max-width: 768px) {
+    .desktop-only {
+        display: none !important;
+    }
+}
+
+/* Requests Modal Styles */
+.requests-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1rem;
+    padding: 1rem 0;
+}
+
+.btn-request-item {
+    padding: 1.25rem;
+    font-size: 1.1rem;
+    font-weight: 700;
+    text-align: left;
+    justify-content: flex-start;
+    border: 2px solid var(--border-color);
+    background: white;
+    color: var(--text-primary);
+    border-radius: var(--radius-lg);
+    transition: all 0.2s;
+}
+
+.btn-request-item:hover {
+    background: var(--primary-color);
+    color: white;
+    border-color: var(--primary-color);
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+}
+
+.btn-request-item i {
+    font-size: 1.5rem;
+    width: 30px;
 }

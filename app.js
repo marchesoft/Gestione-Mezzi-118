@@ -1,4 +1,4 @@
-const APP_VERSION = "1.4.4 - 2026-02-23"; // Ultra-Compact Mobile
+const APP_VERSION = "1.4.5 - 2026-03-01"; // Ultra-Compact Mobile
 let isAdmin = false;
 let cachedVehicles = null;
 let cachedLocations = null;
@@ -115,6 +115,35 @@ window.manualRefresh = async function () {
     if (refreshBtn) {
         setTimeout(() => refreshBtn.classList.remove('syncing'), 500);
     }
+}
+
+window.openRequestsModal = function () {
+    document.getElementById('requests-modal').classList.remove('hidden');
+}
+
+window.closeRequestsModal = function () {
+    document.getElementById('requests-modal').classList.add('hidden');
+}
+
+window.handleRequestAction = function (type) {
+    console.log(`Action requested: ${type}`);
+    switch (type) {
+        case 'ausl':
+            // Get the absolute path to the file based on current window location
+            const fileUrlAusl = window.location.href.split('?')[0].split('#')[0].replace('index.html', 'richiesta_ausl.docm');
+            // Use ms-word protocol to force opening in Word
+            window.location.href = 'ms-word:ofe|u|' + fileUrlAusl;
+            break;
+        case 'alea':
+            const fileUrlAlea = window.location.href.split('?')[0].split('#')[0].replace('index.html', 'richiesta_alea.docm');
+            window.location.href = 'ms-word:ofe|u|' + fileUrlAlea;
+            break;
+        case 'ossigeno':
+            const fileUrlOssigeno = window.location.href.split('?')[0].split('#')[0].replace('index.html', 'ordine_ossigeno.docm');
+            window.location.href = 'ms-word:ofe|u|' + fileUrlOssigeno;
+            break;
+    }
+    closeRequestsModal();
 }
 
 let isSyncing = false; // Prevents race conditions during fetch
@@ -447,6 +476,7 @@ async function renderVehicleGrid(vehicles) {
                         <div class="model-text">${vehicle.model}</div>
                         <div class="plate-number">${vehicle.plate}</div>
                         <div class="km-text">KM: ${(parseInt(vehicle.mileage) || 0).toLocaleString()}</div>
+                        ${vehicle.mileage_month ? `<div class="month-text">${vehicle.mileage_month}</div>` : ''}
                     </div>
                     <div class="card-actions" style="justify-content: center; flex-direction: column; align-items: center;">
                         ${locationHtml}
