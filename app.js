@@ -117,34 +117,7 @@ window.manualRefresh = async function () {
     }
 }
 
-window.openRequestsModal = function () {
-    document.getElementById('requests-modal').classList.remove('hidden');
-}
 
-window.closeRequestsModal = function () {
-    document.getElementById('requests-modal').classList.add('hidden');
-}
-
-window.handleRequestAction = function (type) {
-    console.log(`Action requested: ${type}`);
-    switch (type) {
-        case 'ausl':
-            // Get the absolute path to the file based on current window location
-            const fileUrlAusl = window.location.href.split('?')[0].split('#')[0].replace('index.html', 'richiesta_ausl.docm');
-            // Use ms-word protocol to force opening in Word
-            window.location.href = 'ms-word:ofe|u|' + fileUrlAusl;
-            break;
-        case 'alea':
-            const fileUrlAlea = window.location.href.split('?')[0].split('#')[0].replace('index.html', 'richiesta_alea.docm');
-            window.location.href = 'ms-word:ofe|u|' + fileUrlAlea;
-            break;
-        case 'ossigeno':
-            const fileUrlOssigeno = window.location.href.split('?')[0].split('#')[0].replace('index.html', 'ordine_ossigeno.docm');
-            window.location.href = 'ms-word:ofe|u|' + fileUrlOssigeno;
-            break;
-    }
-    closeRequestsModal();
-}
 
 let isSyncing = false; // Prevents race conditions during fetch
 let lastVehicleSync = Date.now();

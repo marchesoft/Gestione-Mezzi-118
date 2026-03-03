@@ -70,10 +70,7 @@
                         <button class="btn btn-primary admin-only" id="add-vehicle-btn">
                             <i class="fa-solid fa-plus"></i> Nuovo Mezzo
                         </button>
-                        <button class="btn desktop-only" id="btn-requests-menu"
-                            style="background: #ef4444; color: white; font-weight: 700;" onclick="openRequestsModal()">
-                            <i class="fa-solid fa-chevron-right"></i> RICHIESTE
-                        </button>
+
                         <button class="btn" id="admin-login-btn" onclick="toggleAdminMode()"
                             style="background: white; border: 1px solid var(--border-color); color: var(--text-secondary);"
                             title="Admin Login">
@@ -619,29 +616,7 @@
         </div>
     </div>
 
-    <!-- Requests Menu Modal -->
-    <div id="requests-modal" class="modal hidden">
-        <div class="modal-content" style="max-width: 450px; height: auto;">
-            <div
-                style="padding: 1.5rem; border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center;">
-                <h3 style="font-size: 1.25rem; font-weight: 600;">Menu Richieste</h3>
-                <span onclick="closeRequestsModal()" style="font-size: 1.5rem; cursor: pointer;">&times;</span>
-            </div>
-            <div style="padding: 1.5rem;">
-                <div class="requests-grid">
-                    <button class="btn btn-request-item" onclick="handleRequestAction('ausl')">
-                        <i class="fa-solid fa-hospital-user"></i> Richiesta manutenzione AUSL
-                    </button>
-                    <button class="btn btn-request-item" onclick="handleRequestAction('alea')">
-                        <i class="fa-solid fa-briefcase-medical"></i> Richiesta manutenzione ALEA
-                    </button>
-                    <button class="btn btn-request-item" onclick="handleRequestAction('ossigeno')">
-                        <i class="fa-solid fa-lung"></i> Richiesta ossigeno CONA
-                    </button>
-                </div>
-            </div>
-        </div>
-    </div>
+
 
     <script src="store.js?v=1.4.5"></script>
     <script src="app.js?v=1.4.5"></script>
