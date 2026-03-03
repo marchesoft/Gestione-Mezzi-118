@@ -307,6 +307,18 @@ class Store {
             throw error;
         }
     }
+
+    async upsertData(table, rows) {
+        const { data, error } = await this.supabase
+            .from(table)
+            .upsert(rows, { onConflict: table === 'locations' ? 'name' : 'id' });
+
+        if (error) {
+            console.error(`Error upserting data to ${table}:`, error);
+            throw error;
+        }
+        return data;
+    }
 }
 
 const store = new Store();

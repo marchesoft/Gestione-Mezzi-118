@@ -1650,24 +1650,24 @@ window.exportCurrentTableToCSV = async function () {
 
         // Mapping for headers
         if (type === 'vehicles') {
-            headers = ['plate', 'model', 'sigla', 'station', 'status', 'mileage', 'mileage_month', 'notes', 'radio_id', 'inspection_expiry', 'revision_o2'];
-            const italianHeaders = ['Targa', 'Modello', 'Sigla', 'Stazione', 'Stato', 'Km', 'Mese Km', 'Note', 'Radio ID', 'Scadenza Revisione', 'Revisione O2'];
+            headers = ['id', 'plate', 'model', 'sigla', 'station', 'status', 'mileage', 'mileage_month', 'notes', 'radio_id', 'inspection_expiry', 'revision_o2'];
+            const italianHeaders = ['ID (Non modificare)', 'Targa', 'Modello', 'Sigla', 'Stazione', 'Stato', 'Km', 'Mese Km', 'Note', 'Radio ID', 'Scadenza Revisione', 'Revisione O2'];
             csvRows.push(italianHeaders.join(';'));
         } else if (type === 'locations') {
             headers = ['luogo', 'colore'];
             const italianHeaders = ['Luogo', 'Colore'];
             csvRows.push(italianHeaders.join(';'));
         } else if (type === 'interventions') {
-            headers = ['date', 'date_out', 'sigla', 'workshop', 'description', 'cost'];
-            const italianHeaders = ['Data Entrata', 'Data Uscita', 'Mezzo (Sigla)', 'Officina', 'Descrizione Intervento', 'Costo'];
+            headers = ['id', 'date', 'date_out', 'sigla', 'workshop', 'description', 'cost'];
+            const italianHeaders = ['ID (Non modificare)', 'Data Entrata', 'Data Uscita', 'Mezzo (Sigla)', 'Officina', 'Descrizione Intervento', 'Costo'];
             csvRows.push(italianHeaders.join(';'));
         } else if (type === 'cambiomezzo') {
-            headers = ['data', 'turno', 'luogo', 'equipaggio', 'dal_mezzo', 'al_mezzo'];
-            const italianHeaders = ['Data', 'Turno', 'Luogo', 'Equipaggio', 'Dal Mezzo', 'Al Mezzo'];
+            headers = ['id', 'data', 'turno', 'luogo', 'equipaggio', 'dal_mezzo', 'al_mezzo'];
+            const italianHeaders = ['ID (Non modificare)', 'Data', 'Turno', 'Luogo', 'Equipaggio', 'Dal Mezzo', 'Al Mezzo'];
             csvRows.push(italianHeaders.join(';'));
         } else if (type === 'contacts') {
-            headers = ['category', 'name', 'urban', 'mobile', 'mobile2', 'mobile_medical'];
-            const italianHeaders = ['Categoria', 'Nome/Sigla', 'Fisso', 'Cellulare 1', 'Cellulare 2', 'Cell. Medico'];
+            headers = ['id', 'category', 'name', 'urban', 'mobile', 'mobile2', 'mobile_medical'];
+            const italianHeaders = ['ID (Non modificare)', 'Categoria', 'Nome/Sigla', 'Fisso', 'Cellulare 1', 'Cellulare 2', 'Cell. Medico'];
             csvRows.push(italianHeaders.join(';'));
         } else {
             headers = Object.keys(data[0]);
@@ -1711,6 +1711,107 @@ window.exportCurrentTableToCSV = async function () {
         console.error("Export error:", err);
         alert("Errore durante l'esportazione dei dati.");
     }
+}
+
+window.importDataTableFromCSV = function () {
+    const type = window.lastDataManagerTab || 'vehicles';
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = '.csv';
+
+    input.onchange = async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = async (event) => {
+            try {
+                let content = event.target.result;
+                // Remove BOM if present
+                if (content.startsWith('\uFEFF')) content = content.substring(1);
+
+                const rows = content.split('\n').filter(r => r.trim());
+                if (rows.length < 2) {
+                    alert("Il file non contiene dati validi.");
+                    return;
+                }
+
+                const rawHeaders = rows[0].split(';').map(h => h.replace(/"/g, '').trim());
+                const dataRows = rows.slice(1);
+
+                // Header mapping
+                const mapping = {};
+                if (type === 'vehicles') {
+                    const map = { 'Targa': 'id_plate', 'Modello': 'model', 'Sigla': 'sigla', 'Stazione': 'station', 'Stato': 'status', 'Km': 'mileage', 'Mese Km': 'mileage_month', 'Note': 'notes', 'Radio ID': 'radio_id', 'Scadenza Revisione': 'inspection_expiry', 'Revisione O2': 'revision_o2' };
+                    // Special case: we need the ID for upserting, but users edit by Sigla or Plate. 
+                    // However, our export HAS id if we don't hide it. Let's assume they use the exported file.
+                }
+
+                // Since users might find mapping complex, let's use the inverted mapping from export logic
+                const headerMap = {
+                    'vehicles': { 'ID (Non modificare)': 'id', 'Targa': 'plate', 'Modello': 'model', 'Sigla': 'sigla', 'Stazione': 'station', 'Stato': 'status', 'Km': 'mileage', 'Mese Km': 'mileage_month', 'Note': 'notes', 'Radio ID': 'radio_id', 'Scadenza Revisione': 'inspection_expiry', 'Revisione O2': 'revision_o2' },
+                    'locations': { 'Luogo': 'luogo', 'Colore': 'colore' },
+                    'interventions': { 'ID (Non modificare)': 'id', 'Data Entrata': 'date', 'Data Uscita': 'date_out', 'Mezzo (Sigla)': 'sigla', 'Officina': 'workshop', 'Descrizione Intervento': 'description', 'Costo': 'cost' },
+                    'cambiomezzo': { 'ID (Non modificare)': 'id', 'Data': 'data', 'Turno': 'turno', 'Luogo': 'luogo', 'Equipaggio': 'equipaggio', 'Dal Mezzo': 'dal_mezzo', 'Al Mezzo': 'al_mezzo' },
+                    'contacts': { 'ID (Non modificare)': 'id', 'Categoria': 'category', 'Nome/Sigla': 'name', 'Fisso': 'urban', 'Cellulare 1': 'mobile', 'Cellulare 2': 'mobile2', 'Cell. Medico': 'mobile_medical' }
+                };
+
+                const currentMap = headerMap[type];
+                const dbRows = [];
+
+                for (const row of dataRows) {
+                    const values = row.split(';').map(v => v.replace(/"/g, '').trim());
+                    const obj = {};
+                    rawHeaders.forEach((label, idx) => {
+                        const dbField = currentMap[label];
+                        if (dbField) {
+                            let val = values[idx];
+                            // Basic type conversion
+                            if (dbField === 'mileage' || dbField === 'cost') val = parseFloat(val) || 0;
+                            // Date conversion (assuming Italian format DD/MM/YYYY)
+                            if (['date', 'date_out', 'data', 'inspection_expiry', 'revision_o2'].includes(dbField)) {
+                                const parts = val.split('/');
+                                if (parts.length === 3) val = `${parts[2]}-${parts[1]}-${parts[0]}`;
+                            }
+                            obj[dbField] = val;
+                        }
+                    });
+
+                    // For interventions, we need to map sigla -> vehicle_id
+                    if (type === 'interventions' && obj.sigla) {
+                        const vehicles = await store.getVehicles();
+                        const v = vehicles.find(m => m.sigla === obj.sigla);
+                        if (v) obj.vehicle_id = v.id;
+                        delete obj.sigla;
+                    }
+
+                    // For locations, Supabase 'locations' table uses 'name' as PK, mapped to 'luogo' in UI
+                    if (type === 'locations' && obj.luogo) {
+                        obj.name = obj.luogo;
+                        delete obj.luogo;
+                    }
+
+                    if (Object.keys(obj).length > 0) dbRows.push(obj);
+                }
+
+                if (dbRows.length > 0) {
+                    const tableMap = { 'vehicles': 'vehicles', 'locations': 'locations', 'interventions': 'interventions', 'cambiomezzo': 'cambiomezzo', 'contacts': 'contacts' };
+                    await store.upsertData(tableMap[type], dbRows);
+                    alert(`Importazione completata: ${dbRows.length} record elaborati.`);
+                    switchDataTable(type);
+                } else {
+                    alert("Nessun dato valido trovato nel file.");
+                }
+
+            } catch (err) {
+                console.error("Import error:", err);
+                alert("Errore durante l'importazione: " + err.message);
+            }
+        };
+        reader.readAsText(file, 'utf-8');
+    };
+
+    input.click();
 }
 
 // --- Data Management System ---
@@ -1757,6 +1858,9 @@ window.switchDataTable = async function (type) {
                     <div style="display: flex; gap: 0.5rem; align-items: center;">
                         <button class="btn btn-export" onclick="exportCurrentTableToCSV()" style="white-space: nowrap;">
                             <i class="fa-solid fa-file-excel"></i> Esporta Excel
+                        </button>
+                        <button class="btn btn-export" onclick="importDataTableFromCSV()" style="white-space: nowrap; background-color: #065f46;">
+                            <i class="fa-solid fa-file-import"></i> Importa Excel
                         </button>
                         <button class="btn btn-primary" onclick="openVehicleForm();" style="padding: 0.5rem 1rem;"><i class="fa-solid fa-plus"></i> Nuovo Mezzo</button>
                     </div>
@@ -1810,6 +1914,9 @@ window.switchDataTable = async function (type) {
                         <button class="btn btn-export" onclick="exportCurrentTableToCSV()" style="white-space: nowrap;">
                             <i class="fa-solid fa-file-excel"></i> Esporta Excel
                         </button>
+                        <button class="btn btn-export" onclick="importDataTableFromCSV()" style="white-space: nowrap; background-color: #065f46;">
+                            <i class="fa-solid fa-file-import"></i> Importa Excel
+                        </button>
                         <button class="btn btn-primary" onclick="window.addLocationHandler();" style="padding: 0.5rem 1rem;"><i class="fa-solid fa-plus"></i> Nuovo Luogo</button>
                     </div>
                 </div>
@@ -1843,9 +1950,14 @@ window.switchDataTable = async function (type) {
                                oninput="window.filterInterventionTable(this.value)"
                                style="width: 100%; padding: 0.5rem 1rem 0.5rem 2.5rem; border-radius: 0.5rem; border: 1px solid var(--border-color); outline: none;">
                     </div>
-                    <button class="btn btn-export" onclick="exportCurrentTableToCSV()" style="white-space: nowrap;">
-                        <i class="fa-solid fa-file-excel"></i> Esporta Excel
-                    </button>
+                    <div style="display: flex; gap: 0.5rem; align-items: center;">
+                        <button class="btn btn-export" onclick="exportCurrentTableToCSV()" style="white-space: nowrap;">
+                            <i class="fa-solid fa-file-excel"></i> Esporta Excel
+                        </button>
+                        <button class="btn btn-export" onclick="importDataTableFromCSV()" style="white-space: nowrap; background-color: #065f46;">
+                            <i class="fa-solid fa-file-import"></i> Importa Excel
+                        </button>
+                    </div>
                 </div>
                 <div style="overflow-x: auto;">
                     <table class="mgmt-table" id="interventions-table">
@@ -1880,9 +1992,14 @@ window.switchDataTable = async function (type) {
             html = `
                 <div style="margin-bottom: 1rem; background: #f8fafc; padding: 1rem; border-radius: 0.75rem; border: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; gap: 1rem;">
                     <h4 style="font-size: 0.9rem;">Storico Cambi Mezzo</h4>
-                    <button class="btn btn-export" onclick="exportCurrentTableToCSV()" style="white-space: nowrap;">
-                        <i class="fa-solid fa-file-excel"></i> Esporta Excel
-                    </button>
+                    <div style="display: flex; gap: 0.5rem; align-items: center;">
+                        <button class="btn btn-export" onclick="exportCurrentTableToCSV()" style="white-space: nowrap;">
+                            <i class="fa-solid fa-file-excel"></i> Esporta Excel
+                        </button>
+                        <button class="btn btn-export" onclick="importDataTableFromCSV()" style="white-space: nowrap; background-color: #065f46;">
+                            <i class="fa-solid fa-file-import"></i> Importa Excel
+                        </button>
+                    </div>
                 </div>
                 <div style="overflow-x: auto;">
                     <table class="mgmt-table">
@@ -1923,6 +2040,9 @@ window.switchDataTable = async function (type) {
                     <div style="display: flex; gap: 0.5rem; align-items: center;">
                         <button class="btn btn-export" onclick="exportCurrentTableToCSV()" style="white-space: nowrap;">
                             <i class="fa-solid fa-file-excel"></i> Esporta Excel
+                        </button>
+                        <button class="btn btn-export" onclick="importDataTableFromCSV()" style="white-space: nowrap; background-color: #065f46;">
+                            <i class="fa-solid fa-file-import"></i> Importa Excel
                         </button>
                         <button class="btn btn-primary" onclick="openContactForm()" style="padding: 0.5rem 1rem;"><i class="fa-solid fa-plus"></i> Nuovo</button>
                     </div>
