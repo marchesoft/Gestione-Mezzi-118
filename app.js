@@ -1631,7 +1631,17 @@ window.exportCurrentTableToCSV = async function () {
 
     try {
         let data = [];
-        let filename = `export_${type}_${new Date().toISOString().split('T')[0]}.csv`;
+
+        const tableNames = {
+            'vehicles': 'Mezzi',
+            'locations': 'Luoghi',
+            'interventions': 'Interventi',
+            'cambiomezzo': 'Cambi_Mezzo',
+            'contacts': 'Rubrica'
+        };
+        const friendlyName = tableNames[type] || type;
+        const dateStr = new Date().toISOString().split('T')[0];
+        let filename = `${friendlyName}_${dateStr}.csv`;
 
         // Fetch fresh data for export
         if (type === 'vehicles') data = await store.getVehicles();
