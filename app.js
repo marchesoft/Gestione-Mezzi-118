@@ -1636,11 +1636,15 @@ window.exportCurrentTableToCSV = async function () {
             'vehicles': 'Mezzi',
             'locations': 'Luoghi',
             'interventions': 'Interventi',
-            'cambiomezzo': 'Cambi_Mezzo',
+            'cambiomezzo': 'Cambi_Mezzi',
             'contacts': 'Rubrica'
         };
         const friendlyName = tableNames[type] || type;
-        const dateStr = new Date().toISOString().split('T')[0];
+        const now = new Date();
+        const dd = String(now.getDate()).padStart(2, '0');
+        const mm = String(now.getMonth() + 1).padStart(2, '0');
+        const yyyy = now.getFullYear();
+        const dateStr = `${dd}-${mm}-${yyyy}`;
         let filename = `${friendlyName}_${dateStr}.csv`;
 
         // Fetch fresh data for export
