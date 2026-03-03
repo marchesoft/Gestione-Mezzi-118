@@ -1730,7 +1730,7 @@ window.importDataTableFromCSV = function () {
                 // Remove BOM if present
                 if (content.startsWith('\uFEFF')) content = content.substring(1);
 
-                const rows = content.split('\n').filter(r => r.trim());
+                const rows = content.split(/\r?\n/).filter(r => r.trim());
                 if (rows.length < 2) {
                     alert("Il file non contiene dati validi.");
                     return;
@@ -1769,11 +1769,14 @@ window.importDataTableFromCSV = function () {
                             // Basic type conversion
                             if (dbField === 'mileage' || dbField === 'cost') val = parseFloat(val) || 0;
                             // Date conversion (assuming Italian format DD/MM/YYYY)
-                            if (['date', 'date_out', 'data', 'inspection_expiry', 'revision_o2'].includes(dbField)) {
+                            if (['date', 'date_out', 'data', 'inspection_expiry', 'revision_o2'].includes(dbField) && val) {
                                 const parts = val.split('/');
                                 if (parts.length === 3) val = `${parts[2]}-${parts[1]}-${parts[0]}`;
                             }
-                            obj[dbField] = val;
+                            // Don't set empty strings for ID
+                            if (dbField === 'id' && !val) return;
+
+                            obj[dbField] = val || null;
                         }
                     });
 
