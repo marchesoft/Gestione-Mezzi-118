@@ -1799,8 +1799,28 @@ window.importDataTableFromCSV = function () {
 
                 if (dbRows.length > 0) {
                     const tableMap = { 'vehicles': 'vehicles', 'locations': 'locations', 'interventions': 'interventions', 'cambiomezzo': 'cambiomezzo', 'contacts': 'contacts' };
-                    await store.upsertData(tableMap[type], dbRows);
-                    alert(`Importazione completata: ${dbRows.length} record elaborati.`);
+
+                    // Deduplicate rows to avoid "ON CONFLICT DO UPDATE command cannot affect row a second time"
+                    // Unique key is 'name' for locations, 'id' for orthers
+                    const uniqueKey = type === 'locations' ? 'name' : 'id';
+                    if (uniqueKey) {
+                        const uniqueMap = new Map();
+                        dbRows.forEach(row => {
+                            if (row[uniqueKey]) {
+                                uniqueMap.set(row[uniqueKey], row);
+                            }
+                        });
+                        // Also need to handle rows without ID (new ones) - they should stay
+                        const existingRows = Array.from(uniqueMap.values());
+                        const newRows = dbRows.filter(r => !r[uniqueKey]);
+                        const finalRows = [...existingRows, ...newRows];
+
+                        await store.upsertData(tableMap[type], finalRows);
+                        alert(`Importazione completata: ${finalRows.length} record elaborati.`);
+                    } else {
+                        await store.upsertData(tableMap[type], dbRows);
+                        alert(`Importazione completata: ${dbRows.length} record elaborati.`);
+                    }
                     switchDataTable(type);
                 } else {
                     alert("Nessun dato valido trovato nel file.");
