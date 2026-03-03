@@ -1648,10 +1648,26 @@ window.exportCurrentTableToCSV = async function () {
         let headers = [];
         let csvRows = [];
 
-        // Specific mapping for Interventions as requested
-        if (type === 'interventions') {
-            headers = ['date', 'date_out', 'sigla', 'workshop', 'description'];
-            const italianHeaders = ['Data Entrata', 'Data Uscita', 'Mezzo (Sigla)', 'Officina', 'Descrizione Intervento'];
+        // Mapping for headers
+        if (type === 'vehicles') {
+            headers = ['plate', 'model', 'sigla', 'station', 'status', 'mileage', 'mileage_month', 'notes', 'radio_id', 'inspection_expiry', 'revision_o2'];
+            const italianHeaders = ['Targa', 'Modello', 'Sigla', 'Stazione', 'Stato', 'Km', 'Mese Km', 'Note', 'Radio ID', 'Scadenza Revisione', 'Revisione O2'];
+            csvRows.push(italianHeaders.join(';'));
+        } else if (type === 'locations') {
+            headers = ['luogo', 'colore'];
+            const italianHeaders = ['Luogo', 'Colore'];
+            csvRows.push(italianHeaders.join(';'));
+        } else if (type === 'interventions') {
+            headers = ['date', 'date_out', 'sigla', 'workshop', 'description', 'cost'];
+            const italianHeaders = ['Data Entrata', 'Data Uscita', 'Mezzo (Sigla)', 'Officina', 'Descrizione Intervento', 'Costo'];
+            csvRows.push(italianHeaders.join(';'));
+        } else if (type === 'cambiomezzo') {
+            headers = ['data', 'turno', 'luogo', 'equipaggio', 'dal_mezzo', 'al_mezzo'];
+            const italianHeaders = ['Data', 'Turno', 'Luogo', 'Equipaggio', 'Dal Mezzo', 'Al Mezzo'];
+            csvRows.push(italianHeaders.join(';'));
+        } else if (type === 'contacts') {
+            headers = ['category', 'name', 'urban', 'mobile', 'mobile2', 'mobile_medical'];
+            const italianHeaders = ['Categoria', 'Nome/Sigla', 'Fisso', 'Cellulare 1', 'Cellulare 2', 'Cell. Medico'];
             csvRows.push(italianHeaders.join(';'));
         } else {
             headers = Object.keys(data[0]);
@@ -1663,6 +1679,9 @@ window.exportCurrentTableToCSV = async function () {
             const values = headers.map(header => {
                 let val = row[header];
                 if (val === null || val === undefined) return '';
+                if (header.includes('date') || header === 'data' || header === 'inspection_expiry' || header === 'revision_o2') {
+                    val = formatDate(val);
+                }
                 // Escape semicolons and handle strings
                 let escaped = ('' + val).replace(/;/g, ',').replace(/\n/g, ' ');
                 return `"${escaped}"`;
@@ -1733,9 +1752,14 @@ window.switchDataTable = async function (type) {
             data = await store.getVehicles();
             sortVehiclesBySigla(data);
             html = `
-                <div style="margin-bottom: 1.5rem; background: #f8fafc; padding: 1rem; border-radius: 0.75rem; border: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center;">
+                <div style="margin-bottom: 1.5rem; background: #f8fafc; padding: 1rem; border-radius: 0.75rem; border: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; gap: 1rem;">
                     <h4 style="font-size: 0.9rem;">Elenco Mezzi</h4>
-                    <button class="btn btn-primary" onclick="openVehicleForm();" style="padding: 0.5rem 1rem;"><i class="fa-solid fa-plus"></i> Nuovo Mezzo</button>
+                    <div style="display: flex; gap: 0.5rem; align-items: center;">
+                        <button class="btn btn-export" onclick="exportCurrentTableToCSV()" style="white-space: nowrap;">
+                            <i class="fa-solid fa-file-excel"></i> Esporta Excel
+                        </button>
+                        <button class="btn btn-primary" onclick="openVehicleForm();" style="padding: 0.5rem 1rem;"><i class="fa-solid fa-plus"></i> Nuovo Mezzo</button>
+                    </div>
                 </div>
                 <div style="overflow-x: auto;">
                     <table class="mgmt-table">
@@ -1780,9 +1804,14 @@ window.switchDataTable = async function (type) {
         } else if (type === 'locations') {
             data = await store.getLocations();
             html = `
-                <div style="margin-bottom: 1.5rem; background: #f8fafc; padding: 1rem; border-radius: 0.75rem; border: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center;">
+                <div style="margin-bottom: 1.5rem; background: #f8fafc; padding: 1rem; border-radius: 0.75rem; border: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; gap: 1rem;">
                     <h4 style="font-size: 0.9rem;">Elenco Luoghi</h4>
-                    <button class="btn btn-primary" onclick="window.addLocationHandler();" style="padding: 0.5rem 1rem;"><i class="fa-solid fa-plus"></i> Nuovo Luogo</button>
+                    <div style="display: flex; gap: 0.5rem; align-items: center;">
+                        <button class="btn btn-export" onclick="exportCurrentTableToCSV()" style="white-space: nowrap;">
+                            <i class="fa-solid fa-file-excel"></i> Esporta Excel
+                        </button>
+                        <button class="btn btn-primary" onclick="window.addLocationHandler();" style="padding: 0.5rem 1rem;"><i class="fa-solid fa-plus"></i> Nuovo Luogo</button>
+                    </div>
                 </div>
                 <div style="overflow-x: auto;">
                     <table class="mgmt-table">
@@ -1849,6 +1878,12 @@ window.switchDataTable = async function (type) {
         } else if (type === 'cambiomezzo') {
             data = await store.getCambiMezzi();
             html = `
+                <div style="margin-bottom: 1rem; background: #f8fafc; padding: 1rem; border-radius: 0.75rem; border: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; gap: 1rem;">
+                    <h4 style="font-size: 0.9rem;">Storico Cambi Mezzo</h4>
+                    <button class="btn btn-export" onclick="exportCurrentTableToCSV()" style="white-space: nowrap;">
+                        <i class="fa-solid fa-file-excel"></i> Esporta Excel
+                    </button>
+                </div>
                 <div style="overflow-x: auto;">
                     <table class="mgmt-table">
                         <thead>
@@ -1883,9 +1918,14 @@ window.switchDataTable = async function (type) {
             data = await store.getContacts();
             const catLabel = { sedi: 'Sedi Mezzi', officine: 'Officine', utili: 'Utili' };
             html = `
-                <div style="margin-bottom: 1.5rem; background: #f8fafc; padding: 1rem; border-radius: 0.75rem; border: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center;">
+                <div style="margin-bottom: 1.5rem; background: #f8fafc; padding: 1rem; border-radius: 0.75rem; border: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; gap: 1rem;">
                     <h4 style="font-size: 0.9rem;">Elenco Contatti (${data.length})</h4>
-                    <button class="btn btn-primary" onclick="openContactForm()" style="padding: 0.5rem 1rem;"><i class="fa-solid fa-plus"></i> Nuovo</button>
+                    <div style="display: flex; gap: 0.5rem; align-items: center;">
+                        <button class="btn btn-export" onclick="exportCurrentTableToCSV()" style="white-space: nowrap;">
+                            <i class="fa-solid fa-file-excel"></i> Esporta Excel
+                        </button>
+                        <button class="btn btn-primary" onclick="openContactForm()" style="padding: 0.5rem 1rem;"><i class="fa-solid fa-plus"></i> Nuovo</button>
+                    </div>
                 </div>
                 <div style="overflow-x: auto;">
                     <table class="mgmt-table" style="table-layout: auto; width: 100%;">
