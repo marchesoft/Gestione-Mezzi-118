@@ -223,7 +223,7 @@ async function renderDashboard(forceRefresh = false) {
             ]);
 
             cachedVehicles = vehicles;
-            cachedLocations = locations;
+            cachedLocations = locations.sort((a, b) => a.luogo.localeCompare(b.luogo));
             sortVehiclesBySigla(cachedVehicles);
             lastVehicleSync = Date.now();
         }
