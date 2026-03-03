@@ -812,9 +812,13 @@ window.renderContacts = async function (category) {
 
     try {
         const allContacts = await store.getContacts();
-        const filtered = allContacts.filter(c =>
-            category === 'officine' ? (c.category === 'officine' || c.category === 'utili') : c.category === category
-        );
+        const filtered = allContacts.filter(c => {
+            const cat = (c.category || '').toLowerCase();
+            if (category === 'officine') {
+                return cat === 'officine' || cat === 'utili' || cat === 'officine utili';
+            }
+            return cat === 'sedi' || cat === 'sedi mezzi';
+        });
 
         if (filtered.length === 0) {
             container.innerHTML = '<p style="text-align: center; padding: 3rem; color: var(--text-secondary); background: #f8fafc; border-radius: 0.75rem; border: 1px dotted var(--border-color);">Nessun contatto presente in questa categoria.</p>';
