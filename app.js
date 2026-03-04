@@ -1491,8 +1491,8 @@ window.saveMaintenanceRecord = async function (e) {
         workshop: upper(workshop),
         description: upper(description),
         type: 'Routine',
-        cost: 0,
-        sigla: upper(vehicleSigla)
+        cost: 0
+        // 'sigla' removed as it's not a column in 'interventions' table
     };
 
     try {
@@ -1736,6 +1736,12 @@ window.importDataTableFromCSV = function () {
     input.onchange = async (e) => {
         const file = e.target.files[0];
         if (!file) return;
+
+        // Check file extension
+        if (!file.name.toLowerCase().endsWith('.csv')) {
+            alert("Errore: Il sistema accetta solo file in formato .csv (delimitatore punto e virgola). Se hai un file Excel (.xlsx), esportalo prima come CSV.");
+            return;
+        }
 
         const reader = new FileReader();
         reader.onload = async (event) => {

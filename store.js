@@ -179,12 +179,14 @@ class Store {
     }
 
     async addIntervention(vehicleId, intervention) {
-        // Intervention object usually has date, type, description, cost
+        // Clean intervention object: remove properties that don't belong to the DB schema
+        const { sigla, vehicles, ...cleanIntervention } = intervention;
+
         const { error } = await this.supabase
             .from('interventions')
             .insert([{
                 vehicle_id: vehicleId,
-                ...intervention
+                ...cleanIntervention
             }]);
         if (error) {
             console.error('Error adding intervention:', error);
@@ -194,9 +196,12 @@ class Store {
     }
 
     async updateIntervention(id, intervention) {
+        // Clean intervention object: remove properties that don't belong to the DB schema
+        const { sigla, vehicles, vehicle_id, ...cleanIntervention } = intervention;
+
         const { error } = await this.supabase
             .from('interventions')
-            .update(intervention)
+            .update(cleanIntervention)
             .eq('id', id);
 
         if (error) {
