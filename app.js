@@ -1,4 +1,4 @@
-const APP_VERSION = "1.5.0 - 2026-03-05"; // Firebase Migration
+const APP_VERSION = "1.5.2 - 2026-03-05"; // Firebase Migration Fixes
 let isAdmin = false;
 let cachedVehicles = null;
 let cachedLocations = null;
@@ -659,34 +659,11 @@ window.openCambioMezzoModal = async function (cambioId = null) {
     const modal = document.getElementById('cambio-mezzo-modal');
     const form = document.getElementById('cambio-mezzo-form');
     const title = document.querySelector('#cambio-mezzo-modal h3');
+
     form.reset();
     document.getElementById('cambio-id').value = '';
 
-    if (cambioId) {
-        title.textContent = 'Modifica Cambio Mezzo';
-        try {
-            // We could fetch specifically or filter from a list if we had one cached. 
-            // For now, let's fetch it from the store to be safe.
-            const list = await store.getCambiMezzi();
-            const cambio = list.find(c => c.id === cambioId);
-            if (cambio) {
-                document.getElementById('cambio-id').value = cambio.id;
-                document.getElementById('cambio-data').value = cambio.data;
-                document.getElementById('cambio-turno').value = cambio.turno;
-                document.getElementById('cambio-luogo').value = cambio.luogo || '';
-                document.getElementById('cambio-equipaggio').value = cambio.equipaggio || '';
-                // Dropdowns will be populated below, we need to set values AFTER populating
-                // But Dal/Al depend on cachedVehicles which is usually ready
-            }
-        } catch (error) {
-            console.error("Error loading cambio data:", error);
-        }
-    } else {
-        title.textContent = 'Registra Cambio Mezzo';
-        document.getElementById('cambio-data').valueAsDate = new Date();
-    }
-
-    // Populate Luogo Dropdown
+    // 1. Populate Dropdowns FIRST
     const luogoSelect = document.getElementById('cambio-luogo');
     luogoSelect.innerHTML = '<option value="">-- Seleziona Luogo --</option>';
     if (cachedLocations) {
@@ -698,17 +675,13 @@ window.openCambioMezzoModal = async function (cambioId = null) {
         });
     }
 
-    // Populate Vehicle Selects (Sigle)
     const dalSelect = document.getElementById('cambio-dal-mezzo');
     const alSelect = document.getElementById('cambio-al-mezzo');
-
     dalSelect.innerHTML = '<option value="">-- Seleziona --</option>';
     alSelect.innerHTML = '<option value="">-- Seleziona --</option>';
 
     if (cachedVehicles) {
-        // Filter out vehicles without sigla and sort them
         const vehiclesWithSigla = cachedVehicles.filter(v => v.sigla).sort((a, b) => a.sigla.localeCompare(b.sigla));
-
         vehiclesWithSigla.forEach(v => {
             const option = document.createElement('option');
             option.value = v.sigla;
@@ -718,17 +691,35 @@ window.openCambioMezzoModal = async function (cambioId = null) {
         });
     }
 
-    // Set values if editing
-    const cambioIdVal = document.getElementById('cambio-id').value;
-    if (cambioIdVal) {
-        // We need the data again or passed in. Let's assume we fetch it or it's simple.
-        // Actually, better to set values here if they were already fetched.
-        const list = await store.getCambiMezzi();
-        const cambio = list.find(c => c.id === cambioIdVal);
-        if (cambio) {
-            dalSelect.value = cambio.dal_mezzo;
-            alSelect.value = cambio.al_mezzo;
+    // 2. Load and Apply Data
+    if (cambioId) {
+        title.textContent = 'Modifica Cambio Mezzo';
+        try {
+            const list = await store.getCambiMezzi();
+            const cambio = list.find(c => c.id === cambioId);
+            if (cambio) {
+                document.getElementById('cambio-id').value = cambio.id;
+
+                // Ensure date is in YYYY-MM-DD for the input type="date"
+                if (cambio.data) {
+                    const d = new Date(cambio.data);
+                    if (!isNaN(d)) {
+                        document.getElementById('cambio-data').value = d.toISOString().split('T')[0];
+                    }
+                }
+
+                document.getElementById('cambio-turno').value = cambio.turno || '';
+                document.getElementById('cambio-luogo').value = cambio.luogo || '';
+                document.getElementById('cambio-equipaggio').value = cambio.equipaggio || '';
+                document.getElementById('cambio-dal-mezzo').value = cambio.dal_mezzo || '';
+                document.getElementById('cambio-al-mezzo').value = cambio.al_mezzo || '';
+            }
+        } catch (error) {
+            console.error("Error loading cambio data:", error);
         }
+    } else {
+        title.textContent = 'Registra Cambio Mezzo';
+        document.getElementById('cambio-data').valueAsDate = new Date();
     }
 
     modal.classList.remove('hidden');

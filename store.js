@@ -39,15 +39,21 @@ class Store {
             if (!doc.exists) return null;
 
             const data = { id: doc.id, ...doc.data() };
+
+            // Note: Removed .orderBy from query to avoid composite index requirement.
+            // We'll sort in JavaScript.
             const iSnapshot = await this.db.collection('interventions')
                 .where('vehicle_id', '==', id)
-                .orderBy('date', 'desc')
                 .get();
 
-            data.maintenanceHistory = iSnapshot.docs.map(iDoc => ({ id: iDoc.id, ...iDoc.data() }));
+            data.maintenanceHistory = iSnapshot.docs
+                .map(iDoc => ({ id: iDoc.id, ...iDoc.data() }))
+                .sort((a, b) => new Date(b.date) - new Date(a.date));
+
             return data;
         } catch (error) {
             console.error('Error fetching vehicle:', error);
+            // Don't just return null, return what we have or rethink
             return null;
         }
     }
