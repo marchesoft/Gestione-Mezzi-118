@@ -1411,10 +1411,12 @@ window.openVehicleModal = async function (id) {
                                     <td style="padding: 1rem; font-weight: 500;">${record.date_out ? formatDate(record.date_out) : '-'}</td>
                                     <td style="padding: 1rem; font-weight: 500;">${record.workshop || '-'}</td>
                                     <td style="padding: 1rem;">${record.description}</td>
+                                    ${isAdmin ? `
                                     <td style="padding: 1rem; text-align: right;">
                                         <button class="btn" style="padding: 0.25rem 0.5rem; font-size: 0.8rem; background: var(--primary-color); color: white; margin-right: 0.5rem;" onclick='openMaintenanceForm("${vehicle.id}", "${vehicle.sigla || vehicle.plate}", ${JSON.stringify(record).replace(/'/g, "&#39;")})'><i class="fa-solid fa-pen"></i></button>
                                         <button class="btn" style="padding: 0.25rem 0.5rem; font-size: 0.8rem; background: var(--status-to-repair); color: white;" onclick="deleteMaintenanceRecord('${record.id}', '${vehicle.id}')"><i class="fa-solid fa-trash"></i></button>
                                     </td>
+                                    ` : ''}
                                 </tr>
                             `).join('')}
                         </tbody>
@@ -1931,6 +1933,7 @@ window.switchDataTable = async function (type) {
             html = `
                 <div style="margin-bottom: 1.5rem; background: #f8fafc; padding: 1rem; border-radius: 0.75rem; border: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; gap: 1rem;">
                     <h4 style="font-size: 0.9rem;">Elenco Mezzi</h4>
+                    ${isAdmin ? `
                     <div style="display: flex; gap: 0.5rem; align-items: center;">
                         <button class="btn btn-export" onclick="exportCurrentTableToCSV()" style="white-space: nowrap;">
                             <i class="fa-solid fa-file-excel"></i> Esporta Excel
@@ -1940,6 +1943,7 @@ window.switchDataTable = async function (type) {
                         </button>
                         <button class="btn btn-primary" onclick="openVehicleForm();" style="padding: 0.5rem 1rem;"><i class="fa-solid fa-plus"></i> Nuovo Mezzo</button>
                     </div>
+                    ` : ''}
                 </div>
                 <div style="overflow-x: auto;">
                     <table class="mgmt-table">
@@ -1956,7 +1960,7 @@ window.switchDataTable = async function (type) {
                                 <th class="col-shrink">Radio</th>
                                 <th class="col-shrink">Rev. Scad.</th>
                                 <th class="col-shrink">Rev. O2</th>
-                                <th class="col-actions">Azioni</th>
+                                ${isAdmin ? '<th class="col-actions">Azioni</th>' : ''}
                             </tr>
                         </thead>
                         <tbody>
@@ -1973,10 +1977,10 @@ window.switchDataTable = async function (type) {
                 + `<td class="col-shrink">${v.radio_id || '-'}</td>`
                 + `<td class="col-shrink">${formatDate(v.inspection_expiry)}</td>`
                 + `<td class="col-shrink">${formatDate(v.revision_o2)}</td>`
-                + '<td class="col-actions">'
-                + `<button onclick="openVehicleForm('${v.id}');" style="margin-right:0.5rem; cursor:pointer; background:none; border:none; color:var(--primary-color);"><i class="fa-solid fa-pen"></i></button>`
-                + `<button onclick="deleteVehicleHandler('${v.id}')" style="cursor:pointer; background:none; border:none; color:var(--status-to-repair);"><i class="fa-solid fa-trash"></i></button>`
-                + '</td></tr>'
+                + (isAdmin ? '<td class="col-actions">'
+                    + `<button onclick="openVehicleForm('${v.id}');" style="margin-right:0.5rem; cursor:pointer; background:none; border:none; color:var(--primary-color);"><i class="fa-solid fa-pen"></i></button>`
+                    + `<button onclick="deleteVehicleHandler('${v.id}')" style="cursor:pointer; background:none; border:none; color:var(--status-to-repair);"><i class="fa-solid fa-trash"></i></button>`
+                    + '</td>' : '') + '</tr>'
             ).join('')}
                         </tbody>
                     </table>
@@ -1986,6 +1990,7 @@ window.switchDataTable = async function (type) {
             html = `
                 <div style="margin-bottom: 1.5rem; background: #f8fafc; padding: 1rem; border-radius: 0.75rem; border: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; gap: 1rem;">
                     <h4 style="font-size: 0.9rem;">Elenco Luoghi</h4>
+                    ${isAdmin ? `
                     <div style="display: flex; gap: 0.5rem; align-items: center;">
                         <button class="btn btn-export" onclick="exportCurrentTableToCSV()" style="white-space: nowrap;">
                             <i class="fa-solid fa-file-excel"></i> Esporta Excel
@@ -1995,23 +2000,24 @@ window.switchDataTable = async function (type) {
                         </button>
                         <button class="btn btn-primary" onclick="window.addLocationHandler();" style="padding: 0.5rem 1rem;"><i class="fa-solid fa-plus"></i> Nuovo Luogo</button>
                     </div>
+                    ` : ''}
                 </div>
                 <div style="overflow-x: auto;">
                     <table class="mgmt-table">
                         <thead>
                             <tr>
                                 <th>Luogo</th>
-                                <th class="col-actions">Azioni</th>
+                                ${isAdmin ? '<th class="col-actions">Azioni</th>' : ''}
                             </tr>
                         </thead>
                         <tbody>
                             ${data.map(l =>
                 '<tr>'
                 + `<td>${l.luogo}</td>`
-                + '<td class="col-actions">'
-                + `<button onclick="window.editLocationHandler('${l.luogo}')" style="margin-right:0.5rem; cursor:pointer; background:none; border:none; color:var(--primary-color);"><i class="fa-solid fa-edit"></i></button>`
-                + `<button onclick="if(confirm('Eliminare questo luogo?')){store.deleteLocation('${l.luogo}').then(() => switchDataTable('locations'))}" style="cursor:pointer; background:none; border:none; color:var(--status-to-repair);"><i class="fa-solid fa-trash"></i></button>`
-                + '</td></tr>'
+                + (isAdmin ? '<td class="col-actions">'
+                    + `<button onclick="window.editLocationHandler('${l.luogo}')" style="margin-right:0.5rem; cursor:pointer; background:none; border:none; color:var(--primary-color);"><i class="fa-solid fa-edit"></i></button>`
+                    + `<button onclick="if(confirm('Eliminare questo luogo?')){store.deleteLocation('${l.luogo}').then(() => switchDataTable('locations'))}" style="cursor:pointer; background:none; border:none; color:var(--status-to-repair);"><i class="fa-solid fa-trash"></i></button>`
+                    + '</td>' : '') + '</tr>'
             ).join('')}
                         </tbody>
                     </table>
@@ -2026,6 +2032,7 @@ window.switchDataTable = async function (type) {
                                oninput="window.filterInterventionTable(this.value)"
                                style="width: 100%; padding: 0.5rem 1rem 0.5rem 2.5rem; border-radius: 0.5rem; border: 1px solid var(--border-color); outline: none;">
                     </div>
+                    ${isAdmin ? `
                     <div style="display: flex; gap: 0.5rem; align-items: center;">
                         <button class="btn btn-export" onclick="exportCurrentTableToCSV()" style="white-space: nowrap;">
                             <i class="fa-solid fa-file-excel"></i> Esporta Excel
@@ -2034,6 +2041,7 @@ window.switchDataTable = async function (type) {
                             <i class="fa-solid fa-file-import"></i> Importa Excel
                         </button>
                     </div>
+                    ` : ''}
                 </div>
                 <div style="overflow-x: auto;">
                     <table class="mgmt-table" id="interventions-table">
@@ -2044,7 +2052,7 @@ window.switchDataTable = async function (type) {
                                 <th class="col-shrink">Mezzo</th>
                                 <th class="col-shrink">Officina</th>
                                 <th class="col-expand">Descrizione</th>
-                                <th class="col-actions">Azioni</th>
+                                ${isAdmin ? '<th class="col-actions">Azioni</th>' : ''}
                             </tr>
                         </thead>
                         <tbody>
@@ -2055,10 +2063,10 @@ window.switchDataTable = async function (type) {
                 + `<td class="col-shrink text-bold text-primary">${i.sigla || 'N/A'}</td>`
                 + `<td class="col-shrink">${i.workshop || '-'}</td>`
                 + `<td class="col-expand">${i.description}</td>`
-                + '<td class="col-actions">'
-                + `<button onclick="editInterventionHandler('${i.id}')" style="margin-right:0.5rem; cursor:pointer; background:none; border:none; color:var(--primary-color);"><i class="fa-solid fa-pen"></i></button>`
-                + `<button onclick="if(confirm('Eliminare questo intervento?')){store.deleteIntervention('${i.id}').then(() => switchDataTable('interventions'))}" style="cursor:pointer; background:none; border:none; color:var(--status-to-repair);"><i class="fa-solid fa-trash"></i></button>`
-                + '</td></tr>'
+                + (isAdmin ? '<td class="col-actions">'
+                    + `<button onclick="editInterventionHandler('${i.id}')" style="margin-right:0.5rem; cursor:pointer; background:none; border:none; color:var(--primary-color);"><i class="fa-solid fa-pen"></i></button>`
+                    + `<button onclick="if(confirm('Eliminare questo intervento?')){store.deleteIntervention('${i.id}').then(() => switchDataTable('interventions'))}" style="cursor:pointer; background:none; border:none; color:var(--status-to-repair);"><i class="fa-solid fa-trash"></i></button>`
+                    + '</td>' : '') + '</tr>'
             ).join('')}
                         </tbody>
                     </table>
@@ -2068,6 +2076,7 @@ window.switchDataTable = async function (type) {
             html = `
                 <div style="margin-bottom: 1rem; background: #f8fafc; padding: 1rem; border-radius: 0.75rem; border: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; gap: 1rem;">
                     <h4 style="font-size: 0.9rem;">Storico Cambi Mezzo</h4>
+                    ${isAdmin ? `
                     <div style="display: flex; gap: 0.5rem; align-items: center;">
                         <button class="btn btn-export" onclick="exportCurrentTableToCSV()" style="white-space: nowrap;">
                             <i class="fa-solid fa-file-excel"></i> Esporta Excel
@@ -2076,6 +2085,7 @@ window.switchDataTable = async function (type) {
                             <i class="fa-solid fa-file-import"></i> Importa Excel
                         </button>
                     </div>
+                    ` : ''}
                 </div>
                 <div style="overflow-x: auto;">
                     <table class="mgmt-table">
@@ -2087,7 +2097,7 @@ window.switchDataTable = async function (type) {
                                 <th>Equipaggio</th>
                                 <th class="col-shrink">Dal Mezzo</th>
                                 <th class="col-shrink">Al Mezzo</th>
-                                <th class="col-actions">Azioni</th>
+                                ${isAdmin ? '<th class="col-actions">Azioni</th>' : ''}
                             </tr>
                         </thead>
                         <tbody>
@@ -2099,10 +2109,10 @@ window.switchDataTable = async function (type) {
                 + `<td>${c.equipaggio || '-'}</td>`
                 + `<td class="col-shrink text-bold text-primary">${c.dal_mezzo}</td>`
                 + `<td class="col-shrink text-bold" style="color:var(--status-available);">${c.al_mezzo}</td>`
-                + '<td class="col-actions">'
-                + `<button onclick="openCambioMezzoModal('${c.id}')" style="cursor:pointer; background:none; border:none; color:var(--primary-color); margin-right: 0.5rem;"><i class="fa-solid fa-edit"></i></button>`
-                + `<button onclick="if(confirm('Eliminare questo cambio?')){store.deleteCambioMezzo('${c.id}').then(() => switchDataTable('cambiomezzo'))}" style="cursor:pointer; background:none; border:none; color:var(--status-to-repair);"><i class="fa-solid fa-trash"></i></button>`
-                + '</td></tr>'
+                + (isAdmin ? '<td class="col-actions">'
+                    + `<button onclick="openCambioMezzoModal('${c.id}')" style="cursor:pointer; background:none; border:none; color:var(--primary-color); margin-right: 0.5rem;"><i class="fa-solid fa-edit"></i></button>`
+                    + `<button onclick="if(confirm('Eliminare questo cambio?')){store.deleteCambioMezzo('${c.id}').then(() => switchDataTable('cambiomezzo'))}" style="cursor:pointer; background:none; border:none; color:var(--status-to-repair);"><i class="fa-solid fa-trash"></i></button>`
+                    + '</td>' : '') + '</tr>'
             ).join('')}
                         </tbody>
                     </table>
@@ -2113,6 +2123,7 @@ window.switchDataTable = async function (type) {
             html = `
                 <div style="margin-bottom: 1.5rem; background: #f8fafc; padding: 1rem; border-radius: 0.75rem; border: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; gap: 1rem;">
                     <h4 style="font-size: 0.9rem;">Elenco Contatti (${data.length})</h4>
+                    ${isAdmin ? `
                     <div style="display: flex; gap: 0.5rem; align-items: center;">
                         <button class="btn btn-export" onclick="exportCurrentTableToCSV()" style="white-space: nowrap;">
                             <i class="fa-solid fa-file-excel"></i> Esporta Excel
@@ -2122,6 +2133,7 @@ window.switchDataTable = async function (type) {
                         </button>
                         <button class="btn btn-primary" onclick="openContactForm()" style="padding: 0.5rem 1rem;"><i class="fa-solid fa-plus"></i> Nuovo</button>
                     </div>
+                    ` : ''}
                 </div>
                 <div style="overflow-x: auto;">
                     <table class="mgmt-table" style="table-layout: auto; width: 100%;">
@@ -2133,12 +2145,11 @@ window.switchDataTable = async function (type) {
                                 <th class="col-shrink">CELLULARE 1</th>
                                 <th class="col-shrink">CELLULARE 2</th>
                                 <th class="col-shrink">CELL. MEDICO</th>
-                                <th class="col-actions">AZIONI</th>
+                                ${isAdmin ? '<th class="col-actions">AZIONI</th>' : ''}
                             </tr>
                         </thead>
                         <tbody>
                             ${data.map(c => {
-                const isAdmin = localStorage.getItem('adminMode') === 'true';
                 const bg = c.category === 'sedi' ? '#dbeafe' : c.category === 'officine' ? '#fef3c7' : '#f0fdf4';
                 const fg = c.category === 'sedi' ? '#1e40af' : c.category === 'officine' ? '#92400e' : '#166534';
                 const pCell = (num, lbl) => {
@@ -2155,10 +2166,10 @@ window.switchDataTable = async function (type) {
                     + `<td class="col-shrink">${pCell(c.mobile, c.mobile_label)}</td>`
                     + `<td class="col-shrink">${pCell(c.mobile2, c.mobile2_label)}</td>`
                     + `<td class="col-shrink">${c.mobile_medical ? (isAdmin ? `<a href="tel:${c.mobile_medical.replace(/[\\/\s+]/g, '')}" class="tel-link" style="display:inline-block; padding:0.2rem 0.5rem; background:#ecfdf5; color:#059669; text-decoration:none; border-radius:0.3rem; font-weight:700; font-size:0.8rem;">${c.mobile_medical}</a>` : c.mobile_medical) : '<span style="color:#cbd5e1">-</span>'}</td>`
-                    + `<td class="col-actions">`
-                    + `<button onclick="openContactForm('${c.id}')" style="cursor:pointer;background:none;border:none;color:var(--primary-color);margin-right:0.5rem;" title="Modifica"><i class="fa-solid fa-pen-to-square"></i></button>`
-                    + `<button onclick="if(confirm('Eliminare questo contatto?')){store.deleteContact('${c.id}').then(() => switchDataTable('contacts'))}" style="cursor:pointer;background:none;border:none;color:var(--status-to-repair);" title="Elimina"><i class="fa-solid fa-trash"></i></button>`
-                    + '</td></tr>';
+                    + (isAdmin ? `<td class="col-actions">`
+                        + `<button onclick="openContactForm('${c.id}')" style="cursor:pointer;background:none;border:none;color:var(--primary-color);margin-right:0.5rem;" title="Modifica"><i class="fa-solid fa-pen-to-square"></i></button>`
+                        + `<button onclick="if(confirm('Eliminare questo contatto?')){store.deleteContact('${c.id}').then(() => switchDataTable('contacts'))}" style="cursor:pointer;background:none;border:none;color:var(--status-to-repair);" title="Elimina"><i class="fa-solid fa-trash"></i></button>`
+                        + '</td>' : '') + '</tr>';
             }).join('')}
                         </tbody>
                     </table>
