@@ -4,98 +4,80 @@ const SUPABASE_KEY = 'sb_publishable_y2QOHvnU2SqI03A0i1HHew_ArjXlqDm'; // Publis
 
 class Store {
     constructor() {
-        this.supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+        // 'db' is initialized in firebase-config.js
+        this.db = db;
     }
 
     // --- Vehicles ---
 
     async getVehicles() {
-        const { data: vehicles, error: vError } = await this.supabase
-            .from('vehicles')
-            .select('*');
+        try {
+            const vSnapshot = await this.db.collection('vehicles').get();
+            const vehicles = vSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 
-        if (vError) {
-            console.error('Error fetching vehicles:', vError);
+            const iSnapshot = await this.db.collection('interventions').orderBy('date', 'desc').get();
+            const allInterventions = iSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+
+            const interventionsByVehicle = allInterventions.reduce((acc, curr) => {
+                if (!acc[curr.vehicle_id]) acc[curr.vehicle_id] = [];
+                acc[curr.vehicle_id].push(curr);
+                return acc;
+            }, {});
+
+            vehicles.forEach(vehicle => {
+                vehicle.maintenanceHistory = interventionsByVehicle[vehicle.id] || [];
+            });
+
+            return vehicles;
+        } catch (error) {
+            console.error('Error fetching vehicles:', error);
             return [];
         }
-
-        // Fetch all interventions in one go to avoid N+1 queries
-        const { data: allInterventions, error: iError } = await this.supabase
-            .from('interventions')
-            .select('*')
-            .order('date', { ascending: false });
-
-        if (iError) {
-            console.error('Error fetching interventions:', iError);
-        }
-
-        // Map interventions to vehicles
-        const interventionsByVehicle = (allInterventions || []).reduce((acc, curr) => {
-            if (!acc[curr.vehicle_id]) acc[curr.vehicle_id] = [];
-            acc[curr.vehicle_id].push(curr);
-            return acc;
-        }, {});
-
-        vehicles.forEach(vehicle => {
-            vehicle.maintenanceHistory = interventionsByVehicle[vehicle.id] || [];
-        });
-
-        return vehicles;
     }
 
     async getVehicleById(id) {
-        const { data, error } = await this.supabase
-            .from('vehicles')
-            .select('*')
-            .eq('id', id)
-            .single();
+        try {
+            const doc = await this.db.collection('vehicles').doc(id).get();
+            if (!doc.exists) return null;
 
-        if (data) {
-            const { data: interventions } = await this.supabase
-                .from('interventions')
-                .select('*')
-                .eq('vehicle_id', id)
-                .order('date', { ascending: false });
-            data.maintenanceHistory = interventions || [];
+            const data = { id: doc.id, ...doc.data() };
+            const iSnapshot = await this.db.collection('interventions')
+                .where('vehicle_id', '==', id)
+                .orderBy('date', 'desc')
+                .get();
+
+            data.maintenanceHistory = iSnapshot.docs.map(iDoc => ({ id: iDoc.id, ...iDoc.data() }));
+            return data;
+        } catch (error) {
+            console.error('Error fetching vehicle:', error);
+            return null;
         }
-
-        return data;
     }
 
     async addVehicle(vehicle) {
-        // Separate vehicle data from maintenance history
         const { maintenanceHistory, ...vehicleData } = vehicle;
-
-        const { error } = await this.supabase
-            .from('vehicles')
-            .insert([vehicleData]);
-
-        if (error) {
+        try {
+            await this.db.collection('vehicles').add(vehicleData);
+        } catch (error) {
             console.error('Error adding vehicle:', error);
             alert("Errore salvataggio veicolo: " + error.message);
         }
     }
 
     async updateVehicle(vehicle) {
-        const { maintenanceHistory, ...vehicleData } = vehicle;
-        const { error } = await this.supabase
-            .from('vehicles')
-            .update(vehicleData)
-            .eq('id', vehicle.id);
-
-        if (error) {
+        const { id, maintenanceHistory, ...vehicleData } = vehicle;
+        try {
+            await this.db.collection('vehicles').doc(id).update(vehicleData);
+        } catch (error) {
             console.error('Error updating vehicle:', error);
             alert("Errore aggiornamento veicolo: " + error.message);
         }
     }
 
     async deleteVehicle(id) {
-        const { error } = await this.supabase
-            .from('vehicles')
-            .delete()
-            .eq('id', id);
-
-        if (error) {
+        try {
+            await this.db.collection('vehicles').doc(id).delete();
+        } catch (error) {
             console.error('Error deleting vehicle:', error);
             alert("Errore eliminazione veicolo: " + error.message);
         }
@@ -104,107 +86,101 @@ class Store {
     // --- Locations ---
 
     async getLocations() {
-        const { data, error } = await this.supabase
-            .from('locations')
-            .select('name, colore');
-
-        if (error) return [];
-        // Map name to luogo for consistency with UI expectation
-        return data.map(l => ({ luogo: l.name, colore: l.colore }));
+        try {
+            const snapshot = await this.db.collection('locations').get();
+            return snapshot.docs.map(doc => {
+                const data = doc.data();
+                return { luogo: data.name, colore: data.colore };
+            });
+        } catch (error) {
+            console.error('Error fetching locations:', error);
+            return [];
+        }
     }
 
     async addLocation(name, colore = '#3b82f6') {
-        const { error } = await this.supabase
-            .from('locations')
-            .insert([{ name, colore }]);
-        if (error) console.error('Error adding location:', error);
+        try {
+            await this.db.collection('locations').add({ name, colore });
+        } catch (error) {
+            console.error('Error adding location:', error);
+        }
     }
 
     async deleteLocation(name) {
-        const { error } = await this.supabase
-            .from('locations')
-            .delete()
-            .eq('name', name);
-        if (error) console.error('Error deleting location:', error);
+        try {
+            const snapshot = await this.db.collection('locations').where('name', '==', name).get();
+            const batch = this.db.batch();
+            snapshot.forEach(doc => batch.delete(doc.ref));
+            await batch.commit();
+        } catch (error) {
+            console.error('Error deleting location:', error);
+        }
     }
 
     async updateLocation(oldName, newName) {
-        // Update location table
-        const { error } = await this.supabase
-            .from('locations')
-            .update({ name: newName })
-            .eq('name', oldName);
-
-        if (error) {
+        try {
+            const snapshot = await this.db.collection('locations').where('name', '==', oldName).get();
+            const batch = this.db.batch();
+            snapshot.forEach(doc => batch.update(doc.ref, { name: newName }));
+            await batch.commit();
+        } catch (error) {
             console.error('Error updating location:', error);
-            return;
         }
-
-        // Update vehicles (Postgres ON UPDATE CASCADE should handle this if defined in schema, 
-        // but if we used loose foreign keys or text fields, we might need manual update.
-        // My schema said: station TEXT REFERENCES locations(name) ON UPDATE CASCADE
-        // So this should be automatic!)
     }
 
     // --- Maintenance / Interventions ---
 
     async getInterventions() {
-        const { data, error } = await this.supabase
-            .from('interventions')
-            .select('*, vehicles(sigla)')
-            .order('date', { ascending: false });
+        try {
+            const snapshot = await this.db.collection('interventions').orderBy('date', 'desc').get();
+            const interventions = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 
-        if (error) {
+            // To get sigla, we'd need another fetch or a join. 
+            // In Firestore, we usually denormalize or fetch separately.
+            const vSnapshot = await this.db.collection('vehicles').get();
+            const vehiclesMap = vSnapshot.docs.reduce((acc, doc) => {
+                acc[doc.id] = doc.data().sigla;
+                return acc;
+            }, {});
+
+            return interventions.map(i => ({
+                ...i,
+                sigla: vehiclesMap[i.vehicle_id] || 'N/A'
+            }));
+        } catch (error) {
             console.error('Error fetching interventions:', error);
             return [];
         }
-
-        // Flatten the data to have sigla at the top level
-        return data.map(i => ({
-            ...i,
-            sigla: i.vehicles ? i.vehicles.sigla : 'N/A'
-        }));
     }
 
     async deleteIntervention(id) {
-        const { error } = await this.supabase
-            .from('interventions')
-            .delete()
-            .eq('id', id);
-
-        if (error) {
+        try {
+            await this.db.collection('interventions').doc(id).delete();
+        } catch (error) {
             console.error('Error deleting intervention:', error);
             alert("Errore eliminazione intervento: " + error.message);
         }
     }
 
     async addIntervention(vehicleId, intervention) {
-        // Clean intervention object: remove properties that don't belong to the DB schema
-        const { sigla, vehicles, ...cleanIntervention } = intervention;
-
-        const { error } = await this.supabase
-            .from('interventions')
-            .insert([{
+        const { sigla, ...cleanIntervention } = intervention;
+        try {
+            await this.db.collection('interventions').add({
                 vehicle_id: vehicleId,
                 ...cleanIntervention
-            }]);
-        if (error) {
+            });
+        } catch (error) {
             console.error('Error adding intervention:', error);
             alert("Errore salvataggio intervento: " + error.message);
-            throw error; // Re-throw to catch in app.js
+            throw error;
         }
     }
 
     async updateIntervention(id, intervention) {
-        // Clean intervention object: remove properties that don't belong to the DB schema
-        const { sigla, vehicles, vehicle_id, ...cleanIntervention } = intervention;
-
-        const { error } = await this.supabase
-            .from('interventions')
-            .update(cleanIntervention)
-            .eq('id', id);
-
-        if (error) {
+        const { sigla, vehicle_id, ...cleanIntervention } = intervention;
+        try {
+            await this.db.collection('interventions').doc(id).update(cleanIntervention);
+        } catch (error) {
             console.error('Error updating intervention:', error);
             alert("Errore aggiornamento intervento: " + error.message);
         }
@@ -213,24 +189,19 @@ class Store {
     // --- Cambi Mezzi ---
 
     async getCambiMezzi() {
-        const { data, error } = await this.supabase
-            .from('cambiomezzo')
-            .select('*')
-            .order('data', { ascending: false });
-
-        if (error) {
+        try {
+            const snapshot = await this.db.collection('cambiomezzo').orderBy('data', 'desc').get();
+            return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        } catch (error) {
             console.error('Error fetching cambi mezzi:', error);
             return [];
         }
-        return data;
     }
 
     async addCambioMezzo(cambio) {
-        const { error } = await this.supabase
-            .from('cambiomezzo')
-            .insert([cambio]);
-
-        if (error) {
+        try {
+            await this.db.collection('cambiomezzo').add(cambio);
+        } catch (error) {
             console.error('Error adding cambio mezzo:', error);
             alert("Errore salvataggio cambio mezzo: " + error.message);
             throw error;
@@ -238,22 +209,19 @@ class Store {
     }
 
     async updateCambioMezzo(id, data) {
-        const { error } = await this.supabase
-            .from('cambiomezzo')
-            .update(data)
-            .eq('id', id);
-
-        if (error) throw error;
-        return true;
+        try {
+            await this.db.collection('cambiomezzo').doc(id).update(data);
+            return true;
+        } catch (error) {
+            console.error('Error updating cambio mezzo:', error);
+            throw error;
+        }
     }
 
     async deleteCambioMezzo(id) {
-        const { error } = await this.supabase
-            .from('cambiomezzo')
-            .delete()
-            .eq('id', id);
-
-        if (error) {
+        try {
+            await this.db.collection('cambiomezzo').doc(id).delete();
+        } catch (error) {
             console.error('Error deleting cambio mezzo:', error);
             alert("Errore eliminazione cambio mezzo: " + error.message);
         }
@@ -262,25 +230,28 @@ class Store {
     // --- Contacts ---
 
     async getContacts() {
-        const { data, error } = await this.supabase
-            .from('contacts')
-            .select('*')
-            .order('category', { ascending: false }) // 'sedi' before 'officine'
-            .order('name', { ascending: true });
-
-        if (error) {
+        try {
+            // Firestore doesn't support multiple orderBys easily without indexes, 
+            // but we can sort locally or use a single one.
+            const snapshot = await this.db.collection('contacts').orderBy('category', 'desc').get();
+            let contacts = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            // Secondary sort in JS
+            return contacts.sort((a, b) => {
+                if (a.category === b.category) {
+                    return (a.name || '').localeCompare(b.name || '');
+                }
+                return 0;
+            });
+        } catch (error) {
             console.error('Error fetching contacts:', error);
             return [];
         }
-        return data;
     }
 
     async addContact(contact) {
-        const { error } = await this.supabase
-            .from('contacts')
-            .insert([contact]);
-
-        if (error) {
+        try {
+            await this.db.collection('contacts').add(contact);
+        } catch (error) {
             console.error('Error adding contact:', error);
             alert("Errore salvataggio contatto: " + error.message);
             throw error;
@@ -288,12 +259,9 @@ class Store {
     }
 
     async updateContact(id, data) {
-        const { error } = await this.supabase
-            .from('contacts')
-            .update(data)
-            .eq('id', id);
-
-        if (error) {
+        try {
+            await this.db.collection('contacts').doc(id).update(data);
+        } catch (error) {
             console.error('Error updating contact:', error);
             alert("Errore aggiornamento contatto: " + error.message);
             throw error;
@@ -301,12 +269,9 @@ class Store {
     }
 
     async deleteContact(id) {
-        const { error } = await this.supabase
-            .from('contacts')
-            .delete()
-            .eq('id', id);
-
-        if (error) {
+        try {
+            await this.db.collection('contacts').doc(id).delete();
+        } catch (error) {
             console.error('Error deleting contact:', error);
             alert("Errore eliminazione contatto: " + error.message);
             throw error;
@@ -314,15 +279,18 @@ class Store {
     }
 
     async upsertData(table, rows) {
-        const { data, error } = await this.supabase
-            .from(table)
-            .upsert(rows, { onConflict: table === 'locations' ? 'name' : 'id' });
-
-        if (error) {
+        try {
+            const batch = this.db.batch();
+            rows.forEach(row => {
+                const { id, ...data } = row;
+                const docRef = id ? this.db.collection(table).doc(id) : this.db.collection(table).doc();
+                batch.set(docRef, data, { merge: true });
+            });
+            await batch.commit();
+        } catch (error) {
             console.error(`Error upserting data to ${table}:`, error);
             throw error;
         }
-        return data;
     }
 }
 

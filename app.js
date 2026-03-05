@@ -1,4 +1,4 @@
-const APP_VERSION = "1.4.5 - 2026-03-01"; // Ultra-Compact Mobile
+const APP_VERSION = "1.5.0 - 2026-03-05"; // Firebase Migration
 let isAdmin = false;
 let cachedVehicles = null;
 let cachedLocations = null;
@@ -123,88 +123,69 @@ let isSyncing = false; // Prevents race conditions during fetch
 let lastVehicleSync = Date.now();
 
 function setupRealtimeSubscription() {
-    if (window.store && window.store.supabase) {
-        console.log("Realtime: Initializing subscriptions...");
-
-        const handleStatusChange = (status, channelName) => {
-            console.log(`Realtime: ${channelName} status:`, status);
-            if (status === 'SUBSCRIBED') {
-                console.log(`Realtime: ${channelName} active.`);
-                // We used to call renderDashboard(true) here, but that causes 
-                // race conditions if triggered too often. 
-                // Initial load handles the first pull anyway.
-            } else if (status === 'CHANNEL_ERROR' || status === 'CLOSED') {
-                console.warn(`Realtime: ${channelName} connection lost (${status}). Auto-retrying...`);
-                // Supabase JS client handles some retry internally, but we reinforce it.
-            }
-        };
+    if (window.store && window.store.db) {
+        console.log("Realtime: Initializing Firestore onSnapshot listeners...");
 
         // Vehicles Subscription
-        window.store.supabase
-            .channel('public:vehicles')
-            .on('postgres_changes', { event: '*', schema: 'public', table: 'vehicles' }, (payload) => {
-                console.log("Realtime event received:", payload.eventType, payload.new?.id || payload.old?.id);
+        window.store.db.collection('vehicles').onSnapshot((snapshot) => {
+            console.log("Realtime: Vehicles snapshot received.");
 
-                if (!cachedVehicles) return renderDashboard(true);
-
-                if (payload.eventType === 'UPDATE') {
-                    const idx = cachedVehicles.findIndex(v => v.id === payload.new.id);
-                    if (idx !== -1) {
-                        // Merge fields carefully to not lose maintenanceHistory if event payload is partial
-                        // (Wait, REPLICA IDENTITY FULL should give us all columns)
-                        const oldHistory = cachedVehicles[idx].maintenanceHistory || [];
-                        cachedVehicles[idx] = { ...payload.new, maintenanceHistory: oldHistory };
-                    } else {
-                        // If not in cache, just refresh to be safe
-                        return renderDashboard(true);
-                    }
-                } else if (payload.eventType === 'INSERT') {
-                    if (!cachedVehicles.find(v => v.id === payload.new.id)) {
-                        cachedVehicles.push({ ...payload.new, maintenanceHistory: [] });
-                    }
-                } else if (payload.eventType === 'DELETE') {
-                    cachedVehicles = cachedVehicles.filter(v => v.id !== payload.old.id);
-                    if (currentOpenedVehicleId === payload.old.id) closeVehicleModal();
+            // If it's the first pull and we don't have cache, renderDashboard handles it.
+            // But we need to keep cachedVehicles in sync.
+            const newVehicles = snapshot.docs.map(doc => {
+                const data = { id: doc.id, ...doc.data() };
+                // Preserve maintenanceHistory if already cached
+                if (cachedVehicles) {
+                    const oldV = cachedVehicles.find(v => v.id === doc.id);
+                    if (oldV) data.maintenanceHistory = oldV.maintenanceHistory || [];
                 }
+                if (!data.maintenanceHistory) data.maintenanceHistory = [];
+                return data;
+            });
 
-                sortVehiclesBySigla(cachedVehicles);
-                updateStats(cachedVehicles);
-                renderVehicleGrid(cachedVehicles);
+            cachedVehicles = newVehicles;
+            sortVehiclesBySigla(cachedVehicles);
+            updateStats(cachedVehicles);
+            renderVehicleGrid(cachedVehicles);
 
-                if (currentOpenedVehicleId === payload.new?.id) {
-                    openVehicleModal(payload.new.id);
+            // Update modal if open
+            if (currentOpenedVehicleId) {
+                const stillExists = cachedVehicles.find(v => v.id === currentOpenedVehicleId);
+                if (stillExists) {
+                    // Optimized: only refresh if data actually changed
+                    // For now, simple re-open
+                    openVehicleModal(currentOpenedVehicleId);
+                } else {
+                    closeVehicleModal();
                 }
-            })
-            .subscribe((status) => handleStatusChange(status, 'Vehicles'));
+            }
+        }, err => console.error("Realtime Vehicles error:", err));
 
         // Interventions Subscription
-        window.store.supabase
-            .channel('public:interventions')
-            .on('postgres_changes', { event: '*', schema: 'public', table: 'interventions' }, (payload) => {
-                // Interventions are deep-linked, trigger full refresh to sync maintenanceHistory
-                renderDashboard(true);
-            })
-            .subscribe((status) => handleStatusChange(status, 'Interventions'));
+        window.store.db.collection('interventions').onSnapshot((snapshot) => {
+            console.log("Realtime: Interventions snapshot received. Refreshing dashboard...");
+            // Interventions affect maintenanceHistory which is nested in cachedVehicles
+            // Simplest is to trigger a full refresh to re-link everything
+            renderDashboard(true);
+        }, err => console.error("Realtime Interventions error:", err));
 
         // Locations Subscription
-        window.store.supabase
-            .channel('public:locations')
-            .on('postgres_changes', { event: '*', schema: 'public', table: 'locations' }, (payload) => {
-                renderDashboard(true);
-            })
-            .subscribe((status) => handleStatusChange(status, 'Locations'));
+        window.store.db.collection('locations').onSnapshot((snapshot) => {
+            console.log("Realtime: Locations snapshot received.");
+            cachedLocations = snapshot.docs.map(doc => {
+                const data = doc.data();
+                return { luogo: data.name, colore: data.colore };
+            }).sort((a, b) => a.luogo.localeCompare(b.luogo));
+            renderDashboard(false); // Re-render with new locations (station names)
+        }, err => console.error("Realtime Locations error:", err));
 
         // Cambi Mezzi Subscription
-        window.store.supabase
-            .channel('public:cambiomezzo')
-            .on('postgres_changes', { event: '*', schema: 'public', table: 'cambiomezzo' }, (payload) => {
-                console.log("Realtime: Cambi Mezzi event received.");
-                // If Data Management is open and showing Cambi, refresh it
-                if (!document.getElementById('data-management-modal').classList.contains('hidden')) {
-                    switchDataTable('cambiomezzo');
-                }
-            })
-            .subscribe((status) => handleStatusChange(status, 'CambiMezzi'));
+        window.store.db.collection('cambiomezzo').onSnapshot((snapshot) => {
+            console.log("Realtime: Cambi Mezzi snapshot received.");
+            if (!document.getElementById('data-management-modal').classList.contains('hidden')) {
+                switchDataTable('cambiomezzo');
+            }
+        }, err => console.error("Realtime Cambi error:", err));
     }
 }
 
@@ -1520,10 +1501,7 @@ window.saveMaintenanceRecord = async function (e) {
         // Let's check a global flag or just rely on manual re-opening if needed, 
         // but for better UX, let's try to detect.
         // For now, let's just make sure switchDataTable is called if we want to be proactive.
-        if (window.lastDataManagerTab) {
-            window.openDataManagement();
-            switchDataTable(window.lastDataManagerTab);
-        }
+
     } catch (error) {
         console.error("Error saving record:", error);
         alert("Errore durante il salvataggio: " + error.message);
