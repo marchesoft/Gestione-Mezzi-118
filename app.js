@@ -1,4 +1,4 @@
-const APP_VERSION = "1.5.2 - 2026-03-05"; // Firebase Migration Fixes
+const APP_VERSION = "1.6.0 - 2026-03-05"; // Security Hardening & Version Bump
 let isAdmin = false;
 let cachedVehicles = null;
 let cachedLocations = null;
@@ -62,6 +62,31 @@ async function initApp() {
 
     console.log(`%c APP START: Version ${APP_VERSION}`, 'background: #1e3a8a; color: #fff; font-weight: bold; padding: 4px;');
     setupEventListeners();
+
+    // Observe Firebase Auth State
+    auth.onAuthStateChanged(user => {
+        if (user) {
+            console.log("Admin loggato:", user.email);
+            isAdmin = true;
+            document.body.classList.add('is-admin');
+            const lockIcon = document.getElementById('admin-lock-icon');
+            if (lockIcon) lockIcon.className = 'fa-solid fa-lock-open';
+            const hintText = document.getElementById('admin-hint-text');
+            if (hintText) hintText.textContent = 'Modalita amministratore';
+            localStorage.setItem('isAdmin', 'true');
+        } else {
+            console.log("Utente non loggato");
+            isAdmin = false;
+            document.body.classList.remove('is-admin');
+            const lockIcon = document.getElementById('admin-lock-icon');
+            if (lockIcon) lockIcon.className = 'fa-solid fa-lock';
+            const hintText = document.getElementById('admin-hint-text');
+            if (hintText) hintText.textContent = 'Modalita visualizzazione';
+            localStorage.removeItem('isAdmin');
+        }
+        renderDashboard();
+    });
+
     await renderDashboard(true); // Force initial fetch
     setupRealtimeSubscription();
     setupIdleRefresh();
@@ -578,18 +603,16 @@ window.toggleAdminMode = function () {
     const hintText = document.getElementById('admin-hint-text');
 
     if (isAdmin) {
-        // Logout
-        isAdmin = false;
-        localStorage.removeItem('isAdmin'); // Remove from localStorage
-        document.body.classList.remove('is-admin');
-        document.getElementById('admin-lock-icon').className = 'fa-solid fa-lock';
-        if (hintText) hintText.textContent = 'Modalita visualizzazione';
-        alert("Modalità Amministratore Disattivata.");
-        renderDashboard();
+        // Logout via Firebase
+        auth.signOut().then(() => {
+            alert("Modalità Amministratore Disattivata.");
+        }).catch(error => {
+            console.error("Errore logout:", error);
+        });
     } else {
         // Open Login Modal
         document.getElementById('admin-login-modal').classList.remove('hidden');
-        document.getElementById('admin-password-input').focus();
+        document.getElementById('admin-email-input').focus();
     }
 }
 
@@ -957,22 +980,32 @@ function setupEventListeners() {
     // Admin Login Form
     const adminLoginForm = document.getElementById('admin-login-form');
     if (adminLoginForm) {
-        adminLoginForm.addEventListener('submit', (e) => {
+        adminLoginForm.addEventListener('submit', async (e) => {
             e.preventDefault();
+            const email = document.getElementById('admin-email-input').value;
             const password = document.getElementById('admin-password-input').value;
-            if (password === 'admin118') { // Simple shared password
-                isAdmin = true;
-                localStorage.setItem('isAdmin', 'true'); // Save to localStorage
-                document.body.classList.add('is-admin');
-                document.getElementById('admin-lock-icon').className = 'fa-solid fa-lock-open';
-                const hintText = document.getElementById('admin-hint-text');
-                if (hintText) hintText.textContent = 'Modalita amministratore';
+
+            try {
+                const btn = adminLoginForm.querySelector('button[type="submit"]');
+                const originalText = btn.textContent;
+                btn.disabled = true;
+                btn.textContent = 'Accesso in corso...';
+
+                await auth.signInWithEmailAndPassword(email, password);
+
                 document.getElementById('admin-login-modal').classList.add('hidden');
+                document.getElementById('admin-email-input').value = '';
                 document.getElementById('admin-password-input').value = '';
-                alert("Modalità Amministratore Attiva!");
-                renderDashboard();
-            } else {
-                alert("Password Errata!");
+                alert("Accesso Amministratore Effettuato!");
+
+                btn.disabled = false;
+                btn.textContent = originalText;
+            } catch (error) {
+                console.error("Errore login:", error);
+                alert("Credenziali Errate o Errore di Connessione!");
+                const btn = adminLoginForm.querySelector('button[type="submit"]');
+                btn.disabled = false;
+                btn.textContent = 'Entra';
             }
         });
     }
