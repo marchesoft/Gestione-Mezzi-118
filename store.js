@@ -1,6 +1,4 @@
 
-const SUPABASE_URL = 'https://iwpfhxgijqeemvsyjhvy.supabase.co';
-const SUPABASE_KEY = 'sb_publishable_y2QOHvnU2SqI03A0i1HHew_ArjXlqDm'; // Publishable Key
 
 class Store {
     constructor() {

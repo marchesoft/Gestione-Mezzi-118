@@ -1728,37 +1728,64 @@ window.importDataTableFromCSV = function () {
                 // Remove BOM if present
                 if (content.startsWith('\uFEFF')) content = content.substring(1);
 
-                const rows = content.split(/\r?\n/).filter(r => r.trim());
-                if (rows.length < 2) {
-                    alert("Il file non contiene dati validi.");
-                    return;
-                }
-
-                const rawHeaders = rows[0].split(';').map(h => h.replace(/"/g, '').trim());
+                const delimiter = rows[0].includes(';') ? ';' : ',';
+                const rawHeaders = rows[0].split(delimiter).map(h => h.replace(/"/g, '').trim());
                 const dataRows = rows.slice(1);
 
-                // Header mapping
-                const mapping = {};
-                if (type === 'vehicles') {
-                    const map = { 'Targa': 'id_plate', 'Modello': 'model', 'Sigla': 'sigla', 'Stazione': 'station', 'Stato': 'status', 'Km': 'mileage', 'Mese Km': 'mileage_month', 'Note': 'notes', 'Radio ID': 'radio_id', 'Scadenza Revisione': 'inspection_expiry', 'Revisione O2': 'revision_o2' };
-                    // Special case: we need the ID for upserting, but users edit by Sigla or Plate. 
-                    // However, our export HAS id if we don't hide it. Let's assume they use the exported file.
-                }
-
-                // Since users might find mapping complex, let's use the inverted mapping from export logic
+                // Header mapping (maps both Italian labels and Raw DB names)
                 const headerMap = {
-                    'vehicles': { 'ID (Non modificare)': 'id', 'Targa': 'plate', 'Modello': 'model', 'Sigla': 'sigla', 'Stazione': 'station', 'Stato': 'status', 'Km': 'mileage', 'Mese Km': 'mileage_month', 'Note': 'notes', 'Radio ID': 'radio_id', 'Scadenza Revisione': 'inspection_expiry', 'Revisione O2': 'revision_o2' },
-                    'locations': { 'Luogo': 'luogo', 'Colore': 'colore' },
-                    'interventions': { 'ID (Non modificare)': 'id', 'Data Entrata': 'date', 'Data Uscita': 'date_out', 'Mezzo (Sigla)': 'sigla', 'Officina': 'workshop', 'Descrizione Intervento': 'description', 'Costo': 'cost' },
-                    'cambiomezzo': { 'ID (Non modificare)': 'id', 'Data': 'data', 'Turno': 'turno', 'Luogo': 'luogo', 'Equipaggio': 'equipaggio', 'Dal Mezzo': 'dal_mezzo', 'Al Mezzo': 'al_mezzo' },
-                    'contacts': { 'ID (Non modificare)': 'id', 'Categoria': 'category', 'Nome/Sigla': 'name', 'Fisso': 'urban', 'Cellulare 1': 'mobile', 'Cellulare 2': 'mobile2', 'Cell. Medico': 'mobile_medical' }
+                    'vehicles': {
+                        'ID (Non modificare)': 'id', 'id': 'id',
+                        'Targa': 'plate', 'plate': 'plate',
+                        'Modello': 'model', 'model': 'model',
+                        'Sigla': 'sigla', 'sigla': 'sigla',
+                        'Stazione': 'station', 'station': 'station',
+                        'Stato': 'status', 'status': 'status',
+                        'Km': 'mileage', 'mileage': 'mileage',
+                        'Mese Km': 'mileage_month', 'mileage_month': 'mileage_month',
+                        'Note': 'notes', 'notes': 'notes',
+                        'Radio ID': 'radio_id', 'radio_id': 'radio_id',
+                        'Scadenza Revisione': 'inspection_expiry', 'inspection_expiry': 'inspection_expiry',
+                        'Revisione O2': 'revision_o2', 'revision_o2': 'revision_o2'
+                    },
+                    'locations': {
+                        'Luogo': 'name', 'luogo': 'name', 'name': 'name',
+                        'Colore': 'colore', 'colore': 'colore'
+                    },
+                    'interventions': {
+                        'ID (Non modificare)': 'id', 'id': 'id',
+                        'Data Entrata': 'date', 'date': 'date',
+                        'Data Uscita': 'date_out', 'date_out': 'date_out',
+                        'Mezzo (Sigla)': 'sigla', 'sigla': 'sigla', 'vehicle_id': 'vehicle_id',
+                        'Officina': 'workshop', 'workshop': 'workshop',
+                        'Descrizione Intervento': 'description', 'description': 'description',
+                        'Costo': 'cost', 'cost': 'cost'
+                    },
+                    'cambiomezzo': {
+                        'ID (Non modificare)': 'id', 'id': 'id',
+                        'Data': 'data', 'data': 'data',
+                        'Turno': 'turno', 'turno': 'turno',
+                        'Luogo': 'luogo', 'luogo': 'luogo',
+                        'Equipaggio': 'equipaggio', 'equipaggio': 'equipaggio',
+                        'Dal Mezzo': 'dal_mezzo', 'dal_mezzo': 'dal_mezzo',
+                        'Al Mezzo': 'al_mezzo', 'al_mezzo': 'al_mezzo'
+                    },
+                    'contacts': {
+                        'ID (Non modificare)': 'id', 'id': 'id',
+                        'Categoria': 'category', 'category': 'category',
+                        'Nome/Sigla': 'name', 'name': 'name',
+                        'Fisso': 'urban', 'urban': 'urban',
+                        'Cellulare 1': 'mobile', 'mobile': 'mobile',
+                        'Cellulare 2': 'mobile2', 'mobile2': 'mobile2',
+                        'Cell. Medico': 'mobile_medical', 'mobile_medical': 'mobile_medical'
+                    }
                 };
 
                 const currentMap = headerMap[type];
                 const dbRows = [];
 
                 for (const row of dataRows) {
-                    const values = row.split(';').map(v => v.replace(/"/g, '').trim());
+                    const values = row.split(delimiter).map(v => v.replace(/"/g, '').trim());
                     const obj = {};
                     rawHeaders.forEach((label, idx) => {
                         const dbField = currentMap[label];
@@ -1766,11 +1793,15 @@ window.importDataTableFromCSV = function () {
                             let val = values[idx];
                             // Basic type conversion
                             if (dbField === 'mileage' || dbField === 'cost') val = parseFloat(val) || 0;
-                            // Date conversion (assuming Italian format DD/MM/YYYY)
+
+                            // Date conversion (handle both ISO and Italian format)
                             if (['date', 'date_out', 'data', 'inspection_expiry', 'revision_o2'].includes(dbField) && val) {
-                                const parts = val.split('/');
-                                if (parts.length === 3) val = `${parts[2]}-${parts[1]}-${parts[0]}`;
+                                if (val.includes('/')) { // Italian DD/MM/YYYY
+                                    const parts = val.split('/');
+                                    if (parts.length === 3) val = `${parts[2]}-${parts[1].padStart(2, '0')}-${parts[0].padStart(2, '0')}`;
+                                }
                             }
+
                             // Don't set empty strings for ID
                             if (dbField === 'id' && !val) return;
 
@@ -1778,13 +1809,13 @@ window.importDataTableFromCSV = function () {
                         }
                     });
 
-                    // For interventions, we need to map sigla -> vehicle_id
-                    if (type === 'interventions' && obj.sigla) {
+                    // For interventions, we might have vehicle_id directly (Supabase) or need to map sigla -> vehicle_id
+                    if (type === 'interventions' && obj.sigla && !obj.vehicle_id) {
                         const vehicles = await store.getVehicles();
                         const v = vehicles.find(m => m.sigla === obj.sigla);
                         if (v) obj.vehicle_id = v.id;
-                        delete obj.sigla;
                     }
+                    if (obj.sigla) delete obj.sigla;
 
                     // For locations, Supabase 'locations' table uses 'name' as PK, mapped to 'luogo' in UI
                     if (type === 'locations' && obj.luogo) {
