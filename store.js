@@ -11,10 +11,10 @@ class Store {
     async getVehicles() {
         try {
             const vSnapshot = await this.db.collection('vehicles').get();
-            const vehicles = vSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            const vehicles = vSnapshot.docs.map(doc => ({ ...doc.data(), id: doc.id }));
 
             const iSnapshot = await this.db.collection('interventions').orderBy('date', 'desc').get();
-            const allInterventions = iSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            const allInterventions = iSnapshot.docs.map(doc => ({ ...doc.data(), id: doc.id }));
 
             const interventionsByVehicle = allInterventions.reduce((acc, curr) => {
                 if (!acc[curr.vehicle_id]) acc[curr.vehicle_id] = [];
@@ -38,7 +38,7 @@ class Store {
             const doc = await this.db.collection('vehicles').doc(id).get();
             if (!doc.exists) return null;
 
-            const data = { id: doc.id, ...doc.data() };
+            const data = { ...doc.data(), id: doc.id };
 
             // Note: Removed .orderBy from query to avoid composite index requirement.
             // We'll sort in JavaScript.
@@ -47,7 +47,7 @@ class Store {
                 .get();
 
             data.maintenanceHistory = iSnapshot.docs
-                .map(iDoc => ({ id: iDoc.id, ...iDoc.data() }))
+                .map(iDoc => ({ ...iDoc.data(), id: iDoc.id }))
                 .sort((a, b) => new Date(b.date) - new Date(a.date));
 
             return data;
@@ -137,7 +137,7 @@ class Store {
     async getInterventions() {
         try {
             const snapshot = await this.db.collection('interventions').orderBy('date', 'desc').get();
-            const interventions = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            const interventions = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id }));
 
             // To get sigla, we'd need another fetch or a join. 
             // In Firestore, we usually denormalize or fetch separately.

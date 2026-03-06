@@ -25,6 +25,9 @@
     --status-to-repair: #ff0000;
     /* Red */
     --status-to-repair-bg: #fee2e2;
+    --status-internal-use: #65a30d;
+    /* Light Green */
+    --status-internal-use-bg: #f7fee7;
 
     --shadow-sm: 0 2px 4px 0 rgb(0 0 0 / 0.12);
     --shadow-md: 0 8px 16px -2px rgb(0 0 0 / 0.25), 0 4px 8px -3px rgb(0 0 0 / 0.20);
@@ -459,6 +462,11 @@ select {
     color: white !important;
 }
 
+.status-full-bar.status-internal-use {
+    background-color: var(--status-internal-use) !important;
+    color: white !important;
+}
+
 /* Status-specific card borders */
 .vehicle-card.border-operative {
     border-color: var(--status-operative) !important;
@@ -477,6 +485,11 @@ select {
 
 .vehicle-card.border-to-repair {
     border-color: var(--status-to-repair) !important;
+    border-width: 2px;
+}
+
+.vehicle-card.border-internal-use {
+    border-color: var(--status-internal-use) !important;
     border-width: 2px;
 }
 
@@ -758,6 +771,11 @@ body.is-admin #admin-hint-text {
 .status-to-repair {
     color: var(--status-to-repair);
     background-color: var(--status-to-repair-bg);
+}
+
+.status-internal-use {
+    color: var(--status-internal-use);
+    background-color: var(--status-internal-use-bg);
 }
 
 .status-badge {

@@ -335,7 +335,8 @@ function getStatusLabel(status) {
         'operative': 'Operativa',
         'available': 'Disponibile',
         'maintenance': 'In Officina',
-        'to-repair': 'Da Riparare'
+        'to-repair': 'Da Riparare',
+        'internal-use': 'Uso Interno'
     };
     return labels[status] || status;
 }
@@ -382,17 +383,19 @@ async function renderVehicleGrid(vehicles) {
             'operative': 'In Servizio',
             'available': 'Disponibile',
             'maintenance': 'In Officina',
-            'to-repair': 'Da Riparare'
+            'to-repair': 'Da Riparare',
+            'internal-use': 'Uso Interno'
         };
 
         let statusHtml = `
             <div style="position: relative; width: 100%;">
                 ${isAdmin ? `
-                    <select class="status-full-bar status-${vehicle.status}" onchange="quickUpdateStatus(event, '${vehicle.id}')" onclick="event.stopPropagation()">
+                    <select class="status-full-bar status-${vehicle.status}" onchange="quickUpdateStatus(event, '${vehicle.id}')" onclick="event.stopPropagation()" ${vehicle.status === 'internal-use' ? 'disabled' : ''}>
                         <option value="operative" ${vehicle.status === 'operative' ? 'selected' : ''}>In Servizio</option>
                         <option value="available" ${vehicle.status === 'available' ? 'selected' : ''}>Disponibile</option>
                         <option value="maintenance" ${vehicle.status === 'maintenance' ? 'selected' : ''}>In Officina</option>
                         <option value="to-repair" ${vehicle.status === 'to-repair' ? 'selected' : ''}>Da Riparare</option>
+                        ${vehicle.status === 'internal-use' ? '<option value="internal-use" selected>Uso Interno</option>' : ''}
                     </select>
                 ` : `
                     <div class="status-full-bar status-${vehicle.status}" style="cursor: default;">
@@ -535,6 +538,16 @@ window.quickUpdateStatus = async function (event, id) {
     const newStatus = event.target.value;
     const select = event.target;
 
+    // Check if locked
+    if (cachedVehicles) {
+        const v = cachedVehicles.find(v => v.id === id);
+        if (v && v.status === 'internal-use') {
+            alert("I veicoli 'Uso Interno' possono essere modificati solo dalla gestione database.");
+            renderDashboard(false);
+            return;
+        }
+    }
+
     // 1. Force Immediate UI update (Robustness for re-clicks)
     const allStatuses = ['status-operative', 'status-available', 'status-maintenance', 'status-to-repair'];
     select.classList.remove(...allStatuses);
@@ -629,12 +642,22 @@ window.openVehicleForm = async function (vehicleId = null) {
         return;
     }
 
+    const managementModal = document.getElementById('data-management-modal');
+    const isFromManagement = managementModal && !managementModal.classList.contains('hidden');
+
     const modal = document.getElementById('vehicle-form-modal');
     const title = document.querySelector('#vehicle-form-modal h3');
     const form = document.getElementById('vehicle-form');
 
     form.reset();
     document.getElementById('vehicle-id').value = '';
+
+    // Conditionally show/hide "Uso Interno" in the form status dropdown
+    const statusSelect = document.getElementById('vehicle-status');
+    const internalOption = statusSelect.querySelector('option[value="internal-use"]');
+    if (internalOption) {
+        internalOption.style.display = isFromManagement ? 'block' : 'none';
+    }
 
     // Populate Station Select
     const stationSelect = document.getElementById('vehicle-station');
@@ -674,6 +697,35 @@ window.openVehicleForm = async function (vehicleId = null) {
     }
 
     modal.classList.remove('hidden');
+
+    // Status Locking Logic
+    const isInternalUse = vehicleId && cachedVehicles.find(v => v.id === vehicleId)?.status === 'internal-use';
+    const shouldLockFromDashboard = isInternalUse && !isFromManagement;
+
+    const inputs = form.querySelectorAll('input, select, textarea');
+    inputs.forEach(input => {
+        if (isFromManagement) {
+            input.disabled = false;
+        } else if (shouldLockFromDashboard) {
+            // Dashboard view: only status is locked for Uso Interno
+            input.disabled = (input.id === 'vehicle-status');
+        } else {
+            input.disabled = false;
+        }
+    });
+
+    const submitBtn = form.querySelector('button[type="submit"]') || form.querySelector('button[onclick*="saveVehicleForm"]');
+    if (submitBtn) {
+        submitBtn.style.display = 'block'; // Always show button to allow saving changes (including station)
+    }
+
+    if (shouldLockFromDashboard) {
+        title.textContent = 'Mezzo Uso Interno (Stato Bloccato)';
+    } else if (vehicleId) {
+        title.textContent = 'Modifica Mezzo';
+    } else {
+        title.textContent = 'Aggiungi Nuovo Mezzo';
+    }
 }
 
 window.openCambioMezzoModal = async function (cambioId = null) {
