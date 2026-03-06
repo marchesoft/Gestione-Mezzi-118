@@ -1,4 +1,4 @@
-const APP_VERSION = "1.6.0 - 2026-03-05"; // Security Hardening & Version Bump
+const APP_VERSION = "1.6.1 - 2026-03-06"; // Refined "Uso Interno" Locking & Version Bump
 let isAdmin = false;
 let cachedVehicles = null;
 let cachedLocations = null;
