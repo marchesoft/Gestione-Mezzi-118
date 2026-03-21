@@ -1,4 +1,4 @@
-const APP_VERSION = "1.6.6 - 2026-03-21"; // Notifiche ad attivazione manuale Version Bump
+const APP_VERSION = "1.6.7"; // Rimozione notifiche push
 let isAdmin = false;
 let cachedVehicles = null;
 let cachedLocations = null;
@@ -49,15 +49,7 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 async function initApp() {
-    // Registra Service Worker per notifiche push
-    if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.register('./sw.js').then(reg => {
-            console.log('SW registrato:', reg.scope);
-        }).catch(err => console.warn('SW non registrato:', err));
-    }
 
-    // Gestione pulsante notifiche push
-    updateNotificationBtn();
 
     // Check if user was logged in as admin
     const savedAdminState = localStorage.getItem('isAdmin');
@@ -99,10 +91,7 @@ async function initApp() {
 
     await renderDashboard(true); // Force initial fetch
     
-    // Controlla appuntamenti per notifiche push
-    if (cachedVehicles) {
-        checkAndNotifyAppointments(cachedVehicles);
-    }
+
 
     setupRealtimeSubscription();
     setupIdleRefresh();
@@ -1847,6 +1836,12 @@ window.importDataTableFromCSV = function () {
                 // Remove BOM if present
                 if (content.startsWith('\uFEFF')) content = content.substring(1);
 
+                const rows = content.split('\n').filter(row => row.trim() !== '');
+                if (rows.length < 1) {
+                    alert("Il file CSV è vuoto o non contiene dati validi.");
+                    return;
+                }
+
                 const delimiter = rows[0].includes(';') ? ';' : ',';
                 const rawHeaders = rows[0].split(delimiter).map(h => h.replace(/"/g, '').trim());
                 const dataRows = rows.slice(1);
@@ -2285,101 +2280,3 @@ window.filterInterventionTable = function (query) {
         row.style.display = text.includes(q) ? '' : 'none';
     });
 };
-
-// Gestione permessi notifiche manuale
-function updateNotificationBtn() {
-    const btn = document.getElementById('notification-setup-btn');
-    if (!btn) return;
-    
-    if (!('Notification' in window)) {
-        btn.style.display = 'none';
-        return;
-    }
-    
-    if (Notification.permission === 'default') {
-        btn.style.display = 'flex';
-        btn.innerHTML = '<i class="fa-solid fa-bell"></i> Attiva Notifiche';
-        btn.style.background = '#eff6ff';
-        btn.style.color = '#1d4ed8';
-    } else if (Notification.permission === 'denied') {
-        btn.style.display = 'flex';
-        btn.innerHTML = '<i class="fa-solid fa-bell-slash"></i> Notifiche Bloccate';
-        btn.style.background = '#fef2f2';
-        btn.style.color = '#991b1b';
-        btn.title = "Sblocca le notifiche nelle impostazioni del browser";
-    } else {
-        // Notifiche già attive, nascondiamo il pulsante per pulire l'interfaccia hg
-        btn.style.display = 'none';
-    }
-}
-
-window.requestNotificationPermission = function() {
-    if (!('Notification' in window)) return;
-    
-    Notification.requestPermission().then(permission => {
-        updateNotificationBtn();
-        if (permission === 'granted') {
-            alert("Ottimo! Riceverai le notifiche per gli appuntamenti.");
-            // Una volta autorizzato, controlliamo subito se ci sono notifiche da inviare
-            if (cachedVehicles) {
-                checkAndNotifyAppointments(cachedVehicles);
-            }
-        }
-    });
-};
-
-// Funzione per notifiche push appuntamenti
-function checkAndNotifyAppointments(vehicles) {
-    if (!('Notification' in window) || Notification.permission !== 'granted') return;
-
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const tomorrow = new Date(today);
-    tomorrow.setDate(tomorrow.getDate() + 1);
-
-    const todayStr = today.toISOString().split('T')[0];
-    const lastNotifyDate = localStorage.getItem('last_appointment_notify_date');
-    
-    // Notifica una sola volta al giorno per sessione
-    if (lastNotifyDate === todayStr) return;
-
-    vehicles.forEach(v => {
-        if (!v.appointment_date) return;
-        
-        const apptDate = new Date(v.appointment_date);
-        apptDate.setHours(0, 0, 0, 0);
-        
-        let title = '';
-        if (apptDate.getTime() === today.getTime()) {
-            title = `OGGI: Appuntamento ${v.sigla || v.model}`;
-        } else if (apptDate.getTime() === tomorrow.getTime()) {
-            title = `DOMANI: Appuntamento ${v.sigla || v.model}`;
-        }
-
-        if (title) {
-            const body = `${v.plate} - ${v.appointment_location || 'Luogo non specificato'}\n${v.appointment_notes || ''}`;
-            
-            // Invia notifica tramite Service Worker per supporto background
-            if (navigator.serviceWorker.controller) {
-                navigator.serviceWorker.ready.then(reg => {
-                    reg.showNotification(title, {
-                        body: body,
-                        icon: 'icon-192.png',
-                        badge: 'icon-192.png',
-                        vibrate: [200, 100, 200],
-                        tag: `appt-${v.id}-${todayStr}`,
-                        renotify: true
-                    });
-                });
-            } else {
-                // Fallback per browser senza Service Worker o non controllati
-                new Notification(title, {
-                    body: body,
-                    icon: 'icon-192.png',
-                    badge: 'icon-192.png',
-                    vibrate: [200, 100, 200]
-                });
-            }
-        }
-    });
-}
