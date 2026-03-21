@@ -387,10 +387,11 @@ select {
     flex-direction: column;
     justify-content: center;
     align-items: center;
-    padding: 1.5rem;
+    padding: 0.6rem 0.75rem;
     text-align: center;
     border-radius: inherit;
     animation: alert-fade-in 0.3s ease-out;
+    overflow-y: auto;
 }
 
 @keyframes alert-fade-in {
@@ -415,25 +416,60 @@ select {
 
 .alert-subtitle {
     color: #1e293b;
-    font-size: 0.9rem;
+    font-size: 0.85rem;
     font-weight: 600;
-    margin-bottom: 1.5rem;
+    margin-bottom: 0.6rem;
 }
 
 .alert-ack-btn {
     background-color: #0f172a;
     color: white;
-    padding: 0.75rem 2rem;
+    padding: 0.45rem 1.25rem;
     border-radius: 0.5rem;
     border: none;
     font-weight: 800;
     cursor: pointer;
     transition: transform 0.2s;
     box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    font-size: 0.85rem;
 }
 
 .alert-ack-btn:hover {
     transform: scale(1.05);
+}
+
+.alert-notes {
+    margin-top: 0.75rem;
+    background-color: rgba(15, 23, 42, 0.12);
+    border: 1px solid rgba(15, 23, 42, 0.25);
+    border-radius: 0.4rem;
+    padding: 0.35rem 0.6rem;
+    font-size: 0.78rem;
+    font-weight: 700;
+    color: #0f172a;
+    text-align: center;
+    line-height: 1.3;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+/* Card con overlay attivo: l'overlay lascia spazio in basso per le note */
+.vehicle-card.has-alert .appointment-alert-overlay {
+    height: calc(100% - 2.2rem);
+    border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+}
+
+/* Note ancorate al fondo della card, sopra all'overlay */
+.vehicle-card.has-alert .mobile-notes {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 200;
+    margin: 0;
+    border-radius: 0 0 var(--radius-lg) var(--radius-lg);
+    font-size: 0.75rem;
+    padding: 0.3rem 0.5rem;
 }
 
 .status-full-bar:focus {
@@ -527,51 +563,9 @@ select {
     border-top-right-radius: var(--radius-lg);
 }
 
-/* Note Tooltip */
+/* Note Tooltip - disabilitato, ora si usa .mobile-notes sempre visibile */
 .note-tooltip {
-    position: absolute;
-    bottom: 105%;
-    left: 50%;
-    transform: translateX(-50%);
-    background-color: #ffeb3b;
-    /* Vivid Yellow */
-    color: #0f172a;
-    /* Dark Blue */
-    padding: 0.5rem 0.75rem;
-    border-radius: 0.5rem;
-    font-size: 0.8rem;
-    font-weight: 700;
-    width: max-content;
-    max-width: 220px;
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-    border: 1px solid #0f172a;
-    opacity: 0;
-    visibility: hidden;
-    transition: opacity 0.2s, transform 0.2s;
-    pointer-events: none;
-    z-index: 500;
-    /* Increased to stay on top */
-    text-align: center;
-    line-height: 1.4;
-    white-space: pre-line;
-    /* Support newlines */
-}
-
-.note-tooltip::after {
-    content: '';
-    position: absolute;
-    top: 100%;
-    left: 50%;
-    margin-left: -5px;
-    border-width: 5px;
-    border-style: solid;
-    border-color: #0f172a transparent transparent transparent;
-}
-
-.vehicle-card:hover .note-tooltip {
-    opacity: 1;
-    visibility: visible;
-    transform: translateX(-50%) translateY(-5px);
+    display: none !important;
 }
 
 .sigla-text {
@@ -1554,9 +1548,21 @@ body.is-admin #admin-hint-text {
     }
 }
 
-/* Mobile Notes hidden by default */
+/* Note sempre visibili (stile fisso sotto la card) */
 .mobile-notes {
-    display: none;
+    display: block !important;
+    font-size: 0.8rem;
+    background-color: #ffeb3b;
+    color: #0f172a;
+    padding: 0.35rem 0.6rem;
+    border-radius: 0.4rem;
+    border: 1px solid #0f172a;
+    font-weight: 700;
+    text-align: center;
+    margin-top: 0.25rem;
+    line-height: 1.2;
+    width: 100%;
+    white-space: normal;
 }
 
 @media (max-width: 768px) {
@@ -1678,26 +1684,7 @@ body.is-admin #admin-hint-text {
         font-size: 0.8rem !important;
     }
 
-    /* Mobile Notes Display - Always Visible */
-    .mobile-notes {
-        display: block !important;
-        font-size: 0.8rem;
-        background-color: #ffeb3b;
-        color: #0f172a;
-        padding: 0.35rem 0.6rem;
-        border-radius: 0.4rem;
-        border: 1px solid #0f172a;
-        font-weight: 700;
-        text-align: center;
-        margin-top: 0.25rem;
-        line-height: 1.2;
-        width: 100%;
-        white-space: normal;
-    }
-
-    .note-tooltip {
-        display: none !important;
-    }
+    /* .mobile-notes già gestito globalmente */
 }
 
 @media (max-width: 480px) {

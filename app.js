@@ -368,7 +368,8 @@ async function renderVehicleGrid(vehicles) {
         const isTomorrow = vehicle.appointment_date === tomorrowStr;
         const alreadyAcked = vehicle.alert_ack_date === todayStr;
 
-        if ((isToday || isTomorrow) && !alreadyAcked) {
+        const showOverlay = (isToday || isTomorrow) && !alreadyAcked;
+        if (showOverlay) {
             alertHTML = `
                 <div class="appointment-alert-overlay">
                     <div class="alert-title">${isToday ? 'OGGI' : 'DOMANI'} APPUNTAMENTO</div>
@@ -431,15 +432,19 @@ async function renderVehicleGrid(vehicles) {
         }
 
         // Notes
-        let noteContent = (vehicle.notes || '').trim();
+        const pureNotes = (vehicle.notes || '').trim();
+        let noteContent = pureNotes;
         if (vehicle.appointment_date) {
             const locText = vehicle.appointment_location ? ` @ ${vehicle.appointment_location}` : '';
             const apptText = `APPUNTAMENTO: ${formatDate(vehicle.appointment_date)}${locText}`;
-            noteContent = noteContent ? `${apptText}\n---\n${noteContent}` : apptText;
+            noteContent = pureNotes ? `${apptText}\n---\n${pureNotes}` : apptText;
         }
+        // Con overlay attivo: mostriamo solo le note pure (non il testo appuntamento)
+        // posizionate sopra l'overlay tramite CSS (.has-alert .mobile-notes)
+        const mobileNotesContent = showOverlay ? pureNotes : noteContent;
 
         return `
-            <div class="vehicle-card border-${vehicle.status}" 
+            <div class="vehicle-card border-${vehicle.status}${showOverlay ? ' has-alert' : ''}" 
                  data-id="${vehicle.id}" 
                  draggable="${isAdmin}" 
                  onclick="openVehicleModal('${vehicle.id}')"
@@ -450,7 +455,6 @@ async function renderVehicleGrid(vehicles) {
                  ondragleave="handleDragLeave(event)" 
                  ondragend="handleDragEnd(event)">
                 ${alertHTML}
-                ${noteContent ? `<div class="note-tooltip">${noteContent}</div>` : ''}
                 ${statusHtml}
                 <div class="card-body">
                     <div class="vehicle-id" style="text-align: center; margin-bottom: 0.5rem; display: flex; flex-direction: column; gap: 0.1rem;">
@@ -462,7 +466,7 @@ async function renderVehicleGrid(vehicles) {
                     </div>
                     <div class="card-actions" style="justify-content: center; flex-direction: column; align-items: center;">
                         ${locationHtml}
-                        ${noteContent ? `<div class="mobile-notes">${noteContent.replace(/\n/g, '<br>')}</div>` : ''}
+                        ${mobileNotesContent ? `<div class="mobile-notes">${mobileNotesContent.replace(/\n/g, '<br>')}</div>` : ''}
                     </div>
                 </div>
             </div>
