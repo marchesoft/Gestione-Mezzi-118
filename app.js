@@ -1,4 +1,4 @@
-const APP_VERSION = "1.6.2 - 2026-03-21"; // Note sempre visibili su card; note sotto overlay appuntamento Version Bump
+const APP_VERSION = "1.6.3 - 2026-03-21"; // Badge scadenze e notifiche push appuntamenti Version Bump
 let isAdmin = false;
 let cachedVehicles = null;
 let cachedLocations = null;
@@ -49,6 +49,18 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 async function initApp() {
+    // Registra Service Worker per notifiche push
+    if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('./sw.js').then(reg => {
+            console.log('SW registrato:', reg.scope);
+        }).catch(err => console.warn('SW non registrato:', err));
+    }
+
+    // Richiedi permesso notifiche
+    if ('Notification' in window && Notification.permission === 'default') {
+        Notification.requestPermission();
+    }
+
     // Check if user was logged in as admin
     const savedAdminState = localStorage.getItem('isAdmin');
     if (savedAdminState === 'true') {
@@ -88,6 +100,12 @@ async function initApp() {
     });
 
     await renderDashboard(true); // Force initial fetch
+    
+    // Controlla appuntamenti per notifiche push
+    if (cachedVehicles) {
+        checkAndNotifyAppointments(cachedVehicles);
+    }
+
     setupRealtimeSubscription();
     setupIdleRefresh();
     setupAutoRefresh();
@@ -443,6 +461,27 @@ async function renderVehicleGrid(vehicles) {
         // posizionate sopra l'overlay tramite CSS (.has-alert .mobile-notes)
         const mobileNotesContent = showOverlay ? pureNotes : noteContent;
 
+        // --- Badge scadenze ---
+        function expiryBadge(label, dateStr) {
+            if (!dateStr) return '';
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            const exp = new Date(dateStr);
+            exp.setHours(0, 0, 0, 0);
+            const days = Math.round((exp - today) / (1000 * 60 * 60 * 24));
+            if (days > 60) return ''; // Nessun badge oltre 60 giorni
+            const cls = days <= 30 ? 'danger' : 'warning';
+            const dateFormatted = exp.toLocaleDateString('it-IT', { day: '2-digit', month: '2-digit', year: '2-digit' });
+            const icon = days < 0 ? '⚠️' : '🔔';
+            const label2 = days < 0 ? `${label}: SCADUTA` : `${label}: ${dateFormatted}`;
+            return `<span class="expiry-badge ${cls}">${icon} ${label2}</span>`;
+        }
+        const revBadge = expiryBadge('REV', vehicle.inspection_expiry);
+        const o2Badge  = expiryBadge('O2',  vehicle.revision_o2);
+        const expiryBadgesHtml = (revBadge || o2Badge)
+            ? `<div class="expiry-badges">${revBadge}${o2Badge}</div>`
+            : '';
+
         return `
             <div class="vehicle-card border-${vehicle.status}${showOverlay ? ' has-alert' : ''}" 
                  data-id="${vehicle.id}" 
@@ -467,6 +506,7 @@ async function renderVehicleGrid(vehicles) {
                     <div class="card-actions" style="justify-content: center; flex-direction: column; align-items: center;">
                         ${locationHtml}
                         ${mobileNotesContent ? `<div class="mobile-notes">${mobileNotesContent.replace(/\n/g, '<br>')}</div>` : ''}
+                        ${expiryBadgesHtml}
                     </div>
                 </div>
             </div>
@@ -2239,18 +2279,59 @@ window.switchDataTable = async function (type) {
 }
 
 window.filterInterventionTable = function (query) {
-    const table = document.getElementById('interventions-table');
+    const table = document.querySelector('.data-mgmt-content table');
     if (!table) return;
     const rows = table.querySelectorAll('tbody tr');
-    const q = upper(query).trim();
-
+    const q = query.toLowerCase();
     rows.forEach(row => {
-        // The sigla is in the 3rd column (index 2)
-        const siglaCell = row.cells[2];
-        if (siglaCell) {
-            const sigla = upper(siglaCell.textContent);
-            if (sigla.includes(q)) {
-                row.style.display = '';
+        const text = row.innerText.toLowerCase();
+        row.style.display = text.includes(q) ? '' : 'none';
+    });
+};
+
+// Funzione per notifiche push appuntamenti
+function checkAndNotifyAppointments(vehicles) {
+    if (!('Notification' in window) || Notification.permission !== 'granted') return;
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const tomorrow = new Date(today);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+
+    const todayStr = today.toISOString().split('T')[0];
+    const lastNotifyDate = localStorage.getItem('last_appointment_notify_date');
+    
+    // Notifica una sola volta al giorno per sessione
+    if (lastNotifyDate === todayStr) return;
+
+    vehicles.forEach(v => {
+        if (!v.appointment_date) return;
+        
+        const apptDate = new Date(v.appointment_date);
+        apptDate.setHours(0, 0, 0, 0);
+        
+        let title = '';
+        if (apptDate.getTime() === today.getTime()) {
+            title = `OGGI: Appuntamento ${v.sigla || v.model}`;
+        } else if (apptDate.getTime() === tomorrow.getTime()) {
+            title = `DOMANI: Appuntamento ${v.sigla || v.model}`;
+        }
+
+        if (title) {
+            const body = `${v.plate} - ${v.appointment_location || 'Luogo non specificato'}\n${v.appointment_notes || ''}`;
+            
+            // Invia notifica tramite Service Worker per supporto background
+            if (navigator.serviceWorker.controller) {
+                navigator.serviceWorker.ready.then(reg => {
+                    reg.showNotification(title, {
+                        body: body,
+                        icon: 'icon-192.png',
+                        badge: 'icon-192.png',
+                        vibrate: [200, 100, 200],
+                        tag: `appt-${v.id}-${todayStr}`,
+                        renotify: true
+                    });
+                });
             } else {
                 row.style.display = 'none';
             }
