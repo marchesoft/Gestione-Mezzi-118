@@ -1,4 +1,4 @@
-const APP_VERSION = "1.6.4 - 2026-03-21"; // Versione post-rimozione badge O2
+const APP_VERSION = "1.6.5 - 2026-03-21"; // Ottimizzazione prompt notifiche Version Bump
 let isAdmin = false;
 let cachedVehicles = null;
 let cachedLocations = null;
@@ -56,9 +56,17 @@ async function initApp() {
         }).catch(err => console.warn('SW non registrato:', err));
     }
 
-    // Richiedi permesso notifiche
-    if ('Notification' in window && Notification.permission === 'default') {
-        Notification.requestPermission();
+    // Richiedi permesso notifiche in modo più "gentile"
+    // Molti browser bloccano il prompt se chiamato subito all'avvio senza interazione
+    if ('Notification' in window) {
+        if (Notification.permission === 'default') {
+            // Aspetta un momento prima di chiedere, o chiedi al primo click sulla pagina
+            setTimeout(() => {
+                if (Notification.permission === 'default') {
+                    Notification.requestPermission();
+                }
+            }, 3000);
+        }
     }
 
     // Check if user was logged in as admin
