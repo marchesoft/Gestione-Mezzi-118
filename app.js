@@ -1,4 +1,4 @@
-const APP_VERSION = "1.6.3 - 2026-03-21"; // Badge scadenze e notifiche push appuntamenti Version Bump
+const APP_VERSION = "1.6.4 - 2026-03-21"; // Versione post-rimozione badge O2
 let isAdmin = false;
 let cachedVehicles = null;
 let cachedLocations = null;
@@ -477,9 +477,8 @@ async function renderVehicleGrid(vehicles) {
             return `<span class="expiry-badge ${cls}">${icon} ${label2}</span>`;
         }
         const revBadge = expiryBadge('REV', vehicle.inspection_expiry);
-        const o2Badge  = expiryBadge('O2',  vehicle.revision_o2);
-        const expiryBadgesHtml = (revBadge || o2Badge)
-            ? `<div class="expiry-badges">${revBadge}${o2Badge}</div>`
+        const expiryBadgesHtml = revBadge
+            ? `<div class="expiry-badges">${revBadge}</div>`
             : '';
 
         return `
