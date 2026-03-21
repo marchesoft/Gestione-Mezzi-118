@@ -1,4 +1,4 @@
-const APP_VERSION = "1.6.5 - 2026-03-21"; // Ottimizzazione prompt notifiche Version Bump
+const APP_VERSION = "1.6.6 - 2026-03-21"; // Notifiche ad attivazione manuale Version Bump
 let isAdmin = false;
 let cachedVehicles = null;
 let cachedLocations = null;
@@ -56,18 +56,8 @@ async function initApp() {
         }).catch(err => console.warn('SW non registrato:', err));
     }
 
-    // Richiedi permesso notifiche in modo più "gentile"
-    // Molti browser bloccano il prompt se chiamato subito all'avvio senza interazione
-    if ('Notification' in window) {
-        if (Notification.permission === 'default') {
-            // Aspetta un momento prima di chiedere, o chiedi al primo click sulla pagina
-            setTimeout(() => {
-                if (Notification.permission === 'default') {
-                    Notification.requestPermission();
-                }
-            }, 3000);
-        }
-    }
+    // Gestione pulsante notifiche push
+    updateNotificationBtn();
 
     // Check if user was logged in as admin
     const savedAdminState = localStorage.getItem('isAdmin');
@@ -2296,6 +2286,48 @@ window.filterInterventionTable = function (query) {
     });
 };
 
+// Gestione permessi notifiche manuale
+function updateNotificationBtn() {
+    const btn = document.getElementById('notification-setup-btn');
+    if (!btn) return;
+    
+    if (!('Notification' in window)) {
+        btn.style.display = 'none';
+        return;
+    }
+    
+    if (Notification.permission === 'default') {
+        btn.style.display = 'flex';
+        btn.innerHTML = '<i class="fa-solid fa-bell"></i> Attiva Notifiche';
+        btn.style.background = '#eff6ff';
+        btn.style.color = '#1d4ed8';
+    } else if (Notification.permission === 'denied') {
+        btn.style.display = 'flex';
+        btn.innerHTML = '<i class="fa-solid fa-bell-slash"></i> Notifiche Bloccate';
+        btn.style.background = '#fef2f2';
+        btn.style.color = '#991b1b';
+        btn.title = "Sblocca le notifiche nelle impostazioni del browser";
+    } else {
+        // Notifiche già attive, nascondiamo il pulsante per pulire l'interfaccia hg
+        btn.style.display = 'none';
+    }
+}
+
+window.requestNotificationPermission = function() {
+    if (!('Notification' in window)) return;
+    
+    Notification.requestPermission().then(permission => {
+        updateNotificationBtn();
+        if (permission === 'granted') {
+            alert("Ottimo! Riceverai le notifiche per gli appuntamenti.");
+            // Una volta autorizzato, controlliamo subito se ci sono notifiche da inviare
+            if (cachedVehicles) {
+                checkAndNotifyAppointments(cachedVehicles);
+            }
+        }
+    });
+};
+
 // Funzione per notifiche push appuntamenti
 function checkAndNotifyAppointments(vehicles) {
     if (!('Notification' in window) || Notification.permission !== 'granted') return;
@@ -2340,7 +2372,13 @@ function checkAndNotifyAppointments(vehicles) {
                     });
                 });
             } else {
-                row.style.display = 'none';
+                // Fallback per browser senza Service Worker o non controllati
+                new Notification(title, {
+                    body: body,
+                    icon: 'icon-192.png',
+                    badge: 'icon-192.png',
+                    vibrate: [200, 100, 200]
+                });
             }
         }
     });
