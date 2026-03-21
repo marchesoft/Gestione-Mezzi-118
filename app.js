@@ -1,4 +1,4 @@
-const APP_VERSION = "1.6.7"; // Rimozione notifiche push
+const APP_VERSION = "1.6.8"; // Logica visualizzazione scadenze
 let isAdmin = false;
 let cachedVehicles = null;
 let cachedLocations = null;
@@ -453,14 +453,25 @@ async function renderVehicleGrid(vehicles) {
             if (!dateStr) return '';
             const today = new Date();
             today.setHours(0, 0, 0, 0);
+            const currentMonth = today.getMonth();
+            const currentYear = today.getFullYear();
+
             const exp = new Date(dateStr);
             exp.setHours(0, 0, 0, 0);
+            const expMonth = exp.getMonth();
+            const expYear = exp.getFullYear();
+
+            const isExpired = exp < today;
+            const isCurrentMonth = (expMonth === currentMonth && expYear === currentYear);
+
+            // Mostra solo se già scaduta o se scade nel mese corrente
+            if (!isExpired && !isCurrentMonth) return '';
+
             const days = Math.round((exp - today) / (1000 * 60 * 60 * 24));
-            if (days > 60) return ''; // Nessun badge oltre 60 giorni
             const cls = days <= 30 ? 'danger' : 'warning';
             const dateFormatted = exp.toLocaleDateString('it-IT', { day: '2-digit', month: '2-digit', year: '2-digit' });
-            const icon = days < 0 ? '⚠️' : '🔔';
-            const label2 = days < 0 ? `${label}: SCADUTA` : `${label}: ${dateFormatted}`;
+            const icon = isExpired ? '⚠️' : '🔔';
+            const label2 = isExpired ? `${label}: SCADUTA` : `${label}: ${dateFormatted}`;
             return `<span class="expiry-badge ${cls}">${icon} ${label2}</span>`;
         }
         const revBadge = expiryBadge('REV', vehicle.inspection_expiry);
