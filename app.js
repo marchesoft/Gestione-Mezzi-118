@@ -714,7 +714,16 @@ window.openVehicleForm = async function (vehicleId = null) {
 
     if (vehicleId) {
         title.textContent = 'Modifica Mezzo';
-        const vehicle = cachedVehicles.find(v => v.id === vehicleId);
+        
+        let vehicle = (cachedVehicles || []).find(v => v.id === vehicleId);
+        if (!vehicle) {
+            try {
+                vehicle = await store.getVehicleById(vehicleId);
+            } catch (err) {
+                console.error("Error fetching vehicle for edit:", err);
+            }
+        }
+
         if (vehicle) {
             document.getElementById('vehicle-id').value = vehicle.id;
             document.getElementById('vehicle-plate').value = vehicle.plate;
@@ -1327,15 +1336,17 @@ window.saveVehicleForm = async function () {
                 if (idx !== -1) cachedVehicles[idx] = updated;
             }
 
-            // Render UI Immediately
+            // Render UI Immediately (Optimistic)
             document.getElementById('vehicle-form-modal').classList.add('hidden');
             renderDashboard(false);
 
-            // Background DB Sync
-            store.updateVehicle(updated).catch(err => {
+            // Persist to DB and wait
+            try {
+                await store.updateVehicle(updated);
+            } catch (err) {
                 console.error("Failed to update vehicle:", err);
-                alert("Errore salvataggio modifiche. Ricaricare la pagina.");
-            });
+                alert("Errore salvataggio modifiche nel database. Ricaricare la pagina.");
+            }
         }
     } else {
         // New Vehicle - Wait for DB
