@@ -1,4 +1,4 @@
-const APP_VERSION = "1.6.8"; // Logica visualizzazione scadenze
+const APP_VERSION = "1.7.0"; // Fix campo turno e sync database
 let isAdmin = false;
 let cachedVehicles = null;
 let cachedLocations = null;
