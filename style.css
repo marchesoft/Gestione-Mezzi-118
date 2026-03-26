@@ -2009,7 +2009,7 @@ body.is-admin #admin-hint-text {
     line-height: 1.4;
     color: var(--text-primary);
     box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.05);
-    text-transform: none;
+    text-transform: uppercase;
 }
 
 .notes-section textarea:focus {

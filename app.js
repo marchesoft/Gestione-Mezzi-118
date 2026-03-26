@@ -1,4 +1,4 @@
-const APP_VERSION = "1.7.3"; // Note Operative posizionate e colorate di giallo
+const APP_VERSION = "1.7.4"; // Note Operative in maiuscolo
 let isAdmin = false;
 let cachedVehicles = null;
 let cachedLocations = null;
@@ -2321,18 +2321,14 @@ window.closeOperationalNotesModal = function () {
 
 window.saveAndCloseOperationalNotes = async function () {
     const daFare = document.getElementById('note-da-fare').value;
-    const assegnazioni = document.getElementById('note-assegnazioni'); // Need .value
-
-    // Fix: access .value directly
     const assegnazioniVal = document.getElementById('note-assegnazioni').value;
 
     try {
         await store.saveOperationalNotes({
-            da_fare: daFare,
-            assegnazioni: assegnazioniVal
+            da_fare: upper(daFare),
+            assegnazioni: upper(assegnazioniVal)
         });
         closeOperationalNotesModal();
-        // Optional: show a small toast or notification
     } catch (error) {
         console.error("Error saving operational notes:", error);
         alert("Errore durante il salvataggio delle note.");
