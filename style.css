@@ -1961,3 +1961,66 @@ body.is-admin #admin-hint-text {
     font-size: 1.5rem;
     width: 30px;
 }
+/* Operational Notes Modal Styles */
+.operational-notes-content {
+    max-width: 800px;
+    width: 95% !important;
+    height: 90vh !important;
+    display: flex;
+    flex-direction: column;
+}
+
+.operational-notes-body {
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+    padding: 1rem;
+    gap: 0.75rem;
+    overflow: hidden;
+}
+
+.notes-section {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.notes-section label {
+    font-weight: 800;
+    color: var(--primary-color);
+    font-size: 1rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    text-transform: uppercase;
+}
+
+.notes-section textarea {
+    flex-grow: 1;
+    width: 100%;
+    padding: 0.75rem;
+    border-radius: var(--radius-md);
+    border: 1px solid var(--border-color);
+    background: white;
+    font-family: 'Inter', sans-serif;
+    font-size: 1.1rem;
+    resize: none;
+    line-height: 1.4;
+    color: var(--text-primary);
+    box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.05);
+    text-transform: none;
+}
+
+.notes-section textarea:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px rgba(51, 102, 255, 0.1);
+}
+
+.notes-divider {
+    height: 1px;
+    background: var(--border-color);
+    opacity: 0.3;
+    margin: 0.25rem 0;
+}

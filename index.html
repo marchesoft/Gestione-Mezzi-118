@@ -59,6 +59,10 @@
                             style="background: #fbbf24; color: #1e293b; font-weight: 700;">
                             <i class="fa-solid fa-exchange-alt"></i> Cambi Mezzi
                         </button>
+                        <button class="btn admin-only" id="btn-note-operative" onclick="openOperationalNotesModal()"
+                            style="background: #3b82f6; color: white; font-weight: 700;">
+                            <i class="fa-solid fa-note-sticky"></i> Note Operative
+                        </button>
                         <button class="btn admin-only" id="btn-useful-contacts" onclick="openContactsModal()"
                             style="background: #10b981; color: white; font-weight: 700;">
                             <i class="fa-solid fa-phone"></i> Numeri Utili
@@ -627,6 +631,32 @@
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+    <!-- Operational Notes Modal -->
+    <div id="operational-notes-modal" class="modal hidden">
+        <div class="modal-content operational-notes-content">
+            <div class="modal-header">
+                <h2><i class="fa-solid fa-note-sticky"></i> Note Operative</h2>
+                <button class="close-modal" onclick="closeOperationalNotesModal()">&times;</button>
+            </div>
+            <div class="modal-body operational-notes-body">
+                <div class="notes-section">
+                    <label for="note-da-fare"><i class="fa-solid fa-list-check"></i> DA FARE</label>
+                    <textarea id="note-da-fare" placeholder="Scrivi qui le cose da fare..."></textarea>
+                </div>
+                <div class="notes-divider"></div>
+                <div class="notes-section">
+                    <label for="note-assegnazioni"><i class="fa-solid fa-user-tag"></i> ASSEGNAZIONI</label>
+                    <textarea id="note-assegnazioni" placeholder="Scrivi qui le assegnazioni..."></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-primary" onclick="saveAndCloseOperationalNotes()">
+                    <i class="fa-solid fa-save"></i> Salva e Chiudi
+                </button>
+            </div>
+        </div>
+    </div>
+
     <script src="firebase-config.js"></script>
 
     <script src="store.js?v=1.6.8"></script>

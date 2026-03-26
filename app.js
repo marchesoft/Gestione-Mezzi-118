@@ -1,4 +1,4 @@
-const APP_VERSION = "1.7.1"; // Rimozione tasto Nuovo Mezzo dalla dashboard
+const APP_VERSION = "1.7.2"; // Aggiunta Note Operative (Da fare / Assegnazioni)
 let isAdmin = false;
 let cachedVehicles = null;
 let cachedLocations = null;
@@ -1244,8 +1244,10 @@ function setupEventListeners() {
         if (event.target === maintModal) maintModal.classList.add('hidden');
         if (event.target === locModal) locModal.classList.add('hidden');
         const cambioModal = document.getElementById('cambio-mezzo-modal');
+        const notesModal = document.getElementById('operational-notes-modal');
         if (event.target === cambioModal) cambioModal.classList.add('hidden');
         if (event.target === adminModal) adminModal.classList.add('hidden');
+        if (event.target === notesModal) closeOperationalNotesModal();
     }
 }
 
@@ -2296,3 +2298,43 @@ window.filterInterventionTable = function (query) {
         row.style.display = text.includes(q) ? '' : 'none';
     });
 };
+// --- Operational Notes ---
+
+window.openOperationalNotesModal = async function () {
+    const modal = document.getElementById('operational-notes-modal');
+    const daFareTxt = document.getElementById('note-da-fare');
+    const assegnazioniTxt = document.getElementById('note-assegnazioni');
+
+    try {
+        const notes = await store.getOperationalNotes();
+        daFareTxt.value = notes.da_fare || '';
+        assegnazioniTxt.value = notes.assegnazioni || '';
+        modal.classList.remove('hidden');
+    } catch (error) {
+        console.error("Error opening operational notes:", error);
+    }
+}
+
+window.closeOperationalNotesModal = function () {
+    document.getElementById('operational-notes-modal').classList.add('hidden');
+}
+
+window.saveAndCloseOperationalNotes = async function () {
+    const daFare = document.getElementById('note-da-fare').value;
+    const assegnazioni = document.getElementById('note-assegnazioni'); // Need .value
+
+    // Fix: access .value directly
+    const assegnazioniVal = document.getElementById('note-assegnazioni').value;
+
+    try {
+        await store.saveOperationalNotes({
+            da_fare: daFare,
+            assegnazioni: assegnazioniVal
+        });
+        closeOperationalNotesModal();
+        // Optional: show a small toast or notification
+    } catch (error) {
+        console.error("Error saving operational notes:", error);
+        alert("Errore durante il salvataggio delle note.");
+    }
+}

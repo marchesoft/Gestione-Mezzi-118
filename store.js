@@ -296,6 +296,26 @@ class Store {
             throw error;
         }
     }
+
+    async getOperationalNotes() {
+        try {
+            const doc = await this.db.collection('operational_notes').doc('current').get();
+            if (doc.exists) return doc.data();
+            return { da_fare: '', assegnazioni: '' };
+        } catch (error) {
+            console.error('Error fetching operational notes:', error);
+            return { da_fare: '', assegnazioni: '' };
+        }
+    }
+
+    async saveOperationalNotes(notes) {
+        try {
+            await this.db.collection('operational_notes').doc('current').set(notes, { merge: true });
+        } catch (error) {
+            console.error('Error saving operational notes:', error);
+            throw error;
+        }
+    }
 }
 
 const store = new Store();
