@@ -1,4 +1,4 @@
-const APP_VERSION = "1.7.0"; // Fix campo turno e sync database
+const APP_VERSION = "1.7.1"; // Rimozione tasto Nuovo Mezzo dalla dashboard
 let isAdmin = false;
 let cachedVehicles = null;
 let cachedLocations = null;
@@ -1188,12 +1188,6 @@ function setupEventListeners() {
         console.error("Manage Data Button not found!");
     }
 
-    const addBtn = document.getElementById('add-vehicle-btn');
-    if (addBtn) {
-        addBtn.addEventListener('click', () => {
-            openVehicleForm();
-        });
-    }
 
     const cambiBtn = document.getElementById('btn-cambi-mezzi');
     if (cambiBtn) {
