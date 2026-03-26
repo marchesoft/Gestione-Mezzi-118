@@ -1,4 +1,4 @@
-const APP_VERSION = "1.7.4"; // Note Operative in maiuscolo
+const APP_VERSION = "1.7.5"; // Ottimizzata modifica Note Operative
 let isAdmin = false;
 let cachedVehicles = null;
 let cachedLocations = null;
