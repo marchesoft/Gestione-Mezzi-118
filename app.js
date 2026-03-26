@@ -1,4 +1,4 @@
-const APP_VERSION = "1.7.2"; // Aggiunta Note Operative (Da fare / Assegnazioni)
+const APP_VERSION = "1.7.3"; // Note Operative posizionate e colorate di giallo
 let isAdmin = false;
 let cachedVehicles = null;
 let cachedLocations = null;
