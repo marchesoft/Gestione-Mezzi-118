@@ -2424,9 +2424,10 @@ window.generateAndSendMaintenanceRequest = async function () {
 };
 
 async function generateMaintenanceDocx(data) {
-    if (typeof PizZip === 'undefined' || typeof Docxtemplater === 'undefined') {
-        throw new Error('Librerie PizZip / Docxtemplater non caricate. Verifica la connessione internet.');
+    if (typeof PizZip === 'undefined' || typeof docxtemplater === 'undefined') {
+        throw new Error('Librerie PizZip / docxtemplater non caricate. Verifica la connessione internet.');
     }
+    const Docxtemplater = docxtemplater;
 
     const TEMPLATE_PATH = './RICHIESTA RIPARAZIONE.DOCX';
     let response;
