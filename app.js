@@ -2429,7 +2429,7 @@ async function generateMaintenanceDocx(data) {
     }
     const Docxtemplater = docxtemplater;
 
-    const TEMPLATE_PATH = './RICHIESTA RIPARAZIONE.DOCX';
+    const TEMPLATE_PATH = './moduloriparazione.docx';
     let response;
     try {
         response = await fetch(TEMPLATE_PATH);
