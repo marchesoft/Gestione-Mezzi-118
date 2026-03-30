@@ -1422,10 +1422,9 @@ window.openVehicleModal = async function (id) {
                                 </div>
                             </div>
                         </div>
-                        <div style="text-align: right; display: flex; gap: 0.5rem; flex-wrap: wrap;">
-                            ${isAdmin ? `<button class="btn btn-primary" style="padding: 0.4rem 0.8rem; font-size: 0.85rem;" onclick="openVehicleForm('${vehicle.id}')"><i class="fa-solid fa-pen"></i> Modifica</button>` : ''}
-                            <button class="btn btn-maint-req" style="padding: 0.4rem 0.8rem; font-size: 0.85rem;" onclick="event.stopPropagation(); openMaintenanceRequestModal('${vehicle.id}')"><i class="fa-solid fa-envelope-open-text"></i> Richiesta Manut.</button>
-                        </div>
+                        ${isAdmin ? `<div style="text-align: right; display: flex; gap: 0.5rem; flex-wrap: wrap;">
+                            <button class="btn btn-primary" style="padding: 0.4rem 0.8rem; font-size: 0.85rem;" onclick="openVehicleForm('${vehicle.id}')"><i class="fa-solid fa-pen"></i> Modifica</button>
+                        </div>` : ''}
                     </div>
 
                     <div class="form-grid-3" style="margin-bottom: 0.75rem; background: #f8fafc; padding: 0.5rem 1rem; border-radius: 0.75rem;">
