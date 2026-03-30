@@ -1,5 +1,7 @@
 {
-  "projects": {},
+  "projects": {
+    "default": "gestione-mezzi-18343"
+  },
   "targets": {},
   "etags": {}
 }
