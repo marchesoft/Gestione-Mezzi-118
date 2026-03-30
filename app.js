@@ -1,19 +1,17 @@
-const APP_VERSION = "1.7.7"; // Aggiunta funzionalità Richiesta Manutenzione via Word
+const APP_VERSION = "1.7.8"; // Fix cache - configurazione email manutenzione
 
 // ================================================
 // ⚠️  RICHIESTA MANUTENZIONE - CONFIGURAZIONE
 //     Modifica questi valori con i tuoi dati reali
 // ================================================
-const ZIMBRA_BASE_URL = 'https://mail.azienda.it'; // ⚠️ MODIFICARE con l'URL di Zimbra (es. https://mail.ferrara.ausl.it)
+const ZIMBRA_BASE_URL = 'https://webmail.ausl.fe.it';
 const MITTENTI_MANUTENZIONE = [
     { label: '-- Seleziona Mittente --', email: '' },
-    { label: 'Nominativo 1 (da configurare)', email: 'mittente1@azienda.it' }, // ⚠️ MODIFICARE
-    { label: 'Nominativo 2 (da configurare)', email: 'mittente2@azienda.it' }, // ⚠️ MODIFICARE
+    { label: 'LOGISTICA 118', email: 'l.marchesini@ausl.fe.it' },
 ];
 const DESTINATARI_MANUTENZIONE = [
     { label: '-- Seleziona Destinatario --', email: '' },
-    { label: 'Destinatario 1 (da configurare)', email: 'destinatario1@azienda.it' }, // ⚠️ MODIFICARE
-    { label: 'Destinatario 2 (da configurare)', email: 'destinatario2@azienda.it' }, // ⚠️ MODIFICARE
+    { label: 'marchesoft', email: 'marchesoft1@gmail.com' },
 ];
 let isAdmin = false;
 let cachedVehicles = null;
@@ -106,7 +104,7 @@ async function initApp() {
     });
 
     await renderDashboard(true); // Force initial fetch
-    
+
 
 
     setupRealtimeSubscription();
@@ -730,7 +728,7 @@ window.openVehicleForm = async function (vehicleId = null) {
 
     if (vehicleId) {
         title.textContent = 'Modifica Mezzo';
-        
+
         let vehicle = (cachedVehicles || []).find(v => v.id === vehicleId);
         if (!vehicle) {
             try {
@@ -2386,16 +2384,16 @@ window.closeMaintenanceRequestModal = function () {
 };
 
 window.generateAndSendMaintenanceRequest = async function () {
-    const sigla     = document.getElementById('maint-req-sigla').value;
-    const targa     = document.getElementById('maint-req-targa').value;
-    const data      = document.getElementById('maint-req-data').value;
-    const note      = document.getElementById('maint-req-note').value.trim();
+    const sigla = document.getElementById('maint-req-sigla').value;
+    const targa = document.getElementById('maint-req-targa').value;
+    const data = document.getElementById('maint-req-data').value;
+    const note = document.getElementById('maint-req-note').value.trim();
     const mittEmail = document.getElementById('maint-req-mittente').value;
     const destEmail = document.getElementById('maint-req-destinatario').value;
 
-    if (!mittEmail) { alert('⚠️ Seleziona il mittente.');             return; }
-    if (!destEmail) { alert('⚠️ Seleziona il destinatario.');         return; }
-    if (!note)      { alert('⚠️ Inserisci la descrizione del problema.'); return; }
+    if (!mittEmail) { alert('⚠️ Seleziona il mittente.'); return; }
+    if (!destEmail) { alert('⚠️ Seleziona il destinatario.'); return; }
+    if (!note) { alert('⚠️ Inserisci la descrizione del problema.'); return; }
 
     const mittLabel = MITTENTI_MANUTENZIONE.find(m => m.email === mittEmail)?.label || mittEmail;
     const destLabel = DESTINATARI_MANUTENZIONE.find(d => d.email === destEmail)?.label || destEmail;
@@ -2407,11 +2405,11 @@ window.generateAndSendMaintenanceRequest = async function () {
     try {
         await generateMaintenanceDocx({
             sigla, targa, data, note,
-            mittente:     { label: mittLabel, email: mittEmail },
+            mittente: { label: mittLabel, email: mittEmail },
             destinatario: { label: destLabel, email: destEmail }
         });
 
-        const oggetto   = encodeURIComponent(`Richiesta Manutenzione - ${sigla || targa} - ${data}`);
+        const oggetto = encodeURIComponent(`Richiesta Manutenzione - ${sigla || targa} - ${data}`);
         const zimbraUrl = `${ZIMBRA_BASE_URL}/?app=mail&action=compose&to=${encodeURIComponent(destEmail)}&subject=${oggetto}`;
         window.open(zimbraUrl, '_blank');
 
@@ -2446,28 +2444,28 @@ async function generateMaintenanceDocx(data) {
 
     const doc = new Docxtemplater(zip, {
         paragraphLoop: true,
-        linebreaks:    true,
+        linebreaks: true,
     });
 
     doc.render({
-        TARGA:              data.targa || '',
-        SIGLA:              data.sigla || '',
-        DATA:               data.data  || '',
-        NOTE_PROBLEMA:      data.note  || '',
-        MITTENTE_NOME:      data.mittente.label     || '',
-        MITTENTE_EMAIL:     data.mittente.email     || '',
-        DESTINATARIO_NOME:  data.destinatario.label || '',
+        TARGA: data.targa || '',
+        SIGLA: data.sigla || '',
+        DATA: data.data || '',
+        NOTE_PROBLEMA: data.note || '',
+        MITTENTE_NOME: data.mittente.label || '',
+        MITTENTE_EMAIL: data.mittente.email || '',
+        DESTINATARIO_NOME: data.destinatario.label || '',
         DESTINATARIO_EMAIL: data.destinatario.email || '',
     });
 
     const blob = doc.getZip().generate({
-        type:     'blob',
+        type: 'blob',
         mimeType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
     });
 
     const url = URL.createObjectURL(blob);
-    const a   = document.createElement('a');
-    a.href    = url;
+    const a = document.createElement('a');
+    a.href = url;
     const dateClean = data.data.replace(/\//g, '-');
     const nameClean = (data.sigla || data.targa || 'mezzo').replace(/[^a-zA-Z0-9]/g, '_');
     a.download = `RichiestaManutenzione_${nameClean}_${dateClean}.docx`;
