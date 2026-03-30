@@ -2025,3 +2025,62 @@ body.is-admin #admin-hint-text {
     opacity: 0.3;
     margin: 0.25rem 0;
 }
+
+/* ================================================
+   RICHIESTA MANUTENZIONE - MODAL
+   ================================================ */
+
+.maint-req-label {
+    display: block;
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    color: var(--text-secondary);
+    margin-bottom: 0.35rem;
+    letter-spacing: 0.06em;
+}
+
+.maint-req-input {
+    width: 100%;
+    padding: 0.6rem 0.75rem;
+    border: 1.5px solid var(--border-color);
+    border-radius: 0.5rem;
+    font-family: inherit;
+    font-size: 0.95rem;
+    color: var(--text-primary);
+    background: white;
+    box-sizing: border-box;
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.maint-req-input:focus {
+    outline: none;
+    border-color: #2563eb;
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
+}
+
+.maint-req-readonly {
+    background: #f1f5f9 !important;
+    color: #475569 !important;
+    cursor: default;
+    font-weight: 700;
+}
+
+.btn-maint-req {
+    background: linear-gradient(135deg, #1e3a8a, #2563eb);
+    color: white;
+    border: none;
+    font-weight: 600;
+    transition: all 0.2s;
+}
+
+.btn-maint-req:hover:not(:disabled) {
+    background: linear-gradient(135deg, #1e40af, #1d4ed8);
+    transform: translateY(-1px);
+    box-shadow: 0 6px 16px rgba(37, 99, 235, 0.35);
+}
+
+.btn-maint-req:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
+}

@@ -657,10 +657,95 @@
         </div>
     </div>
 
+    <!-- ================================================ -->
+    <!-- MODAL: RICHIESTA MANUTENZIONE                    -->
+    <!-- ================================================ -->
+    <div id="maint-request-modal" class="modal hidden" style="z-index:1500;">
+        <div class="modal-content" style="max-width:560px; max-height:92vh; display:flex; flex-direction:column;">
+
+            <!-- Header -->
+            <div style="padding:1.25rem 1.5rem; background:linear-gradient(135deg,#1e3a8a,#2563eb);
+                        border-radius:1rem 1rem 0 0; display:flex; justify-content:space-between; align-items:center;">
+                <h3 style="margin:0; color:#fff; font-size:1.1rem; font-weight:700;">
+                    <i class="fa-solid fa-envelope-open-text"></i>&nbsp; Richiesta di Manutenzione
+                </h3>
+                <span onclick="closeMaintenanceRequestModal()"
+                      style="font-size:1.5rem; cursor:pointer; color:#fff; opacity:.8; line-height:1;">&times;</span>
+            </div>
+
+            <!-- Body -->
+            <div style="padding:1.5rem; overflow-y:auto; flex:1;">
+                <input type="hidden" id="maint-req-vehicle-id">
+
+                <!-- Dati mezzo (readonly) -->
+                <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:.75rem; margin-bottom:1rem;">
+                    <div>
+                        <label class="maint-req-label">Sigla</label>
+                        <input type="text" id="maint-req-sigla" readonly class="maint-req-input maint-req-readonly">
+                    </div>
+                    <div>
+                        <label class="maint-req-label">Targa</label>
+                        <input type="text" id="maint-req-targa" readonly class="maint-req-input maint-req-readonly">
+                    </div>
+                    <div>
+                        <label class="maint-req-label">Data</label>
+                        <input type="text" id="maint-req-data"  readonly class="maint-req-input maint-req-readonly">
+                    </div>
+                </div>
+
+                <!-- Mittente -->
+                <div style="margin-bottom:.9rem;">
+                    <label class="maint-req-label"><i class="fa-solid fa-user"></i> Mittente (chi invia)</label>
+                    <select id="maint-req-mittente" class="maint-req-input"></select>
+                </div>
+
+                <!-- Destinatario -->
+                <div style="margin-bottom:.9rem;">
+                    <label class="maint-req-label"><i class="fa-solid fa-paper-plane"></i> Destinatario</label>
+                    <select id="maint-req-destinatario" class="maint-req-input"></select>
+                </div>
+
+                <!-- Note problema -->
+                <div style="margin-bottom:1.25rem;">
+                    <label class="maint-req-label"><i class="fa-solid fa-wrench"></i> Descrizione problema / intervento richiesto</label>
+                    <textarea id="maint-req-note" class="maint-req-input" rows="5"
+                              placeholder="Descrivi il problema tecnico o l'intervento richiesto..."
+                              style="resize:vertical;"></textarea>
+                </div>
+
+                <!-- Info box -->
+                <div style="background:#eff6ff; border:1px solid #bfdbfe; border-radius:.5rem;
+                            padding:.75rem 1rem; margin-bottom:1.25rem; font-size:.83rem; color:#1e40af;">
+                    <i class="fa-solid fa-circle-info"></i>
+                    <strong> Come funziona:</strong> Il documento Word verrà scaricato sul tuo PC.
+                    Si aprirà poi Zimbra con destinatario e oggetto già inseriti.
+                    Allega il file scaricato e invia.
+                </div>
+
+                <!-- Pulsanti -->
+                <div style="display:flex; gap:.75rem; justify-content:flex-end;">
+                    <button class="btn" onclick="closeMaintenanceRequestModal()"
+                            style="background:#f8fafc; border:1px solid var(--border-color); color:var(--text-primary);">
+                        Annulla
+                    </button>
+                    <button id="maint-req-submit-btn" class="btn btn-maint-req"
+                            onclick="generateAndSendMaintenanceRequest()">
+                        <i class="fa-solid fa-file-word"></i> Genera Word e Apri Zimbra
+                    </button>
+                </div>
+            </div><!-- /body -->
+        </div>
+    </div>
+    <!-- /MODAL RICHIESTA MANUTENZIONE -->
+
+    <!-- Librerie Word (docxtemplater) -->
+    <script src="https://unpkg.com/pizzip@3.1.6/dist/pizzip.js"></script>
+    <script src="https://unpkg.com/docxtemplater@3.50.0/build/docxtemplater.js"></script>
+
     <script src="firebase-config.js"></script>
 
-    <script src="store.js?v=1.7.6"></script>
-    <script src="app.js?v=1.7.6"></script>
+    <script src="store.js?v=1.7.7"></script>
+    <script src="app.js?v=1.7.7"></script>
 </body>
 
 </html>

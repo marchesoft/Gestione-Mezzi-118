@@ -1,4 +1,20 @@
-const APP_VERSION = "1.7.6"; // Ottimizzata modifica Note Operative
+const APP_VERSION = "1.7.7"; // Aggiunta funzionalità Richiesta Manutenzione via Word
+
+// ================================================
+// ⚠️  RICHIESTA MANUTENZIONE - CONFIGURAZIONE
+//     Modifica questi valori con i tuoi dati reali
+// ================================================
+const ZIMBRA_BASE_URL = 'https://mail.azienda.it'; // ⚠️ MODIFICARE con l'URL di Zimbra (es. https://mail.ferrara.ausl.it)
+const MITTENTI_MANUTENZIONE = [
+    { label: '-- Seleziona Mittente --', email: '' },
+    { label: 'Nominativo 1 (da configurare)', email: 'mittente1@azienda.it' }, // ⚠️ MODIFICARE
+    { label: 'Nominativo 2 (da configurare)', email: 'mittente2@azienda.it' }, // ⚠️ MODIFICARE
+];
+const DESTINATARI_MANUTENZIONE = [
+    { label: '-- Seleziona Destinatario --', email: '' },
+    { label: 'Destinatario 1 (da configurare)', email: 'destinatario1@azienda.it' }, // ⚠️ MODIFICARE
+    { label: 'Destinatario 2 (da configurare)', email: 'destinatario2@azienda.it' }, // ⚠️ MODIFICARE
+];
 let isAdmin = false;
 let cachedVehicles = null;
 let cachedLocations = null;
@@ -1245,9 +1261,11 @@ function setupEventListeners() {
         if (event.target === locModal) locModal.classList.add('hidden');
         const cambioModal = document.getElementById('cambio-mezzo-modal');
         const notesModal = document.getElementById('operational-notes-modal');
+        const maintReqModal = document.getElementById('maint-request-modal');
         if (event.target === cambioModal) cambioModal.classList.add('hidden');
         if (event.target === adminModal) adminModal.classList.add('hidden');
         if (event.target === notesModal) closeOperationalNotesModal();
+        if (event.target === maintReqModal) closeMaintenanceRequestModal();
     }
 }
 
@@ -1406,9 +1424,10 @@ window.openVehicleModal = async function (id) {
                                 </div>
                             </div>
                         </div>
-                        ${isAdmin ? `<div style="text-align: right; display: flex; gap: 0.5rem;">
-                    <button class="btn btn-primary" style="padding: 0.4rem 0.8rem; font-size: 0.85rem;" onclick="openVehicleForm('${vehicle.id}')"><i class="fa-solid fa-pen"></i> Modifica</button>
-                </div>` : ''}
+                        <div style="text-align: right; display: flex; gap: 0.5rem; flex-wrap: wrap;">
+                            ${isAdmin ? `<button class="btn btn-primary" style="padding: 0.4rem 0.8rem; font-size: 0.85rem;" onclick="openVehicleForm('${vehicle.id}')"><i class="fa-solid fa-pen"></i> Modifica</button>` : ''}
+                            <button class="btn btn-maint-req" style="padding: 0.4rem 0.8rem; font-size: 0.85rem;" onclick="event.stopPropagation(); openMaintenanceRequestModal('${vehicle.id}')"><i class="fa-solid fa-envelope-open-text"></i> Richiesta Manut.</button>
+                        </div>
                     </div>
 
                     <div class="form-grid-3" style="margin-bottom: 0.75rem; background: #f8fafc; padding: 0.5rem 1rem; border-radius: 0.75rem;">
@@ -2333,4 +2352,127 @@ window.saveAndCloseOperationalNotes = async function () {
         console.error("Error saving operational notes:", error);
         alert("Errore durante il salvataggio delle note.");
     }
+}
+
+// ================================================
+// RICHIESTA MANUTENZIONE
+// ================================================
+
+window.openMaintenanceRequestModal = function (vehicleId) {
+    const vehicle = (cachedVehicles || []).find(v => v.id === vehicleId);
+    if (!vehicle) return;
+
+    document.getElementById('maint-req-vehicle-id').value = vehicleId;
+    document.getElementById('maint-req-sigla').value = vehicle.sigla || '-';
+    document.getElementById('maint-req-targa').value = vehicle.plate || '-';
+    document.getElementById('maint-req-data').value = new Date().toLocaleDateString('it-IT');
+    document.getElementById('maint-req-note').value = '';
+
+    const mittSelect = document.getElementById('maint-req-mittente');
+    mittSelect.innerHTML = MITTENTI_MANUTENZIONE.map(m =>
+        `<option value="${m.email}" ${!m.email ? 'disabled selected' : ''}>${m.label}</option>`
+    ).join('');
+
+    const destSelect = document.getElementById('maint-req-destinatario');
+    destSelect.innerHTML = DESTINATARI_MANUTENZIONE.map(d =>
+        `<option value="${d.email}" ${!d.email ? 'disabled selected' : ''}>${d.label}</option>`
+    ).join('');
+
+    document.getElementById('maint-request-modal').classList.remove('hidden');
+};
+
+window.closeMaintenanceRequestModal = function () {
+    document.getElementById('maint-request-modal').classList.add('hidden');
+};
+
+window.generateAndSendMaintenanceRequest = async function () {
+    const sigla     = document.getElementById('maint-req-sigla').value;
+    const targa     = document.getElementById('maint-req-targa').value;
+    const data      = document.getElementById('maint-req-data').value;
+    const note      = document.getElementById('maint-req-note').value.trim();
+    const mittEmail = document.getElementById('maint-req-mittente').value;
+    const destEmail = document.getElementById('maint-req-destinatario').value;
+
+    if (!mittEmail) { alert('⚠️ Seleziona il mittente.');             return; }
+    if (!destEmail) { alert('⚠️ Seleziona il destinatario.');         return; }
+    if (!note)      { alert('⚠️ Inserisci la descrizione del problema.'); return; }
+
+    const mittLabel = MITTENTI_MANUTENZIONE.find(m => m.email === mittEmail)?.label || mittEmail;
+    const destLabel = DESTINATARI_MANUTENZIONE.find(d => d.email === destEmail)?.label || destEmail;
+
+    const btn = document.getElementById('maint-req-submit-btn');
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Generazione in corso...';
+
+    try {
+        await generateMaintenanceDocx({
+            sigla, targa, data, note,
+            mittente:     { label: mittLabel, email: mittEmail },
+            destinatario: { label: destLabel, email: destEmail }
+        });
+
+        const oggetto   = encodeURIComponent(`Richiesta Manutenzione - ${sigla || targa} - ${data}`);
+        const zimbraUrl = `${ZIMBRA_BASE_URL}/?app=mail&action=compose&to=${encodeURIComponent(destEmail)}&subject=${oggetto}`;
+        window.open(zimbraUrl, '_blank');
+
+        closeMaintenanceRequestModal();
+    } catch (err) {
+        console.error('Errore generazione documento:', err);
+        alert('❌ Errore nella generazione del documento.\n\n' + err.message);
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fa-solid fa-file-word"></i> Genera Word e Apri Zimbra';
+    }
+};
+
+async function generateMaintenanceDocx(data) {
+    if (typeof PizZip === 'undefined' || typeof Docxtemplater === 'undefined') {
+        throw new Error('Librerie PizZip / Docxtemplater non caricate. Verifica la connessione internet.');
+    }
+
+    const TEMPLATE_PATH = './RICHIESTA RIPARAZIONE.DOCX';
+    let response;
+    try {
+        response = await fetch(TEMPLATE_PATH);
+    } catch (e) {
+        throw new Error(`Impossibile caricare il template.\nVerifica che il file "RICHIESTA RIPARAZIONE.DOCX" esista nella cartella del progetto.`);
+    }
+    if (!response.ok) {
+        throw new Error(`Template non trovato: "RICHIESTA RIPARAZIONE.DOCX" (HTTP ${response.status}).\nAssicurati che il file sia nella cartella principale del progetto.`);
+    }
+
+    const arrayBuffer = await response.arrayBuffer();
+    const zip = new PizZip(arrayBuffer);
+
+    const doc = new Docxtemplater(zip, {
+        paragraphLoop: true,
+        linebreaks:    true,
+    });
+
+    doc.render({
+        TARGA:              data.targa || '',
+        SIGLA:              data.sigla || '',
+        DATA:               data.data  || '',
+        NOTE_PROBLEMA:      data.note  || '',
+        MITTENTE_NOME:      data.mittente.label     || '',
+        MITTENTE_EMAIL:     data.mittente.email     || '',
+        DESTINATARIO_NOME:  data.destinatario.label || '',
+        DESTINATARIO_EMAIL: data.destinatario.email || '',
+    });
+
+    const blob = doc.getZip().generate({
+        type:     'blob',
+        mimeType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+    });
+
+    const url = URL.createObjectURL(blob);
+    const a   = document.createElement('a');
+    a.href    = url;
+    const dateClean = data.data.replace(/\//g, '-');
+    const nameClean = (data.sigla || data.targa || 'mezzo').replace(/[^a-zA-Z0-9]/g, '_');
+    a.download = `RichiestaManutenzione_${nameClean}_${dateClean}.docx`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(() => URL.revokeObjectURL(url), 1500);
 }
