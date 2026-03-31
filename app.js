@@ -1,4 +1,4 @@
-﻿const APP_VERSION = "1.7.9";
+const APP_VERSION = "1.7.10";
 let isAdmin = false;
 let cachedVehicles = null;
 let cachedLocations = null;
@@ -464,13 +464,13 @@ async function renderVehicleGrid(vehicles) {
             const isExpired = exp < today;
             const isCurrentMonth = (expMonth === currentMonth && expYear === currentYear);
 
-            // Mostra solo se giÃ  scaduta o se scade nel mese corrente
+            // Mostra solo se già scaduta o se scade nel mese corrente
             if (!isExpired && !isCurrentMonth) return '';
 
             const days = Math.round((exp - today) / (1000 * 60 * 60 * 24));
             const cls = days <= 30 ? 'danger' : 'warning';
             const dateFormatted = exp.toLocaleDateString('it-IT', { day: '2-digit', month: '2-digit', year: '2-digit' });
-            const icon = isExpired ? 'âš ï¸' : 'ðŸ””';
+            const icon = isExpired ? '⚠️' : '🔔';
             const label2 = isExpired ? `${label}: SCADUTA` : `${label}: ${dateFormatted}`;
             return `<span class="expiry-badge ${cls}">${icon} ${label2}</span>`;
         }
@@ -659,7 +659,7 @@ window.toggleAdminMode = function () {
     if (isAdmin) {
         // Logout via Firebase
         auth.signOut().then(() => {
-            alert("ModalitÃ  Amministratore Disattivata.");
+            alert("Modalità Amministratore Disattivata.");
         }).catch(error => {
             console.error("Errore logout:", error);
         });
@@ -1856,7 +1856,7 @@ window.importDataTableFromCSV = function () {
 
                 const rows = content.split('\n').filter(row => row.trim() !== '');
                 if (rows.length < 1) {
-                    alert("Il file CSV Ã¨ vuoto o non contiene dati validi.");
+                    alert("Il file CSV è vuoto o non contiene dati validi.");
                     return;
                 }
 
