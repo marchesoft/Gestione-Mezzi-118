@@ -28,6 +28,9 @@
     --status-internal-use: #65a30d;
     /* Light Green */
     --status-internal-use-bg: #f7fee7;
+    --status-not-present: #6b7280;
+    /* Gray */
+    --status-not-present-bg: #f3f4f6;
 
     --shadow-sm: 0 2px 4px 0 rgb(0 0 0 / 0.12);
     --shadow-md: 0 8px 16px -2px rgb(0 0 0 / 0.25), 0 4px 8px -3px rgb(0 0 0 / 0.20);
@@ -541,6 +544,11 @@ select {
     color: white !important;
 }
 
+.status-full-bar.status-not-present {
+    background-color: var(--status-not-present) !important;
+    color: white !important;
+}
+
 /* Status-specific card borders */
 .vehicle-card.border-operative {
     border-color: var(--status-operative) !important;
@@ -564,6 +572,11 @@ select {
 
 .vehicle-card.border-internal-use {
     border-color: var(--status-internal-use) !important;
+    border-width: 2px;
+}
+
+.vehicle-card.border-not-present {
+    border-color: var(--status-not-present) !important;
     border-width: 2px;
 }
 

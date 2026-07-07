@@ -1,4 +1,4 @@
-const APP_VERSION = "1.8.0";
+const APP_VERSION = "1.8.1";
 let isAdmin = false;
 let cachedVehicles = null;
 let cachedLocations = null;
@@ -341,12 +341,16 @@ function getStatusLabel(status) {
         'available': 'Disponibile',
         'maintenance': 'In Officina',
         'to-repair': 'Da Riparare',
-        'internal-use': 'Uso Interno'
+        'internal-use': 'Uso Interno',
+        'not-present': 'Non più presente'
     };
     return labels[status] || status;
 }
 
 async function renderVehicleGrid(vehicles) {
+    // Escludi i mezzi non più presenti dalla dashboard
+    vehicles = vehicles.filter(v => v.status !== 'not-present');
+
     const grid = document.getElementById('vehicle-grid');
     const todayStr = getLocalISODate();
 
@@ -390,7 +394,8 @@ async function renderVehicleGrid(vehicles) {
             'available': 'Disponibile',
             'maintenance': 'In Officina',
             'to-repair': 'Da Riparare',
-            'internal-use': 'Uso Interno'
+            'internal-use': 'Uso Interno',
+            'not-present': 'Non più presente'
         };
 
         let statusHtml = `
