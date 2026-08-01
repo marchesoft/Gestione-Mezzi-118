@@ -1,4 +1,4 @@
-const APP_VERSION = "1.9.2";
+const APP_VERSION = "1.9.3";
 let isAdmin = false;
 let cachedVehicles = null;
 let cachedLocations = null;
@@ -1572,15 +1572,15 @@ window.openVehicleModal = async function (id) {
                     </div>
 
                     <div style="margin-bottom: 1.5rem;">
-                        <label style="font-size: 0.75rem; text-transform: uppercase; color: black; font-weight: 600; margin-bottom: 0.25rem; display: block;">Note</label>
+                        <label style="font-size: 0.75rem; text-transform: uppercase; color: black; font-weight: 600; margin-bottom: 0.25rem; display: block;">Problematiche Note</label>
                         <textarea id="vehicle-notes-textarea"
                             style="width: 100%; padding: 0.75rem; border: 1px solid var(--border-color); border-radius: 0.5rem; font-family: inherit; font-size: 0.95rem; resize: vertical; min-height: 80px; color: black; ${!isAdmin ? 'background-color: #f8fafc; cursor: not-allowed;' : ''}"
-                            placeholder="${isAdmin ? 'Scrivi qui le note del mezzo...' : 'Nessuna nota'}"
+                            placeholder="${isAdmin ? 'Scrivi qui le problematiche note del mezzo...' : 'Nessuna problematica nota'}"
                             ${!isAdmin ? 'readonly' : ''}
                         >${vehicle.notes || ''}</textarea>
                         ${isAdmin ? `<div style="text-align: right; margin-top: 0.5rem;">
                             <button class="btn btn-primary" style="padding: 0.4rem 0.8rem; font-size: 0.85rem;" onclick="saveVehicleNote('${vehicle.id}', document.getElementById('vehicle-notes-textarea').value, true)">
-                                <i class="fa-solid fa-save"></i> Salva Note
+                                <i class="fa-solid fa-save"></i> Salva Problematiche Note
                             </button>
                         </div>` : ''}
                     </div>
