@@ -596,7 +596,7 @@ window.addTodoNote = async function (event, id) {
         if (idx !== -1) {
             const vehicle = cachedVehicles[idx];
             vehicle.todo_notes = upper(note);
-            
+
             store.updateVehicle(vehicle).then(() => {
                 alert("Nota da fare salvata correttamente!");
                 // Refresh modal if it is open
@@ -623,7 +623,7 @@ window.deleteTodoNote = async function (event, id) {
         if (idx !== -1) {
             const vehicle = cachedVehicles[idx];
             vehicle.todo_notes = '';
-            
+
             store.updateVehicle(vehicle).catch(err => {
                 console.error("Failed to delete todo note:", err);
                 alert("Errore salvataggio nota da fare.");
@@ -1492,17 +1492,17 @@ window.openVehicleModal = async function (id) {
                     </div>
 
                     ${(() => {
-                        // Nuova logica: ultimo intervento con "TAGLIANDO" vs km più recente
-                        const histModal = vehicle.maintenanceHistory || [];
-                        const withKm = histModal.filter(r => r.km != null && r.km !== '' && parseInt(r.km) > 0);
-                        if (withKm.length > 0) {
-                            const latestKm = Math.max(...withKm.map(r => parseInt(r.km)));
-                            const tagliandoList = withKm.filter(r => r.description && r.description.toUpperCase().includes('TAGLIANDO'));
-                            if (tagliandoList.length > 0) {
-                                const lastTagliandoKm = Math.max(...tagliandoList.map(r => parseInt(r.km)));
-                                const delta = latestKm - lastTagliandoKm;
-                                if (delta > 20000) {
-                                    return `<div style="margin-bottom: 0.75rem; background: #fff3cd; border: 2px solid #f59e0b; border-radius: 0.75rem; padding: 0.75rem 1rem; display: flex; align-items: center; gap: 0.75rem;">
+            // Nuova logica: ultimo intervento con "TAGLIANDO" vs km più recente
+            const histModal = vehicle.maintenanceHistory || [];
+            const withKm = histModal.filter(r => r.km != null && r.km !== '' && parseInt(r.km) > 0);
+            if (withKm.length > 0) {
+                const latestKm = Math.max(...withKm.map(r => parseInt(r.km)));
+                const tagliandoList = withKm.filter(r => r.description && r.description.toUpperCase().includes('TAGLIANDO'));
+                if (tagliandoList.length > 0) {
+                    const lastTagliandoKm = Math.max(...tagliandoList.map(r => parseInt(r.km)));
+                    const delta = latestKm - lastTagliandoKm;
+                    if (delta > 20000) {
+                        return `<div style="margin-bottom: 0.75rem; background: #fff3cd; border: 2px solid #f59e0b; border-radius: 0.75rem; padding: 0.75rem 1rem; display: flex; align-items: center; gap: 0.75rem;">
                                             <div style="background: #f59e0b; color: white; padding: 0.5rem; border-radius: 0.5rem; flex-shrink: 0;">
                                                 <i class="fa-solid fa-triangle-exclamation" style="font-size: 1.1rem;"></i>
                                             </div>
@@ -1513,11 +1513,11 @@ window.openVehicleModal = async function (id) {
                                                 </div>
                                             </div>
                                         </div>`;
-                                }
-                            }
-                        }
-                        return '';
-                    })()}
+                    }
+                }
+            }
+            return '';
+        })()}
 
                     <div class="form-grid-3" style="margin-bottom: 0.75rem; background: #f1f5f9; padding: 0.5rem 1rem; border-radius: 0.75rem;">
                         <div>
@@ -1566,9 +1566,9 @@ window.openVehicleModal = async function (id) {
 
                     <div style="margin-bottom: 1.5rem;">
                         <label style="font-size: 0.75rem; text-transform: uppercase; color: black; font-weight: 600; margin-bottom: 0.25rem; display: block;"><i class="fa-solid fa-clipboard-list"></i> Da Fare (sospeso)</label>
-                        ${(function() {
-                            if (vehicle.todo_notes && vehicle.todo_notes.trim() !== '') {
-                                return `
+                        ${(function () {
+            if (vehicle.todo_notes && vehicle.todo_notes.trim() !== '') {
+                return `
                                     <div style="background-color: white; border: 1px solid var(--border-color); border-radius: 0.5rem; padding: 0.75rem; color: black; display: flex; justify-content: space-between; align-items: flex-start; gap: 0.5rem;">
                                         <div style="flex-grow: 1; font-size: 0.95rem; white-space: pre-wrap;">${vehicle.todo_notes}</div>
                                         ${isAdmin ? `
@@ -1578,18 +1578,18 @@ window.openVehicleModal = async function (id) {
                                         ` : ''}
                                     </div>
                                 `;
-                            } else {
-                                if (isAdmin) {
-                                    return `
+            } else {
+                if (isAdmin) {
+                    return `
                                         <button class="btn" style="background: transparent; border: 1px dashed var(--border-color); color: var(--text-secondary); width: 100%; padding: 0.75rem; text-align: center; border-radius: 0.5rem;" onclick="addTodoNote(event, '${vehicle.id}')">
                                             <i class="fa-solid fa-plus"></i> Aggiungi Da Fare
                                         </button>
                                     `;
-                                } else {
-                                    return `<div style="font-style: italic; color: var(--text-secondary); font-size: 0.85rem;">Nessuna attività in sospeso</div>`;
-                                }
-                            }
-                        })()}
+                } else {
+                    return `<div style="font-style: italic; color: var(--text-secondary); font-size: 0.85rem;">Nessuna attività in sospeso</div>`;
+                }
+            }
+        })()}
                     </div>
 
                     <div style="margin-bottom: 1.5rem;">
