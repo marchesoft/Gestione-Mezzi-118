@@ -1,4 +1,4 @@
-const APP_VERSION = "1.9.1";
+const APP_VERSION = "1.9.2";
 let isAdmin = false;
 let cachedVehicles = null;
 let cachedLocations = null;
@@ -478,6 +478,17 @@ async function renderVehicleGrid(vehicles) {
         const allBadges = [revBadge, kmIntervalBadge].filter(Boolean).join('');
         const expiryBadgesHtml = allBadges ? `<div class="expiry-badges">${allBadges}</div>` : '';
 
+        // --- Da Fare HTML ---
+        let todoHtml = '';
+        if (vehicle.todo_notes && vehicle.todo_notes.trim() !== '') {
+            todoHtml = `
+            <div class="todo-note-box" style="width: 100%; margin-bottom: 0.5rem;" onclick="event.stopPropagation()">
+                <div class="todo-text"><i class="fa-solid fa-clipboard-list" style="margin-right:4px;"></i>${vehicle.todo_notes.replace(/\n/g, '<br>')}</div>
+                ${isAdmin ? `<button class="todo-done-btn" onclick="deleteTodoNote(event, '${vehicle.id}')" title="Segna come completato"><i class="fa-solid fa-check"></i></button>` : ''}
+            </div>
+            `;
+        }
+
         return `
             <div class="vehicle-card border-${vehicle.status}${showOverlay ? ' has-alert' : ''}" 
                  data-id="${vehicle.id}" 
@@ -492,6 +503,7 @@ async function renderVehicleGrid(vehicles) {
                 ${alertHTML}
                 ${statusHtml}
                 <div class="card-body">
+                    ${todoHtml}
                     <div class="vehicle-id" style="text-align: center; margin-bottom: 0.5rem; display: flex; flex-direction: column; gap: 0.1rem;">
                         ${vehicle.sigla ? `<div class="sigla-text">${vehicle.sigla}</div>` : ''}
                         <div class="model-text">${vehicle.model}</div>
@@ -573,6 +585,47 @@ function handleDrop(e) {
 }
 
 // Quick Actions
+window.addTodoNote = async function (event, id) {
+    event.stopPropagation();
+    if (!isAdmin) return;
+    const note = prompt("Inserisci la cosa da fare per questo mezzo:");
+    if (!note || note.trim() === '') return;
+
+    if (cachedVehicles) {
+        const idx = cachedVehicles.findIndex(v => v.id === id);
+        if (idx !== -1) {
+            const vehicle = cachedVehicles[idx];
+            vehicle.todo_notes = upper(note);
+            
+            store.updateVehicle(vehicle).catch(err => {
+                console.error("Failed to update todo note:", err);
+                alert("Errore salvataggio nota da fare.");
+            });
+            renderDashboard(false);
+        }
+    }
+}
+
+window.deleteTodoNote = async function (event, id) {
+    event.stopPropagation();
+    if (!isAdmin) return;
+    if (!confirm("Hai completato questa attività? La nota verrà eliminata.")) return;
+
+    if (cachedVehicles) {
+        const idx = cachedVehicles.findIndex(v => v.id === id);
+        if (idx !== -1) {
+            const vehicle = cachedVehicles[idx];
+            vehicle.todo_notes = '';
+            
+            store.updateVehicle(vehicle).catch(err => {
+                console.error("Failed to delete todo note:", err);
+                alert("Errore salvataggio nota da fare.");
+            });
+            renderDashboard(false);
+        }
+    }
+}
+
 window.quickUpdateStatus = async function (event, id) {
     event.stopPropagation();
     const newStatus = event.target.value;
@@ -737,6 +790,9 @@ window.openVehicleForm = async function (vehicleId = null) {
             document.getElementById('vehicle-revision-o2').value = vehicle.revision_o2 || '';
             document.getElementById('vehicle-type').value = vehicle.type;
             document.getElementById('vehicle-notes').value = vehicle.notes || '';
+            if (document.getElementById('vehicle-todo-notes')) {
+                document.getElementById('vehicle-todo-notes').value = vehicle.todo_notes || '';
+            }
         }
     } else {
         title.textContent = 'Aggiungi Nuovo Mezzo';
@@ -1302,6 +1358,8 @@ window.saveVehicleForm = async function () {
     const inspection_expiry = document.getElementById('vehicle-inspection').value;
     const revision_o2 = document.getElementById('vehicle-revision-o2').value;
     const notes = document.getElementById('vehicle-notes').value;
+    const todoNotesEl = document.getElementById('vehicle-todo-notes');
+    const todo_notes = todoNotesEl ? todoNotesEl.value : '';
 
     const vehicleData = {
         model: upper(model),
@@ -1316,7 +1374,8 @@ window.saveVehicleForm = async function () {
 
         inspection_expiry: inspection_expiry || null,
         revision_o2: revision_o2 || null,
-        notes: upper(notes)
+        notes: upper(notes),
+        todo_notes: upper(todo_notes)
     };
 
     if (id) {
@@ -1496,6 +1555,20 @@ window.openVehicleModal = async function (id) {
                                 </select>
                             </div>
                         ` : ''}
+                    </div>
+
+                    <div style="margin-bottom: 1.5rem;">
+                        <label style="font-size: 0.75rem; text-transform: uppercase; color: #dc2626; font-weight: 800; margin-bottom: 0.25rem; display: block;"><i class="fa-solid fa-clipboard-list"></i> Da Fare (sospeso)</label>
+                        <textarea id="vehicle-todo-notes-textarea"
+                            style="width: 100%; padding: 0.75rem; border: 1px solid #fca5a5; border-radius: 0.5rem; font-family: inherit; font-size: 0.95rem; resize: vertical; min-height: 80px; color: #991b1b; background-color: #fee2e2; ${!isAdmin ? 'cursor: not-allowed;' : ''}"
+                            placeholder="${isAdmin ? 'Cose da fare in sospeso...' : 'Nessuna attività in sospeso'}"
+                            ${!isAdmin ? 'readonly' : ''}
+                        >${vehicle.todo_notes || ''}</textarea>
+                        ${isAdmin ? `<div style="text-align: right; margin-top: 0.5rem;">
+                            <button class="btn btn-primary" style="padding: 0.4rem 0.8rem; font-size: 0.85rem; background-color: #dc2626; border-color: #dc2626;" onclick="saveVehicleTodoNote('${vehicle.id}', document.getElementById('vehicle-todo-notes-textarea').value)">
+                                <i class="fa-solid fa-save"></i> Salva Da Fare
+                            </button>
+                        </div>` : ''}
                     </div>
 
                     <div style="margin-bottom: 1.5rem;">
