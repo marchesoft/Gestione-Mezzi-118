@@ -1,4 +1,4 @@
-const APP_VERSION = "1.9.3";
+const APP_VERSION = "1.9.4";
 let isAdmin = false;
 let cachedVehicles = null;
 let cachedLocations = null;
@@ -1558,14 +1558,14 @@ window.openVehicleModal = async function (id) {
                     </div>
 
                     <div style="margin-bottom: 1.5rem;">
-                        <label style="font-size: 0.75rem; text-transform: uppercase; color: #dc2626; font-weight: 800; margin-bottom: 0.25rem; display: block;"><i class="fa-solid fa-clipboard-list"></i> Da Fare (sospeso)</label>
+                        <label style="font-size: 0.75rem; text-transform: uppercase; color: black; font-weight: 600; margin-bottom: 0.25rem; display: block;"><i class="fa-solid fa-clipboard-list"></i> Da Fare (sospeso)</label>
                         <textarea id="vehicle-todo-notes-textarea"
-                            style="width: 100%; padding: 0.75rem; border: 1px solid #fca5a5; border-radius: 0.5rem; font-family: inherit; font-size: 0.95rem; resize: vertical; min-height: 80px; color: #991b1b; background-color: #fee2e2; ${!isAdmin ? 'cursor: not-allowed;' : ''}"
+                            style="width: 100%; padding: 0.75rem; border: 1px solid var(--border-color); border-radius: 0.5rem; font-family: inherit; font-size: 0.95rem; resize: vertical; min-height: 80px; color: black; ${!isAdmin ? 'background-color: #f8fafc; cursor: not-allowed;' : ''}"
                             placeholder="${isAdmin ? 'Cose da fare in sospeso...' : 'Nessuna attività in sospeso'}"
                             ${!isAdmin ? 'readonly' : ''}
                         >${vehicle.todo_notes || ''}</textarea>
                         ${isAdmin ? `<div style="text-align: right; margin-top: 0.5rem;">
-                            <button class="btn btn-primary" style="padding: 0.4rem 0.8rem; font-size: 0.85rem; background-color: #dc2626; border-color: #dc2626;" onclick="saveVehicleTodoNote('${vehicle.id}', document.getElementById('vehicle-todo-notes-textarea').value)">
+                            <button class="btn btn-primary" style="padding: 0.4rem 0.8rem; font-size: 0.85rem;" onclick="saveVehicleTodoNote('${vehicle.id}', document.getElementById('vehicle-todo-notes-textarea').value)">
                                 <i class="fa-solid fa-save"></i> Salva Da Fare
                             </button>
                         </div>` : ''}
