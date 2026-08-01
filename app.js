@@ -1,4 +1,4 @@
-const APP_VERSION = "1.8.8";
+const APP_VERSION = "1.8.9";
 let isAdmin = false;
 let cachedVehicles = null;
 let cachedLocations = null;
@@ -465,8 +465,8 @@ async function renderVehicleGrid(vehicles) {
             if (interventionsWithKm.length > 0) {
                 const lastMaintenanceKm = Math.max(...interventionsWithKm.map(r => parseInt(r.km)));
                 const deltaKm = currentMileage - lastMaintenanceKm;
-                if (deltaKm > 20000) {
-                    kmIntervalBadge = `<span class="expiry-badge danger">🔧 Tagliando probabile (+${deltaKm.toLocaleString()} km)</span>`;
+                if (Math.abs(deltaKm) > 20000) {
+                    kmIntervalBadge = `<span class="expiry-badge danger">🔧 Tagliando probabile (+${Math.abs(deltaKm).toLocaleString()} km)</span>`;
                 }
             }
         }
@@ -1431,7 +1431,7 @@ window.openVehicleModal = async function (id) {
                             const lastKm = Math.max(...withKm.map(r => parseInt(r.km)));
                             const curKm = parseInt(vehicle.mileage) || 0;
                             const delta = curKm - lastKm;
-                            if (delta > 20000) {
+                            if (Math.abs(delta) > 20000) {
                                 return `<div style="margin-bottom: 0.75rem; background: #fff3cd; border: 2px solid #f59e0b; border-radius: 0.75rem; padding: 0.75rem 1rem; display: flex; align-items: center; gap: 0.75rem;">
                                         <div style="background: #f59e0b; color: white; padding: 0.5rem; border-radius: 0.5rem; flex-shrink: 0;">
                                             <i class="fa-solid fa-triangle-exclamation" style="font-size: 1.1rem;"></i>
@@ -1439,7 +1439,7 @@ window.openVehicleModal = async function (id) {
                                         <div>
                                             <div style="font-size: 0.75rem; font-weight: 800; color: #92400e; text-transform: uppercase; margin-bottom: 0.1rem;">🔧 Tagliando Probabile</div>
                                             <div style="font-size: 0.95rem; font-weight: 600; color: #78350f;">
-                                                <strong>+${delta.toLocaleString()} km</strong> dall'ultimo intervento registrato (a ${lastKm.toLocaleString()} km)
+                                                <strong>${Math.abs(delta).toLocaleString()} km</strong> di differenza dall'ultimo intervento (a ${lastKm.toLocaleString()} km)
                                             </div>
                                         </div>
                                     </div>`;
