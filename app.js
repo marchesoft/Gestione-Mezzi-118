@@ -1,4 +1,4 @@
-const APP_VERSION = "1.8.9";
+const APP_VERSION = "1.9.0";
 let isAdmin = false;
 let cachedVehicles = null;
 let cachedLocations = null;
@@ -453,20 +453,24 @@ async function renderVehicleGrid(vehicles) {
         }
         const revBadge = expiryBadge('REV', vehicle.inspection_expiry);
 
-        // --- Badge intervallo KM manutenzione ---
-        // vehicle.mileage = km rilevati a inizio mese (fissi)
-        // intervention.km = km rilevati durante ogni manutenzione (piu aggiornati)
-        // Avviso solo quando vehicle.mileage supera di >20.000 l'ultimo intervento
+        // --- Badge Tagliando probabile ---
+        // Logica: confronta km dell'ultimo intervento con "TAGLIANDO" nella descrizione
+        // vs km dell'intervento più recente. Se differenza > 20.000 → avviso.
         let kmIntervalBadge = '';
-        const currentMileage = parseInt(vehicle.mileage) || 0;
         const history = vehicle.maintenanceHistory || [];
         if (history.length > 0) {
-            const interventionsWithKm = history.filter(r => r.km != null && r.km !== '' && parseInt(r.km) > 0);
-            if (interventionsWithKm.length > 0) {
-                const lastMaintenanceKm = Math.max(...interventionsWithKm.map(r => parseInt(r.km)));
-                const deltaKm = currentMileage - lastMaintenanceKm;
-                if (Math.abs(deltaKm) > 20000) {
-                    kmIntervalBadge = `<span class="expiry-badge danger">🔧 Tagliando probabile (+${Math.abs(deltaKm).toLocaleString()} km)</span>`;
+            const withKm = history.filter(r => r.km != null && r.km !== '' && parseInt(r.km) > 0);
+            if (withKm.length > 0) {
+                // Km più alto = intervento più recente
+                const latestKm = Math.max(...withKm.map(r => parseInt(r.km)));
+                // Ultimo tagliando = intervento con "TAGLIANDO" nella descrizione con km più alto
+                const tagliandoList = withKm.filter(r => r.description && r.description.toUpperCase().includes('TAGLIANDO'));
+                if (tagliandoList.length > 0) {
+                    const lastTagliandoKm = Math.max(...tagliandoList.map(r => parseInt(r.km)));
+                    const delta = latestKm - lastTagliandoKm;
+                    if (delta > 20000) {
+                        kmIntervalBadge = `<span class="expiry-badge danger">🔧 Tagliando probabile (+${delta.toLocaleString()} km)</span>`;
+                    }
                 }
             }
         }
@@ -1422,27 +1426,28 @@ window.openVehicleModal = async function (id) {
                     </div>
 
                     ${(() => {
-                        // vehicle.mileage = km inizio mese (fissi)
-                        // intervention.km = km rilevati all'intervento (piu aggiornati)
-                        // Avviso solo se vehicle.mileage - lastKm > 20.000
+                        // Nuova logica: ultimo intervento con "TAGLIANDO" vs km più recente
                         const histModal = vehicle.maintenanceHistory || [];
                         const withKm = histModal.filter(r => r.km != null && r.km !== '' && parseInt(r.km) > 0);
                         if (withKm.length > 0) {
-                            const lastKm = Math.max(...withKm.map(r => parseInt(r.km)));
-                            const curKm = parseInt(vehicle.mileage) || 0;
-                            const delta = curKm - lastKm;
-                            if (Math.abs(delta) > 20000) {
-                                return `<div style="margin-bottom: 0.75rem; background: #fff3cd; border: 2px solid #f59e0b; border-radius: 0.75rem; padding: 0.75rem 1rem; display: flex; align-items: center; gap: 0.75rem;">
-                                        <div style="background: #f59e0b; color: white; padding: 0.5rem; border-radius: 0.5rem; flex-shrink: 0;">
-                                            <i class="fa-solid fa-triangle-exclamation" style="font-size: 1.1rem;"></i>
-                                        </div>
-                                        <div>
-                                            <div style="font-size: 0.75rem; font-weight: 800; color: #92400e; text-transform: uppercase; margin-bottom: 0.1rem;">🔧 Tagliando Probabile</div>
-                                            <div style="font-size: 0.95rem; font-weight: 600; color: #78350f;">
-                                                <strong>${Math.abs(delta).toLocaleString()} km</strong> di differenza dall'ultimo intervento (a ${lastKm.toLocaleString()} km)
+                            const latestKm = Math.max(...withKm.map(r => parseInt(r.km)));
+                            const tagliandoList = withKm.filter(r => r.description && r.description.toUpperCase().includes('TAGLIANDO'));
+                            if (tagliandoList.length > 0) {
+                                const lastTagliandoKm = Math.max(...tagliandoList.map(r => parseInt(r.km)));
+                                const delta = latestKm - lastTagliandoKm;
+                                if (delta > 20000) {
+                                    return `<div style="margin-bottom: 0.75rem; background: #fff3cd; border: 2px solid #f59e0b; border-radius: 0.75rem; padding: 0.75rem 1rem; display: flex; align-items: center; gap: 0.75rem;">
+                                            <div style="background: #f59e0b; color: white; padding: 0.5rem; border-radius: 0.5rem; flex-shrink: 0;">
+                                                <i class="fa-solid fa-triangle-exclamation" style="font-size: 1.1rem;"></i>
                                             </div>
-                                        </div>
-                                    </div>`;
+                                            <div>
+                                                <div style="font-size: 0.75rem; font-weight: 800; color: #92400e; text-transform: uppercase; margin-bottom: 0.1rem;">🔧 Tagliando Probabile</div>
+                                                <div style="font-size: 0.95rem; font-weight: 600; color: #78350f;">
+                                                    <strong>+${delta.toLocaleString()} km</strong> dall'ultimo tagliando (effettuato a ${lastTagliandoKm.toLocaleString()} km)
+                                                </div>
+                                            </div>
+                                        </div>`;
+                                }
                             }
                         }
                         return '';
