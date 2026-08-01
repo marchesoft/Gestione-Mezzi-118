@@ -1,4 +1,4 @@
-const APP_VERSION = "1.9.6";
+const APP_VERSION = "1.9.7";
 let isAdmin = false;
 let cachedVehicles = null;
 let cachedLocations = null;
@@ -597,7 +597,14 @@ window.addTodoNote = async function (event, id) {
             const vehicle = cachedVehicles[idx];
             vehicle.todo_notes = upper(note);
             
-            store.updateVehicle(vehicle).catch(err => {
+            store.updateVehicle(vehicle).then(() => {
+                alert("Nota da fare salvata correttamente!");
+                // Refresh modal if it is open
+                const modal = document.getElementById('vehicle-modal');
+                if (modal && !modal.classList.contains('hidden')) {
+                    openVehicleModal(id);
+                }
+            }).catch(err => {
                 console.error("Failed to update todo note:", err);
                 alert("Errore salvataggio nota da fare.");
             });
