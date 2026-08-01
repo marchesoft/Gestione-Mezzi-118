@@ -1834,6 +1834,26 @@ window.saveVehicleNote = async function (id, text, showFeedback = false) {
     }
 }
 
+// Note Da Fare Save
+window.saveVehicleTodoNote = async function (id, text, showFeedback = true) {
+    if (!isAdmin) return;
+    try {
+        const vehicle = await store.getVehicleById(id);
+        if (vehicle) {
+            vehicle.todo_notes = upper(text);
+            await store.updateVehicle(vehicle);
+            await renderDashboard(true); // Force refresh
+            if (showFeedback) {
+                alert("Note 'Da Fare' aggiornate con successo!");
+                document.getElementById('vehicle-modal').classList.add('hidden');
+            }
+        }
+    } catch (error) {
+        console.error("Errore salvataggio note da fare:", error);
+        if (showFeedback) alert("Errore durante il salvataggio.");
+    }
+}
+
 // --- CSV Export Utility ---
 window.exportCurrentTableToCSV = async function () {
     const type = window.lastDataManagerTab || 'vehicles';
