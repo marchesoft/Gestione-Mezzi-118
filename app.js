@@ -1,4 +1,4 @@
-const APP_VERSION = "1.8.2";
+const APP_VERSION = "1.8.3";
 let isAdmin = false;
 let cachedVehicles = null;
 let cachedLocations = null;
@@ -2168,6 +2168,7 @@ window.switchDataTable = async function (type) {
                                 <th class="col-shrink">Data Uscita</th>
                                 <th class="col-shrink">Mezzo</th>
                                 <th class="col-shrink">Officina</th>
+                                <th class="col-shrink">KM</th>
                                 <th class="col-expand">Descrizione</th>
                                 ${isAdmin ? '<th class="col-actions">Azioni</th>' : ''}
                             </tr>
@@ -2179,6 +2180,7 @@ window.switchDataTable = async function (type) {
                 + `<td class="col-shrink">${formatDate(i.date_out)}</td>`
                 + `<td class="col-shrink text-bold text-primary">${i.sigla || 'N/A'}</td>`
                 + `<td class="col-shrink">${i.workshop || '-'}</td>`
+                + `<td class="col-shrink" style="font-weight:600; color:var(--primary-color);">${i.km ? parseInt(i.km).toLocaleString() + ' km' : '-'}</td>`
                 + `<td class="col-expand">${i.description}</td>`
                 + (isAdmin ? '<td class="col-actions">'
                     + `<button onclick="editInterventionHandler('${i.id}')" style="margin-right:0.5rem; cursor:pointer; background:none; border:none; color:var(--primary-color);"><i class="fa-solid fa-pen"></i></button>`
