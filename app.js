@@ -1,4 +1,4 @@
-const APP_VERSION = "1.8.7";
+const APP_VERSION = "1.8.8";
 let isAdmin = false;
 let cachedVehicles = null;
 let cachedLocations = null;
@@ -454,6 +454,9 @@ async function renderVehicleGrid(vehicles) {
         const revBadge = expiryBadge('REV', vehicle.inspection_expiry);
 
         // --- Badge intervallo KM manutenzione ---
+        // vehicle.mileage = km rilevati a inizio mese (fissi)
+        // intervention.km = km rilevati durante ogni manutenzione (piu aggiornati)
+        // Avviso solo quando vehicle.mileage supera di >20.000 l'ultimo intervento
         let kmIntervalBadge = '';
         const currentMileage = parseInt(vehicle.mileage) || 0;
         const history = vehicle.maintenanceHistory || [];
@@ -463,11 +466,7 @@ async function renderVehicleGrid(vehicles) {
                 const lastMaintenanceKm = Math.max(...interventionsWithKm.map(r => parseInt(r.km)));
                 const deltaKm = currentMileage - lastMaintenanceKm;
                 if (deltaKm > 20000) {
-                    // Troppi km dall'ultimo intervento
                     kmIntervalBadge = `<span class="expiry-badge danger">🔧 Tagliando probabile (+${deltaKm.toLocaleString()} km)</span>`;
-                } else if (deltaKm < 0) {
-                    // Km veicolo non aggiornati dopo l'intervento
-                    kmIntervalBadge = `<span class="expiry-badge warning">⚠️ KM veicolo non aggiornati</span>`;
                 }
             }
         }
@@ -1423,6 +1422,9 @@ window.openVehicleModal = async function (id) {
                     </div>
 
                     ${(() => {
+                        // vehicle.mileage = km inizio mese (fissi)
+                        // intervention.km = km rilevati all'intervento (piu aggiornati)
+                        // Avviso solo se vehicle.mileage - lastKm > 20.000
                         const histModal = vehicle.maintenanceHistory || [];
                         const withKm = histModal.filter(r => r.km != null && r.km !== '' && parseInt(r.km) > 0);
                         if (withKm.length > 0) {
@@ -1438,18 +1440,6 @@ window.openVehicleModal = async function (id) {
                                             <div style="font-size: 0.75rem; font-weight: 800; color: #92400e; text-transform: uppercase; margin-bottom: 0.1rem;">🔧 Tagliando Probabile</div>
                                             <div style="font-size: 0.95rem; font-weight: 600; color: #78350f;">
                                                 <strong>+${delta.toLocaleString()} km</strong> dall'ultimo intervento registrato (a ${lastKm.toLocaleString()} km)
-                                            </div>
-                                        </div>
-                                    </div>`;
-                            } else if (delta < 0) {
-                                return `<div style="margin-bottom: 0.75rem; background: #fef9c3; border: 2px solid #eab308; border-radius: 0.75rem; padding: 0.75rem 1rem; display: flex; align-items: center; gap: 0.75rem;">
-                                        <div style="background: #eab308; color: white; padding: 0.5rem; border-radius: 0.5rem; flex-shrink: 0;">
-                                            <i class="fa-solid fa-arrow-up" style="font-size: 1.1rem;"></i>
-                                        </div>
-                                        <div>
-                                            <div style="font-size: 0.75rem; font-weight: 800; color: #713f12; text-transform: uppercase; margin-bottom: 0.1rem;">⚠️ KM Veicolo Non Aggiornati</div>
-                                            <div style="font-size: 0.95rem; font-weight: 600; color: #713f12;">
-                                                Ultimo intervento a <strong>${lastKm.toLocaleString()} km</strong> — aggiornare i km del mezzo (attualmente ${curKm.toLocaleString()} km)
                                             </div>
                                         </div>
                                     </div>`;
