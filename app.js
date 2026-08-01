@@ -1,4 +1,4 @@
-const APP_VERSION = "1.9.0";
+const APP_VERSION = "1.9.1";
 let isAdmin = false;
 let cachedVehicles = null;
 let cachedLocations = null;
@@ -1443,7 +1443,7 @@ window.openVehicleModal = async function (id) {
                                             <div>
                                                 <div style="font-size: 0.75rem; font-weight: 800; color: #92400e; text-transform: uppercase; margin-bottom: 0.1rem;">🔧 Tagliando Probabile</div>
                                                 <div style="font-size: 0.95rem; font-weight: 600; color: #78350f;">
-                                                    <strong>+${delta.toLocaleString()} km</strong> dall'ultimo tagliando (effettuato a ${lastTagliandoKm.toLocaleString()} km)
+                                                <strong>${delta.toLocaleString()} km</strong> dall'ultimo tagliando (${lastTagliandoKm.toLocaleString()} km)
                                                 </div>
                                             </div>
                                         </div>`;
