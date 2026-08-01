@@ -1,4 +1,4 @@
-const APP_VERSION = "1.8.1";
+const APP_VERSION = "1.8.2";
 let isAdmin = false;
 let cachedVehicles = null;
 let cachedLocations = null;
@@ -1505,6 +1505,7 @@ window.openVehicleModal = async function (id) {
                                 <th style="text-align: left; padding: 1rem; font-size: 0.85rem; color: var(--text-secondary);">Data Entrata</th>
                                 <th style="text-align: left; padding: 1rem; font-size: 0.85rem; color: var(--text-secondary);">Data Uscita</th>
                                 <th style="text-align: left; padding: 1rem; font-size: 0.85rem; color: var(--text-secondary);">Officina</th>
+                                <th style="text-align: left; padding: 1rem; font-size: 0.85rem; color: var(--text-secondary);">KM</th>
                                 <th style="text-align: left; padding: 1rem; font-size: 0.85rem; color: var(--text-secondary);">Descrizione</th>
                                 <th style="text-align: right; padding: 1rem; font-size: 0.85rem; color: var(--text-secondary);">Azioni</th>
                             </tr>
@@ -1515,6 +1516,7 @@ window.openVehicleModal = async function (id) {
                                     <td style="padding: 1rem; font-weight: 500;">${record.date ? formatDate(record.date) : '-'}</td>
                                     <td style="padding: 1rem; font-weight: 500;">${record.date_out ? formatDate(record.date_out) : '-'}</td>
                                     <td style="padding: 1rem; font-weight: 500;">${record.workshop || '-'}</td>
+                                    <td style="padding: 1rem; font-weight: 600; color: var(--primary-color);">${record.km ? parseInt(record.km).toLocaleString() + ' km' : '-'}</td>
                                     <td style="padding: 1rem;">${record.description}</td>
                                     ${isAdmin ? `
                                     <td style="padding: 1rem; text-align: right;">
@@ -1569,6 +1571,7 @@ window.openMaintenanceForm = function (vehicleId, vehicleSigla, record = null) {
         document.getElementById('maintenance-date').value = record.date;
         document.getElementById('maintenance-date-out').value = record.date_out || '';
         document.getElementById('maintenance-workshop').value = record.workshop || '';
+        document.getElementById('maintenance-km').value = record.km || '';
         document.getElementById('maintenance-description').value = record.description;
     } else {
         // Add Mode
@@ -1577,6 +1580,7 @@ window.openMaintenanceForm = function (vehicleId, vehicleSigla, record = null) {
         document.getElementById('maintenance-date').valueAsDate = new Date();
         document.getElementById('maintenance-date-out').value = '';
         document.getElementById('maintenance-workshop').value = '';
+        document.getElementById('maintenance-km').value = '';
         document.getElementById('maintenance-description').value = '';
     }
 
@@ -1591,6 +1595,7 @@ window.saveMaintenanceRecord = async function (e) {
     const date = document.getElementById('maintenance-date').value;
     const date_out = document.getElementById('maintenance-date-out').value;
     const workshop = document.getElementById('maintenance-workshop').value;
+    const kmVal = document.getElementById('maintenance-km').value;
     const description = document.getElementById('maintenance-description').value;
 
     // Fetch vehicle to get sigla
@@ -1601,6 +1606,7 @@ window.saveMaintenanceRecord = async function (e) {
         date,
         date_out: date_out || null,
         workshop: upper(workshop),
+        km: kmVal ? parseInt(kmVal) : null,
         description: upper(description),
         type: 'Routine',
         cost: 0
