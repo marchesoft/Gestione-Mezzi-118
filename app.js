@@ -1,4 +1,4 @@
-const APP_VERSION = "1.8.3";
+const APP_VERSION = "1.8.4";
 let isAdmin = false;
 let cachedVehicles = null;
 let cachedLocations = null;
@@ -480,9 +480,22 @@ async function renderVehicleGrid(vehicles) {
             return `<span class="expiry-badge ${cls}">${icon} ${label2}</span>`;
         }
         const revBadge = expiryBadge('REV', vehicle.inspection_expiry);
-        const expiryBadgesHtml = revBadge
-            ? `<div class="expiry-badges">${revBadge}</div>`
-            : '';
+
+        // --- Badge intervallo KM manutenzione ---
+        let kmIntervalBadge = '';
+        if (vehicle.maintenanceHistory && vehicle.maintenanceHistory.length > 0) {
+            const interventionsWithKm = vehicle.maintenanceHistory.filter(r => r.km && parseInt(r.km) > 0);
+            if (interventionsWithKm.length > 0) {
+                const lastMaintenanceKm = Math.max(...interventionsWithKm.map(r => parseInt(r.km)));
+                const deltaKm = (parseInt(vehicle.mileage) || 0) - lastMaintenanceKm;
+                if (deltaKm > 20000) {
+                    kmIntervalBadge = `<span class="expiry-badge danger">🔧 +${deltaKm.toLocaleString()} km senza manut.</span>`;
+                }
+            }
+        }
+
+        const allBadges = [revBadge, kmIntervalBadge].filter(Boolean).join('');
+        const expiryBadgesHtml = allBadges ? `<div class="expiry-badges">${allBadges}</div>` : '';
 
         return `
             <div class="vehicle-card border-${vehicle.status}${showOverlay ? ' has-alert' : ''}" 
@@ -1430,6 +1443,30 @@ window.openVehicleModal = async function (id) {
                             <div style="font-size: 1.1rem; font-weight: 600; color: black;">${vehicle.mileage_month || '-'}</div>
                         </div>
                     </div>
+
+                    ${(() => {
+                        if (vehicle.maintenanceHistory && vehicle.maintenanceHistory.length > 0) {
+                            const withKm = vehicle.maintenanceHistory.filter(r => r.km && parseInt(r.km) > 0);
+                            if (withKm.length > 0) {
+                                const lastKm = Math.max(...withKm.map(r => parseInt(r.km)));
+                                const delta = (parseInt(vehicle.mileage) || 0) - lastKm;
+                                if (delta > 20000) {
+                                    return `<div style="margin-bottom: 0.75rem; background: #fff3cd; border: 2px solid #f59e0b; border-radius: 0.75rem; padding: 0.75rem 1rem; display: flex; align-items: center; gap: 0.75rem;">
+                                        <div style="background: #f59e0b; color: white; padding: 0.5rem; border-radius: 0.5rem; flex-shrink: 0;">
+                                            <i class="fa-solid fa-triangle-exclamation" style="font-size: 1.1rem;"></i>
+                                        </div>
+                                        <div>
+                                            <div style="font-size: 0.75rem; font-weight: 800; color: #92400e; text-transform: uppercase; margin-bottom: 0.1rem;">⚠️ Intervallo Manutenzione Superato</div>
+                                            <div style="font-size: 0.95rem; font-weight: 600; color: #78350f;">
+                                                <strong>+${delta.toLocaleString()} km</strong> dall'ultimo intervento registrato (a ${lastKm.toLocaleString()} km)
+                                            </div>
+                                        </div>
+                                    </div>`;
+                                }
+                            }
+                        }
+                        return '';
+                    })()}
 
                     <div class="form-grid-3" style="margin-bottom: 0.75rem; background: #f1f5f9; padding: 0.5rem 1rem; border-radius: 0.75rem;">
                         <div>
