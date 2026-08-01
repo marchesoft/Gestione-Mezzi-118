@@ -1,4 +1,4 @@
-const APP_VERSION = "1.8.4";
+const APP_VERSION = "1.8.5";
 let isAdmin = false;
 let cachedVehicles = null;
 let cachedLocations = null;
@@ -158,37 +158,9 @@ function setupRealtimeSubscription() {
 
         // Vehicles Subscription
         window.store.db.collection('vehicles').onSnapshot((snapshot) => {
-            console.log("Realtime: Vehicles snapshot received.");
-
-            // If it's the first pull and we don't have cache, renderDashboard handles it.
-            // But we need to keep cachedVehicles in sync.
-            const newVehicles = snapshot.docs.map(doc => {
-                const data = { id: doc.id, ...doc.data() };
-                // Preserve maintenanceHistory if already cached
-                if (cachedVehicles) {
-                    const oldV = cachedVehicles.find(v => v.id === doc.id);
-                    if (oldV) data.maintenanceHistory = oldV.maintenanceHistory || [];
-                }
-                if (!data.maintenanceHistory) data.maintenanceHistory = [];
-                return data;
-            });
-
-            cachedVehicles = newVehicles;
-            sortVehiclesBySigla(cachedVehicles);
-            updateStats(cachedVehicles);
-            renderVehicleGrid(cachedVehicles);
-
-            // Update modal if open
-            if (currentOpenedVehicleId) {
-                const stillExists = cachedVehicles.find(v => v.id === currentOpenedVehicleId);
-                if (stillExists) {
-                    // Optimized: only refresh if data actually changed
-                    // For now, simple re-open
-                    openVehicleModal(currentOpenedVehicleId);
-                } else {
-                    closeVehicleModal();
-                }
-            }
+            console.log("Realtime: Vehicles snapshot received. Triggering full refresh for accurate maintenanceHistory...");
+            // Full refresh so maintenanceHistory (including km field) is always up to date
+            renderDashboard(true);
         }, err => console.error("Realtime Vehicles error:", err));
 
         // Interventions Subscription
