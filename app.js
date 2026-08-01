@@ -1,4 +1,4 @@
-const APP_VERSION = "1.9.4";
+const APP_VERSION = "1.9.5";
 let isAdmin = false;
 let cachedVehicles = null;
 let cachedLocations = null;
@@ -1559,16 +1559,55 @@ window.openVehicleModal = async function (id) {
 
                     <div style="margin-bottom: 1.5rem;">
                         <label style="font-size: 0.75rem; text-transform: uppercase; color: black; font-weight: 600; margin-bottom: 0.25rem; display: block;"><i class="fa-solid fa-clipboard-list"></i> Da Fare (sospeso)</label>
-                        <textarea id="vehicle-todo-notes-textarea"
-                            style="width: 100%; padding: 0.75rem; border: 1px solid var(--border-color); border-radius: 0.5rem; font-family: inherit; font-size: 0.95rem; resize: vertical; min-height: 80px; color: black; ${!isAdmin ? 'background-color: #f8fafc; cursor: not-allowed;' : ''}"
-                            placeholder="${isAdmin ? 'Cose da fare in sospeso...' : 'Nessuna attività in sospeso'}"
-                            ${!isAdmin ? 'readonly' : ''}
-                        >${vehicle.todo_notes || ''}</textarea>
-                        ${isAdmin ? `<div style="text-align: right; margin-top: 0.5rem;">
-                            <button class="btn btn-primary" style="padding: 0.4rem 0.8rem; font-size: 0.85rem;" onclick="saveVehicleTodoNote('${vehicle.id}', document.getElementById('vehicle-todo-notes-textarea').value)">
-                                <i class="fa-solid fa-save"></i> Salva Da Fare
-                            </button>
-                        </div>` : ''}
+                        ${(function() {
+                            if (vehicle.todo_notes && vehicle.todo_notes.trim() !== '') {
+                                return `
+                                    <div id="todo-edit-container">
+                                        <textarea id="vehicle-todo-notes-textarea"
+                                            style="width: 100%; padding: 0.75rem; border: 1px solid var(--border-color); border-radius: 0.5rem; font-family: inherit; font-size: 0.95rem; resize: vertical; min-height: 80px; color: black; ${!isAdmin ? 'background-color: #f8fafc; cursor: not-allowed;' : ''}"
+                                            placeholder="Cose da fare in sospeso..."
+                                            ${!isAdmin ? 'readonly' : ''}
+                                        >${vehicle.todo_notes}</textarea>
+                                        ${isAdmin ? `
+                                        <div style="display: flex; gap: 0.5rem; justify-content: flex-end; margin-top: 0.5rem;">
+                                            <button class="btn" style="background: #ef4444; color: white; padding: 0.4rem 0.8rem; font-size: 0.85rem;" onclick="saveVehicleTodoNote('${vehicle.id}', '')" title="Svuota Da Fare">
+                                                <i class="fa-solid fa-trash"></i>
+                                            </button>
+                                            <button class="btn btn-primary" style="padding: 0.4rem 0.8rem; font-size: 0.85rem;" onclick="saveVehicleTodoNote('${vehicle.id}', document.getElementById('vehicle-todo-notes-textarea').value)">
+                                                OK
+                                            </button>
+                                        </div>
+                                        ` : ''}
+                                    </div>
+                                `;
+                            } else {
+                                if (isAdmin) {
+                                    return `
+                                        <div id="todo-add-container">
+                                            <button class="btn" style="background: transparent; border: 1px dashed var(--border-color); color: var(--text-secondary); width: 100%; padding: 0.75rem; text-align: center; border-radius: 0.5rem;" onclick="document.getElementById('todo-add-container').style.display='none'; document.getElementById('todo-edit-container').style.display='block';">
+                                                <i class="fa-solid fa-plus"></i> Aggiungi Da Fare
+                                            </button>
+                                        </div>
+                                        <div id="todo-edit-container" style="display: none;">
+                                            <textarea id="vehicle-todo-notes-textarea"
+                                                style="width: 100%; padding: 0.75rem; border: 1px solid var(--border-color); border-radius: 0.5rem; font-family: inherit; font-size: 0.95rem; resize: vertical; min-height: 80px; color: black;"
+                                                placeholder="Cose da fare in sospeso..."
+                                            ></textarea>
+                                            <div style="display: flex; gap: 0.5rem; justify-content: flex-end; margin-top: 0.5rem;">
+                                                <button class="btn" style="background: white; border: 1px solid var(--border-color); color: var(--text-color); padding: 0.4rem 0.8rem; font-size: 0.85rem;" onclick="document.getElementById('todo-edit-container').style.display='none'; document.getElementById('todo-add-container').style.display='block'; document.getElementById('vehicle-todo-notes-textarea').value='';" title="Annulla">
+                                                    Annulla
+                                                </button>
+                                                <button class="btn btn-primary" style="padding: 0.4rem 0.8rem; font-size: 0.85rem;" onclick="saveVehicleTodoNote('${vehicle.id}', document.getElementById('vehicle-todo-notes-textarea').value)">
+                                                    OK
+                                                </button>
+                                            </div>
+                                        </div>
+                                    `;
+                                } else {
+                                    return `<div style="font-style: italic; color: var(--text-secondary); font-size: 0.85rem;">Nessuna attività in sospeso</div>`;
+                                }
+                            }
+                        })()}
                     </div>
 
                     <div style="margin-bottom: 1.5rem;">
