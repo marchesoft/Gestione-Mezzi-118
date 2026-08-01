@@ -1,4 +1,4 @@
-const APP_VERSION = "1.8.5";
+const APP_VERSION = "1.8.6";
 let isAdmin = false;
 let cachedVehicles = null;
 let cachedLocations = null;
@@ -455,13 +455,19 @@ async function renderVehicleGrid(vehicles) {
 
         // --- Badge intervallo KM manutenzione ---
         let kmIntervalBadge = '';
-        if (vehicle.maintenanceHistory && vehicle.maintenanceHistory.length > 0) {
-            const interventionsWithKm = vehicle.maintenanceHistory.filter(r => r.km && parseInt(r.km) > 0);
+        const currentMileage = parseInt(vehicle.mileage) || 0;
+        const history = vehicle.maintenanceHistory || [];
+        console.log(`[KM CHECK] ${vehicle.sigla || vehicle.plate} | mileage: ${currentMileage} | interventions: ${history.length}`);
+        if (history.length > 0) {
+            history.forEach(r => console.log(`  -> km: ${r.km} (type: ${typeof r.km}), date: ${r.date}`));
+            const interventionsWithKm = history.filter(r => r.km != null && r.km !== '' && parseInt(r.km) > 0);
+            console.log(`  -> interventions with km: ${interventionsWithKm.length}`);
             if (interventionsWithKm.length > 0) {
                 const lastMaintenanceKm = Math.max(...interventionsWithKm.map(r => parseInt(r.km)));
-                const deltaKm = (parseInt(vehicle.mileage) || 0) - lastMaintenanceKm;
+                const deltaKm = currentMileage - lastMaintenanceKm;
+                console.log(`  -> lastMaintenanceKm: ${lastMaintenanceKm} | delta: ${deltaKm}`);
                 if (deltaKm > 20000) {
-                    kmIntervalBadge = `<span class="expiry-badge danger">🔧 +${deltaKm.toLocaleString()} km senza manut.</span>`;
+                    kmIntervalBadge = `<span class="expiry-badge danger">🔧 Tagliando probabile (+${deltaKm.toLocaleString()} km)</span>`;
                 }
             }
         }
@@ -1417,24 +1423,25 @@ window.openVehicleModal = async function (id) {
                     </div>
 
                     ${(() => {
-                        if (vehicle.maintenanceHistory && vehicle.maintenanceHistory.length > 0) {
-                            const withKm = vehicle.maintenanceHistory.filter(r => r.km && parseInt(r.km) > 0);
-                            if (withKm.length > 0) {
-                                const lastKm = Math.max(...withKm.map(r => parseInt(r.km)));
-                                const delta = (parseInt(vehicle.mileage) || 0) - lastKm;
-                                if (delta > 20000) {
-                                    return `<div style="margin-bottom: 0.75rem; background: #fff3cd; border: 2px solid #f59e0b; border-radius: 0.75rem; padding: 0.75rem 1rem; display: flex; align-items: center; gap: 0.75rem;">
+                        const histModal = vehicle.maintenanceHistory || [];
+                        const withKm = histModal.filter(r => r.km != null && r.km !== '' && parseInt(r.km) > 0);
+                        console.log(`[MODAL KM] ${vehicle.sigla || vehicle.plate} | mileage: ${parseInt(vehicle.mileage)||0} | withKm records: ${withKm.length}`);
+                        if (withKm.length > 0) {
+                            const lastKm = Math.max(...withKm.map(r => parseInt(r.km)));
+                            const delta = (parseInt(vehicle.mileage) || 0) - lastKm;
+                            console.log(`[MODAL KM] lastKm: ${lastKm} | delta: ${delta}`);
+                            if (delta > 20000) {
+                                return `<div style="margin-bottom: 0.75rem; background: #fff3cd; border: 2px solid #f59e0b; border-radius: 0.75rem; padding: 0.75rem 1rem; display: flex; align-items: center; gap: 0.75rem;">
                                         <div style="background: #f59e0b; color: white; padding: 0.5rem; border-radius: 0.5rem; flex-shrink: 0;">
                                             <i class="fa-solid fa-triangle-exclamation" style="font-size: 1.1rem;"></i>
                                         </div>
                                         <div>
-                                            <div style="font-size: 0.75rem; font-weight: 800; color: #92400e; text-transform: uppercase; margin-bottom: 0.1rem;">⚠️ Intervallo Manutenzione Superato</div>
+                                            <div style="font-size: 0.75rem; font-weight: 800; color: #92400e; text-transform: uppercase; margin-bottom: 0.1rem;">🔧 Tagliando Probabile</div>
                                             <div style="font-size: 0.95rem; font-weight: 600; color: #78350f;">
                                                 <strong>+${delta.toLocaleString()} km</strong> dall'ultimo intervento registrato (a ${lastKm.toLocaleString()} km)
                                             </div>
                                         </div>
                                     </div>`;
-                                }
                             }
                         }
                         return '';
