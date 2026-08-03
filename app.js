@@ -1,4 +1,4 @@
-const APP_VERSION = "1.9.7";
+const APP_VERSION = "1.9.8";
 let isAdmin = false;
 let cachedVehicles = null;
 let cachedLocations = null;
@@ -458,19 +458,25 @@ async function renderVehicleGrid(vehicles) {
         // vs km dell'intervento più recente. Se differenza > 20.000 → avviso.
         let kmIntervalBadge = '';
         const history = vehicle.maintenanceHistory || [];
+        const currentMileage = parseInt(vehicle.mileage) || 0;
+
         if (history.length > 0) {
             const withKm = history.filter(r => r.km != null && r.km !== '' && parseInt(r.km) > 0);
-            if (withKm.length > 0) {
-                // Km più alto = intervento più recente
-                const latestKm = Math.max(...withKm.map(r => parseInt(r.km)));
-                // Ultimo tagliando = intervento con "TAGLIANDO" nella descrizione con km più alto
-                const tagliandoList = withKm.filter(r => r.description && r.description.toUpperCase().includes('TAGLIANDO'));
-                if (tagliandoList.length > 0) {
-                    const lastTagliandoKm = Math.max(...tagliandoList.map(r => parseInt(r.km)));
-                    const delta = latestKm - lastTagliandoKm;
-                    if (delta > 20000) {
-                        kmIntervalBadge = `<span class="expiry-badge danger">🔧 Tagliando probabile (+${delta.toLocaleString()} km)</span>`;
-                    }
+            const tagliandoList = withKm.filter(r => r.description && r.description.toUpperCase().includes('TAGLIANDO'));
+            
+            if (tagliandoList.length > 0) {
+                const lastTagliandoKm = Math.max(...tagliandoList.map(r => parseInt(r.km)));
+                
+                // Consideriamo il massimo tra il chilometraggio attuale e quello dell'ultimo intervento registrato
+                let maxKm = currentMileage;
+                if (withKm.length > 0) {
+                    const maxHistoryKm = Math.max(...withKm.map(r => parseInt(r.km)));
+                    maxKm = Math.max(maxKm, maxHistoryKm);
+                }
+
+                const delta = maxKm - lastTagliandoKm;
+                if (delta >= 20000) {
+                    kmIntervalBadge = `<span class="expiry-badge danger">🔧 Tagliando probabile (+${delta.toLocaleString()} km)</span>`;
                 }
             }
         }
