@@ -486,13 +486,20 @@ async function renderVehicleGrid(vehicles) {
 
         // --- Da Fare HTML ---
         let todoHtml = '';
-        if (vehicle.todo_notes && vehicle.todo_notes.trim() !== '') {
-            todoHtml = `
+        let todos = [];
+        if (Array.isArray(vehicle.todo_notes)) {
+            todos = vehicle.todo_notes;
+        } else if (vehicle.todo_notes && typeof vehicle.todo_notes === 'string' && vehicle.todo_notes.trim() !== '') {
+            todos = [vehicle.todo_notes];
+        }
+
+        if (todos.length > 0) {
+            todoHtml = todos.map((note, idx) => `
             <div class="todo-note-box" style="width: 100%; margin-bottom: 0.5rem;" onclick="event.stopPropagation()">
-                <div class="todo-text"><i class="fa-solid fa-clipboard-list" style="margin-right:4px;"></i>${vehicle.todo_notes.replace(/\n/g, '<br>')}</div>
-                ${isAdmin ? `<button class="todo-done-btn" onclick="deleteTodoNote(event, '${vehicle.id}')" title="Segna come completato"><i class="fa-solid fa-check"></i></button>` : ''}
+                <div class="todo-text"><i class="fa-solid fa-clipboard-list" style="margin-right:4px;"></i>${note.replace(/\n/g, '<br>')}</div>
+                ${isAdmin ? `<button class="todo-done-btn" onclick="deleteTodoNote(event, '${vehicle.id}', ${idx})" title="Segna come completato"><i class="fa-solid fa-check"></i></button>` : ''}
             </div>
-            `;
+            `).join('');
         }
 
         return `
@@ -601,11 +608,11 @@ window.addTodoNote = async function (event, id) {
         const idx = cachedVehicles.findIndex(v => v.id === id);
         if (idx !== -1) {
             const vehicle = cachedVehicles[idx];
-            vehicle.todo_notes = upper(note);
+            let todos = Array.isArray(vehicle.todo_notes) ? [...vehicle.todo_notes] : (vehicle.todo_notes && typeof vehicle.todo_notes === 'string' && vehicle.todo_notes.trim() !== '' ? [vehicle.todo_notes] : []);
+            todos.push(upper(note));
+            vehicle.todo_notes = todos;
 
             store.updateVehicle(vehicle).then(() => {
-                alert("Nota da fare salvata correttamente!");
-                // Refresh modal if it is open
                 const modal = document.getElementById('vehicle-modal');
                 if (modal && !modal.classList.contains('hidden')) {
                     openVehicleModal(id);
@@ -619,7 +626,7 @@ window.addTodoNote = async function (event, id) {
     }
 }
 
-window.deleteTodoNote = async function (event, id) {
+window.deleteTodoNote = async function (event, id, noteIndex) {
     event.stopPropagation();
     if (!isAdmin) return;
     if (!confirm("Hai completato questa attività? La nota verrà eliminata.")) return;
@@ -628,9 +635,21 @@ window.deleteTodoNote = async function (event, id) {
         const idx = cachedVehicles.findIndex(v => v.id === id);
         if (idx !== -1) {
             const vehicle = cachedVehicles[idx];
-            vehicle.todo_notes = '';
+            let todos = Array.isArray(vehicle.todo_notes) ? [...vehicle.todo_notes] : (vehicle.todo_notes && typeof vehicle.todo_notes === 'string' && vehicle.todo_notes.trim() !== '' ? [vehicle.todo_notes] : []);
+            
+            if (noteIndex !== undefined && noteIndex >= 0 && noteIndex < todos.length) {
+                todos.splice(noteIndex, 1);
+            } else {
+                todos = [];
+            }
+            vehicle.todo_notes = todos;
 
-            store.updateVehicle(vehicle).catch(err => {
+            store.updateVehicle(vehicle).then(() => {
+                const modal = document.getElementById('vehicle-modal');
+                if (modal && !modal.classList.contains('hidden')) {
+                    openVehicleModal(id);
+                }
+            }).catch(err => {
                 console.error("Failed to delete todo note:", err);
                 alert("Errore salvataggio nota da fare.");
             });
@@ -1582,28 +1601,34 @@ window.openVehicleModal = async function (id) {
                     <div style="margin-bottom: 1.5rem;">
                         <label style="font-size: 0.75rem; text-transform: uppercase; color: black; font-weight: 600; margin-bottom: 0.25rem; display: block;"><i class="fa-solid fa-clipboard-list"></i> Da Fare (sospeso)</label>
                         ${(function () {
-            if (vehicle.todo_notes && vehicle.todo_notes.trim() !== '') {
-                return `
-                                    <div style="background-color: white; border: 1px solid var(--border-color); border-radius: 0.5rem; padding: 0.75rem; color: black; display: flex; justify-content: space-between; align-items: flex-start; gap: 0.5rem;">
-                                        <div style="flex-grow: 1; font-size: 0.95rem; white-space: pre-wrap;">${vehicle.todo_notes}</div>
+            let todos = Array.isArray(vehicle.todo_notes) ? vehicle.todo_notes : (vehicle.todo_notes && typeof vehicle.todo_notes === 'string' && vehicle.todo_notes.trim() !== '' ? [vehicle.todo_notes] : []);
+            let html = '';
+            
+            if (todos.length > 0) {
+                html += todos.map((note, idx) => `
+                                    <div style="background-color: white; border: 1px solid var(--border-color); border-radius: 0.5rem; padding: 0.75rem; color: black; display: flex; justify-content: space-between; align-items: flex-start; gap: 0.5rem; margin-bottom: 0.5rem;">
+                                        <div style="flex-grow: 1; font-size: 0.95rem; white-space: pre-wrap;">${note}</div>
                                         ${isAdmin ? `
-                                        <button class="btn" style="background: #ef4444; color: white; padding: 0.3rem 0.6rem; font-size: 0.8rem; border-radius: 0.3rem; flex-shrink: 0;" onclick="deleteTodoNote(event, '${vehicle.id}')" title="Elimina Da Fare">
+                                        <button class="btn" style="background: #ef4444; color: white; padding: 0.3rem 0.6rem; font-size: 0.8rem; border-radius: 0.3rem; flex-shrink: 0;" onclick="deleteTodoNote(event, '${vehicle.id}', ${idx})" title="Elimina Da Fare">
                                             <i class="fa-solid fa-trash"></i>
                                         </button>
                                         ` : ''}
                                     </div>
-                                `;
+                                `).join('');
             } else {
-                if (isAdmin) {
-                    return `
-                                        <button class="btn" style="background: transparent; border: 1px dashed var(--border-color); color: var(--text-secondary); width: 100%; padding: 0.75rem; text-align: center; border-radius: 0.5rem;" onclick="addTodoNote(event, '${vehicle.id}')">
-                                            <i class="fa-solid fa-plus"></i> Aggiungi Da Fare
-                                        </button>
-                                    `;
-                } else {
-                    return `<div style="font-style: italic; color: var(--text-secondary); font-size: 0.85rem;">Nessuna attività in sospeso</div>`;
+                if (!isAdmin) {
+                    html += `<div style="font-style: italic; color: var(--text-secondary); font-size: 0.85rem;">Nessuna attività in sospeso</div>`;
                 }
             }
+            
+            if (isAdmin) {
+                html += `
+                                    <button class="btn" style="background: transparent; border: 1px dashed var(--border-color); color: var(--text-secondary); width: 100%; padding: 0.75rem; text-align: center; border-radius: 0.5rem; margin-top: 0.5rem;" onclick="addTodoNote(event, '${vehicle.id}')">
+                                        <i class="fa-solid fa-plus"></i> ${todos.length > 0 ? 'Aggiungi ulteriore nota Da Fare' : 'Aggiungi Da Fare'}
+                                    </button>
+                                `;
+            }
+            return html;
         })()}
                     </div>
 
