@@ -1,4 +1,4 @@
-const APP_VERSION = "1.9.8";
+const APP_VERSION = "1.9.9";
 let isAdmin = false;
 let cachedVehicles = null;
 let cachedLocations = null;
@@ -1498,16 +1498,25 @@ window.openVehicleModal = async function (id) {
                     </div>
 
                     ${(() => {
-            // Nuova logica: ultimo intervento con "TAGLIANDO" vs km più recente
+            // Logica: ultimo intervento con "TAGLIANDO" vs km più recente (incluso vehicle.mileage)
             const histModal = vehicle.maintenanceHistory || [];
-            const withKm = histModal.filter(r => r.km != null && r.km !== '' && parseInt(r.km) > 0);
-            if (withKm.length > 0) {
-                const latestKm = Math.max(...withKm.map(r => parseInt(r.km)));
+            const currentMileage = parseInt(vehicle.mileage) || 0;
+            
+            if (histModal.length > 0) {
+                const withKm = histModal.filter(r => r.km != null && r.km !== '' && parseInt(r.km) > 0);
                 const tagliandoList = withKm.filter(r => r.description && r.description.toUpperCase().includes('TAGLIANDO'));
+                
                 if (tagliandoList.length > 0) {
                     const lastTagliandoKm = Math.max(...tagliandoList.map(r => parseInt(r.km)));
-                    const delta = latestKm - lastTagliandoKm;
-                    if (delta > 20000) {
+                    
+                    let maxKm = currentMileage;
+                    if (withKm.length > 0) {
+                        const maxHistoryKm = Math.max(...withKm.map(r => parseInt(r.km)));
+                        maxKm = Math.max(maxKm, maxHistoryKm);
+                    }
+                    
+                    const delta = maxKm - lastTagliandoKm;
+                    if (delta >= 20000) {
                         return `<div style="margin-bottom: 0.75rem; background: #fff3cd; border: 2px solid #f59e0b; border-radius: 0.75rem; padding: 0.75rem 1rem; display: flex; align-items: center; gap: 0.75rem;">
                                             <div style="background: #f59e0b; color: white; padding: 0.5rem; border-radius: 0.5rem; flex-shrink: 0;">
                                                 <i class="fa-solid fa-triangle-exclamation" style="font-size: 1.1rem;"></i>
