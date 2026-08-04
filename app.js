@@ -348,14 +348,15 @@ async function renderVehicleGrid(vehicles) {
         const isToday = vehicle.appointment_date === todayStr;
         const isTomorrow = vehicle.appointment_date === tomorrowStr;
         const alreadyAcked = vehicle.alert_ack_date === todayStr;
+        const tempDismissed = window.dismissedAlerts && window.dismissedAlerts.has(vehicle.id);
 
-        const showOverlay = (isToday || isTomorrow) && !alreadyAcked;
+        const showOverlay = (isToday || isTomorrow) && !alreadyAcked && !tempDismissed;
         if (showOverlay) {
             alertHTML = `
-                <div class="appointment-alert-overlay">
+                <div class="appointment-alert-overlay" id="alert-overlay-${vehicle.id}">
                     <div class="alert-title">${isToday ? 'OGGI' : 'DOMANI'} APPUNTAMENTO</div>
                     <div class="alert-subtitle">${vehicle.appointment_location || 'Luogo non specificato'}</div>
-                    <button class="alert-ack-btn" onclick="acknowledgeAppointmentAlert(event, '${vehicle.id}')">PRESA VISIONE</button>
+                    <button class="alert-ack-btn" onclick="dismissAlert(event, '${vehicle.id}')">PRESA VISIONE</button>
                 </div>
             `;
         }
@@ -509,16 +510,8 @@ async function renderVehicleGrid(vehicles) {
             `).join('');
         }
 
-        // Mostra pulsante presa visione solo se la nota contiene un appuntamento (senza overlay attivo)
-        const hasApptNote = !showOverlay && !!vehicle.appointment_date && !!mobileNotesContent;
-        const noteHidden = window.dismissedNotes && window.dismissedNotes.has(vehicle.id);
-        const mobileNoteHtml = (mobileNotesContent && !(hasApptNote && noteHidden))
-            ? `<div class="mobile-notes" id="mobile-note-${vehicle.id}">
-                ${mobileNotesContent.replace(/\n/g, '<br>')}
-                ${hasApptNote ? `<button class="note-dismiss-btn" onclick="event.stopPropagation(); dismissNote('${vehicle.id}')" title="Presa visione">
-                    ✓ Presa visione
-                </button>` : ''}
-               </div>`
+        const mobileNoteHtml = mobileNotesContent
+            ? `<div class="mobile-notes">${mobileNotesContent.replace(/\n/g, '<br>')}</div>`
             : '';
 
         return `
@@ -645,18 +638,26 @@ window.addTodoNote = async function (event, id) {
     }
 }
 
-// Inizializza il Set delle note già prese in visione (si resetta al riavvio)
-if (!window.dismissedNotes) {
-    window.dismissedNotes = new Set();
+// Set degli overlay chiusi temporaneamente (si resetta al riavvio)
+if (!window.dismissedAlerts) {
+    window.dismissedAlerts = new Set();
 }
 
-window.dismissNote = function (vehicleId) {
-    window.dismissedNotes.add(vehicleId);
-    const el = document.getElementById('mobile-note-' + vehicleId);
+window.dismissAlert = function (event, vehicleId) {
+    if (event) {
+        event.stopPropagation();
+        event.preventDefault();
+    }
+    window.dismissedAlerts.add(vehicleId);
+    const el = document.getElementById('alert-overlay-' + vehicleId);
     if (el) {
-        el.style.transition = 'opacity 0.3s ease';
+        el.style.transition = 'opacity 0.25s ease';
         el.style.opacity = '0';
-        setTimeout(() => el.remove(), 300);
+        setTimeout(() => {
+            el.remove();
+            const card = document.querySelector(`.vehicle-card[data-id="${vehicleId}"]`);
+            if (card) card.classList.remove('has-alert');
+        }, 250);
     }
 };
 
