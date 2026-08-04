@@ -509,13 +509,15 @@ async function renderVehicleGrid(vehicles) {
             `).join('');
         }
 
+        // Mostra pulsante presa visione solo se la nota contiene un appuntamento (senza overlay attivo)
+        const hasApptNote = !showOverlay && !!vehicle.appointment_date && !!mobileNotesContent;
         const noteHidden = window.dismissedNotes && window.dismissedNotes.has(vehicle.id);
-        const mobileNoteHtml = (mobileNotesContent && !noteHidden)
+        const mobileNoteHtml = (mobileNotesContent && !(hasApptNote && noteHidden))
             ? `<div class="mobile-notes" id="mobile-note-${vehicle.id}">
                 ${mobileNotesContent.replace(/\n/g, '<br>')}
-                <button class="note-dismiss-btn" onclick="event.stopPropagation(); dismissNote('${vehicle.id}')" title="Presa visione">
+                ${hasApptNote ? `<button class="note-dismiss-btn" onclick="event.stopPropagation(); dismissNote('${vehicle.id}')" title="Presa visione">
                     ✓ Presa visione
-                </button>
+                </button>` : ''}
                </div>`
             : '';
 
