@@ -509,6 +509,16 @@ async function renderVehicleGrid(vehicles) {
             `).join('');
         }
 
+        const noteHidden = window.dismissedNotes && window.dismissedNotes.has(vehicle.id);
+        const mobileNoteHtml = (mobileNotesContent && !noteHidden)
+            ? `<div class="mobile-notes" id="mobile-note-${vehicle.id}">
+                ${mobileNotesContent.replace(/\n/g, '<br>')}
+                <button class="note-dismiss-btn" onclick="event.stopPropagation(); dismissNote('${vehicle.id}')" title="Presa visione">
+                    ✓ Presa visione
+                </button>
+               </div>`
+            : '';
+
         return `
             <div class="vehicle-card border-${vehicle.status}${showOverlay ? ' has-alert' : ''}" 
                  data-id="${vehicle.id}" 
@@ -533,7 +543,7 @@ async function renderVehicleGrid(vehicles) {
                     </div>
                     <div class="card-actions" style="justify-content: center; flex-direction: column; align-items: center;">
                         ${locationHtml}
-                        ${mobileNotesContent ? `<div class="mobile-notes">${mobileNotesContent.replace(/\n/g, '<br>')}</div>` : ''}
+                        ${mobileNoteHtml}
                         ${expiryBadgesHtml}
                     </div>
                 </div>
@@ -632,6 +642,21 @@ window.addTodoNote = async function (event, id) {
         }
     }
 }
+
+// Inizializza il Set delle note già prese in visione (si resetta al riavvio)
+if (!window.dismissedNotes) {
+    window.dismissedNotes = new Set();
+}
+
+window.dismissNote = function (vehicleId) {
+    window.dismissedNotes.add(vehicleId);
+    const el = document.getElementById('mobile-note-' + vehicleId);
+    if (el) {
+        el.style.transition = 'opacity 0.3s ease';
+        el.style.opacity = '0';
+        setTimeout(() => el.remove(), 300);
+    }
+};
 
 window.deleteTodoNote = async function (event, id, noteIndex) {
     event.stopPropagation();

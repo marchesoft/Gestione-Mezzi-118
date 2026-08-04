@@ -1616,6 +1616,25 @@ body.is-admin #admin-hint-text {
     white-space: normal;
 }
 
+.note-dismiss-btn {
+    display: block;
+    margin: 0.4rem auto 0;
+    padding: 0.2rem 0.6rem;
+    font-size: 0.72rem;
+    font-weight: 700;
+    background-color: #0f172a;
+    color: #ffeb3b;
+    border: none;
+    border-radius: 0.3rem;
+    cursor: pointer;
+    letter-spacing: 0.03em;
+    transition: background-color 0.2s;
+}
+
+.note-dismiss-btn:hover {
+    background-color: #1e293b;
+}
+
 @media (max-width: 768px) {
     .header-container {
         flex-direction: column;
