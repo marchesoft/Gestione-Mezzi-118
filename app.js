@@ -347,10 +347,9 @@ async function renderVehicleGrid(vehicles) {
         let alertHTML = '';
         const isToday = vehicle.appointment_date === todayStr;
         const isTomorrow = vehicle.appointment_date === tomorrowStr;
-        const alreadyAcked = vehicle.alert_ack_date === todayStr;
         const tempDismissed = window.dismissedAlerts && window.dismissedAlerts.has(vehicle.id);
 
-        const showOverlay = (isToday || isTomorrow) && !alreadyAcked && !tempDismissed;
+        const showOverlay = (isToday || isTomorrow) && !tempDismissed;
         if (showOverlay) {
             alertHTML = `
                 <div class="appointment-alert-overlay" id="alert-overlay-${vehicle.id}">
