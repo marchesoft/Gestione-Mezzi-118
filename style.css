@@ -1205,6 +1205,18 @@ body.is-admin #admin-hint-text {
     margin-top: 0.5rem;
 }
 
+.brand-credits {
+    position: absolute;
+    right: 12px;
+    bottom: 6px;
+    color: rgba(255, 255, 0, 0.8);
+    font-size: 0.75rem;
+    font-weight: 600;
+    font-style: italic;
+    letter-spacing: 0.05em;
+    pointer-events: none;
+}
+
 .btn-refresh {
     background: transparent;
     border: 1px solid #e2e8f0;
@@ -1697,6 +1709,12 @@ body.is-admin #admin-hint-text {
         white-space: normal;
         font-size: 1.3rem;
         line-height: 1.2;
+    }
+
+    .brand-credits {
+        font-size: 0.65rem;
+        right: 8px;
+        bottom: 3px;
     }
 
     .action-buttons {
