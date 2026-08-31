@@ -75,10 +75,10 @@ input[type="date"] {
     transform: translateY(-50%);
     width: 14px;
     height: 14px;
-    background-color: #2dd4bf; /* Light Aqua/Teal */
+    background-color: #ffffff; /* White */
     border-radius: 50%;
     border: 2px solid white;
-    filter: drop-shadow(0 0 6px #2dd4bf);
+    filter: drop-shadow(0 0 6px #ffffff);
     z-index: 5;
 }
 

@@ -1,4 +1,4 @@
-const APP_VERSION = "2.2.2";
+const APP_VERSION = "2.2.3";
 let isAdmin = false;
 let cachedVehicles = null;
 let cachedLocations = null;
@@ -500,9 +500,9 @@ async function renderVehicleGrid(vehicles) {
         let todoHtml = '';
         let todos = [];
         if (Array.isArray(vehicle.todo_notes)) {
-            todos = vehicle.todo_notes;
+            todos = vehicle.todo_notes.flatMap(note => (note || '').toString().split('\n').map(s => s.trim()).filter(s => s !== ''));
         } else if (vehicle.todo_notes && typeof vehicle.todo_notes === 'string' && vehicle.todo_notes.trim() !== '') {
-            todos = [vehicle.todo_notes];
+            todos = vehicle.todo_notes.split('\n').map(s => s.trim()).filter(s => s !== '');
         }
 
         if (todos.length > 0) {
@@ -862,7 +862,8 @@ window.openVehicleForm = async function (vehicleId = null) {
             document.getElementById('vehicle-type').value = vehicle.type;
             document.getElementById('vehicle-notes').value = vehicle.notes || '';
             if (document.getElementById('vehicle-todo-notes')) {
-                document.getElementById('vehicle-todo-notes').value = vehicle.todo_notes || '';
+                const todoVal = Array.isArray(vehicle.todo_notes) ? vehicle.todo_notes.join('\n') : (vehicle.todo_notes || '');
+                document.getElementById('vehicle-todo-notes').value = todoVal;
             }
         }
     } else {
@@ -1430,7 +1431,8 @@ window.saveVehicleForm = async function () {
     const revision_o2 = document.getElementById('vehicle-revision-o2').value;
     const notes = document.getElementById('vehicle-notes').value;
     const todoNotesEl = document.getElementById('vehicle-todo-notes');
-    const todo_notes = todoNotesEl ? todoNotesEl.value : '';
+    const todo_notes_raw = todoNotesEl ? todoNotesEl.value : '';
+    const todo_notes = todo_notes_raw.split('\n').map(s => s.trim()).map(upper).filter(s => s !== '');
 
     const vehicleData = {
         model: upper(model),
@@ -1446,7 +1448,7 @@ window.saveVehicleForm = async function () {
         inspection_expiry: inspection_expiry || null,
         revision_o2: revision_o2 || null,
         notes: upper(notes),
-        todo_notes: upper(todo_notes)
+        todo_notes: todo_notes
     };
 
     if (id) {
@@ -1693,7 +1695,12 @@ window.openVehicleModal = async function (id) {
                             <i class="fa-solid fa-clipboard-list" style="font-size: 1rem;"></i> Segna le cose da fare
                         </div>
                         ${(function () {
-                            let todos = Array.isArray(vehicle.todo_notes) ? vehicle.todo_notes : (vehicle.todo_notes && typeof vehicle.todo_notes === 'string' && vehicle.todo_notes.trim() !== '' ? [vehicle.todo_notes] : []);
+                            let todos = [];
+                            if (Array.isArray(vehicle.todo_notes)) {
+                                todos = vehicle.todo_notes.flatMap(note => (note || '').toString().split('\n').map(s => s.trim()).filter(s => s !== ''));
+                            } else if (vehicle.todo_notes && typeof vehicle.todo_notes === 'string' && vehicle.todo_notes.trim() !== '') {
+                                todos = vehicle.todo_notes.split('\n').map(s => s.trim()).filter(s => s !== '');
+                            }
                             let html = '';
                             
                             if (todos.length > 0) {
