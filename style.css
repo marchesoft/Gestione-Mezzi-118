@@ -78,6 +78,7 @@ input[type="date"] {
     background-color: #a3e635; /* Light Lime/Green */
     border-radius: 50%;
     border: 2px solid white;
+    box-shadow: 0 0 8px rgba(163, 230, 53, 0.9), 0 0 3px rgba(255, 255, 255, 0.8);
     z-index: 5;
 }
 
