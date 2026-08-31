@@ -75,10 +75,9 @@ input[type="date"] {
     transform: translateY(-50%);
     width: 14px;
     height: 14px;
-    background-color: #a3e635; /* Light Lime/Green */
+    background-color: #ffcc00; /* Yellow */
     border-radius: 50%;
     border: 2px solid white;
-    box-shadow: 0 0 8px rgba(163, 230, 53, 0.9), 0 0 3px rgba(255, 255, 255, 0.8);
     z-index: 5;
 }
 
