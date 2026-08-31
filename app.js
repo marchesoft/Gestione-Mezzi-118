@@ -1,4 +1,4 @@
-const APP_VERSION = "2.1.1";
+const APP_VERSION = "2.2.0";
 let isAdmin = false;
 let cachedVehicles = null;
 let cachedLocations = null;
@@ -1647,7 +1647,7 @@ window.openVehicleModal = async function (id) {
                     </div>
 
                     <div class="monthly-check-block" style="margin-bottom: 1rem; background: #f0fdfa; padding: 1rem; border: 2px solid #2dd4bf; border-radius: 0.75rem;">
-                        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.75rem;">
+                        <div style="display: flex; align-items: center; justify-content: space-between;">
                             <div style="display: flex; align-items: center; gap: 0.75rem;">
                                 <div style="background: #2dd4bf; color: white; padding: 0.5rem; border-radius: 0.5rem; display: flex; align-items: center; justify-content: center;">
                                     <i class="fa-solid fa-circle-check" style="font-size: 1.2rem;"></i>
@@ -1683,27 +1683,6 @@ window.openVehicleModal = async function (id) {
                                     </div>
                                     <input type="text" id="admin-monthly-check-notes" placeholder="Note controllo (es. OK, fari regolati...)" 
                                            style="padding: 0.4rem; border: 1px solid #2dd4bf; border-radius: 0.4rem; font-size: 0.9rem; width: 100%; color: black; background-color: white;">
-                                </div>
-                            </div>
-                        ` : ''}
-
-                        ${vehicle.monthly_checks && vehicle.monthly_checks.length > 0 ? `
-                            <div style="margin-top: 0.75rem; border-top: 1px solid #99f6e4; padding-top: 0.75rem;">
-                                <div style="font-size: 0.75rem; font-weight: 700; color: #0f766e; margin-bottom: 0.4rem; text-transform: uppercase;">Storico Controlli Mensili</div>
-                                <div style="max-height: 120px; overflow-y: auto; display: flex; flex-direction: column; gap: 0.4rem; background: white; padding: 0.5rem; border-radius: 0.5rem; border: 1px solid #99f6e4;">
-                                    ${vehicle.monthly_checks.map((check, idx) => `
-                                        <div style="font-size: 0.85rem; display: flex; justify-content: space-between; align-items: flex-start; gap: 0.5rem; padding-bottom: 0.25rem; border-bottom: 1px solid #f0fdfa;">
-                                            <div>
-                                                <strong>${formatDate(check.date)}</strong>
-                                                ${check.notes ? `<span style="color: #4b5563; margin-left: 0.5rem;">- ${check.notes}</span>` : ''}
-                                            </div>
-                                            ${isAdmin ? `
-                                                <button onclick="deleteMonthlyCheck(event, '${vehicle.id}', ${idx})" style="background: transparent; border: none; color: #ef4444; cursor: pointer; font-size: 0.75rem; padding: 0 0.25rem;" title="Elimina">
-                                                    <i class="fa-solid fa-trash"></i>
-                                                </button>
-                                            ` : ''}
-                                        </div>
-                                    `).join('')}
                                 </div>
                             </div>
                         ` : ''}
@@ -1978,23 +1957,25 @@ window.saveMonthlyCheck = async function (id, date, notes) {
     }
 }
 
-window.deleteMonthlyCheck = async function (event, id, index) {
-    if (event) {
-        event.stopPropagation();
-        event.preventDefault();
-    }
+window.deleteMonthlyCheckFromDb = async function (id, date, notes) {
     if (!confirm("Eliminare questa registrazione di controllo?")) return;
     try {
         const vehicle = await store.getVehicleById(id);
         if (vehicle && vehicle.monthly_checks) {
-            vehicle.monthly_checks.splice(index, 1);
-            await store.updateVehicle(vehicle);
-            openVehicleModal(id);
-            renderDashboard(true);
+            const idx = vehicle.monthly_checks.findIndex(c => c.date === date && c.notes === notes);
+            if (idx !== -1) {
+                vehicle.monthly_checks.splice(idx, 1);
+                await store.updateVehicle(vehicle);
+                alert("Controllo eliminato.");
+                switchDataTable('controlli');
+                renderDashboard(true);
+            } else {
+                alert("Controllo non trovato nel database.");
+            }
         }
-    } catch (error) {
-        console.error("Error deleting monthly check:", error);
-        alert("Errore durante l'eliminazione del controllo mensile.");
+    } catch (e) {
+        console.error("Error deleting monthly check:", e);
+        alert("Errore durante l'eliminazione del controllo.");
     }
 }
 
@@ -2082,7 +2063,8 @@ window.exportCurrentTableToCSV = async function () {
             'locations': 'Luoghi',
             'interventions': 'Interventi',
             'cambiomezzo': 'Cambi_Mezzi',
-            'contacts': 'Rubrica'
+            'contacts': 'Rubrica',
+            'controlli': 'Controlli_Mensili'
         };
         const friendlyName = tableNames[type] || type;
         const now = new Date();
@@ -2098,6 +2080,25 @@ window.exportCurrentTableToCSV = async function () {
         else if (type === 'interventions') data = await store.getInterventions();
         else if (type === 'cambiomezzo') data = await store.getCambiMezzi();
         else if (type === 'contacts') data = await store.getContacts();
+        else if (type === 'controlli') {
+            const vehicles = await store.getVehicles();
+            data = [];
+            vehicles.forEach(v => {
+                if (v.monthly_checks && Array.isArray(v.monthly_checks)) {
+                    v.monthly_checks.forEach(check => {
+                        data.push({
+                            vehicle_id: v.id,
+                            sigla: v.sigla || '-',
+                            plate: v.plate || '-',
+                            model: v.model || '-',
+                            date: check.date,
+                            notes: check.notes
+                        });
+                    });
+                }
+            });
+            data.sort((a, b) => new Date(b.date) - new Date(a.date));
+        }
 
         if (!data || data.length === 0) {
             alert("Nessun dato da esportare.");
@@ -2127,6 +2128,10 @@ window.exportCurrentTableToCSV = async function () {
         } else if (type === 'contacts') {
             headers = ['id', 'category', 'name', 'urban', 'mobile', 'mobile2', 'mobile_medical'];
             const italianHeaders = ['ID (Non modificare)', 'Categoria', 'Nome/Sigla', 'Fisso', 'Cellulare 1', 'Cellulare 2', 'Cell. Medico'];
+            csvRows.push(italianHeaders.join(';'));
+        } else if (type === 'controlli') {
+            headers = ['vehicle_id', 'sigla', 'plate', 'model', 'date', 'notes'];
+            const italianHeaders = ['ID Veicolo', 'Sigla', 'Targa', 'Modello', 'Data Controllo', 'Note'];
             csvRows.push(italianHeaders.join(';'));
         } else {
             headers = Object.keys(data[0]);
@@ -2620,6 +2625,61 @@ window.switchDataTable = async function (type) {
                         + `<button onclick="if(confirm('Eliminare questo contatto?')){store.deleteContact('${c.id}').then(() => switchDataTable('contacts'))}" style="cursor:pointer;background:none;border:none;color:var(--status-to-repair);" title="Elimina"><i class="fa-solid fa-trash"></i></button>`
                         + '</td>' : '') + '</tr>';
             }).join('')}
+                        </tbody>
+                    </table>
+                </div>`;
+        } else if (type === 'controlli') {
+            const vehicles = await store.getVehicles();
+            data = [];
+            vehicles.forEach(v => {
+                if (v.monthly_checks && Array.isArray(v.monthly_checks)) {
+                    v.monthly_checks.forEach(check => {
+                        data.push({
+                            vehicle_id: v.id,
+                            sigla: v.sigla || '-',
+                            plate: v.plate || '-',
+                            model: v.model || '-',
+                            date: check.date,
+                            notes: check.notes
+                        });
+                    });
+                }
+            });
+            data.sort((a, b) => new Date(b.date) - new Date(a.date));
+
+            html = `
+                <div style="margin-bottom: 1.5rem; background: #f8fafc; padding: 1rem; border-radius: 0.75rem; border: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; gap: 1rem;">
+                    <h4 style="font-size: 0.9rem;">Storico Controlli Mensili</h4>
+                    ${isAdmin ? `
+                    <div style="display: flex; gap: 0.5rem; align-items: center;">
+                        <button class="btn btn-export" onclick="exportCurrentTableToCSV()" style="white-space: nowrap;">
+                            <i class="fa-solid fa-file-excel"></i> Esporta Excel
+                        </button>
+                    </div>
+                    ` : ''}
+                </div>
+                <div style="overflow-x: auto;">
+                    <table class="mgmt-table">
+                        <thead>
+                            <tr>
+                                <th class="col-shrink">Mezzo (Sigla)</th>
+                                <th class="col-shrink">Targa</th>
+                                <th class="col-shrink">Data Controllo</th>
+                                <th class="col-expand">Note</th>
+                                ${isAdmin ? '<th class="col-actions">Azioni</th>' : ''}
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${data.map(c => 
+                                '<tr>'
+                                + `<td class="col-shrink text-bold text-primary">${c.sigla}</td>`
+                                + `<td class="col-shrink">${c.plate}</td>`
+                                + `<td class="col-shrink">${formatDate(c.date)}</td>`
+                                + `<td class="col-expand">${c.notes || '-'}</td>`
+                                + (isAdmin ? `<td class="col-actions">`
+                                    + `<button onclick="deleteMonthlyCheckFromDb('${c.vehicle_id}', '${c.date}', \`${(c.notes || '').replace(/`/g, '\\`').replace(/\$/g, '\\$')}\`)" style="cursor:pointer; background:none; border:none; color:var(--status-to-repair);" title="Elimina"><i class="fa-solid fa-trash"></i></button>`
+                                    + '</td>' : '') + '</tr>'
+                            ).join('')}
                         </tbody>
                     </table>
                 </div>`;
