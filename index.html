@@ -25,7 +25,7 @@
     <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <!-- App Styles -->
-    <link rel="stylesheet" href="style.css?v=2.2.0">
+    <link rel="stylesheet" href="style.css?v=2.2.1">
 </head>
 
 <body>
@@ -52,7 +52,7 @@
                     <div class="section-header" style="margin-bottom: 0;">
                         <h3 style="margin: 0; white-space: nowrap;">VEICOLI IN GESTIONE <span id="app-version-display"
                                 style="font-size: 0.8rem; font-weight: 400; opacity: 0.8; margin-left: 0.5rem; vertical-align: middle; text-transform: none;">v
-                                2.2.0</span></h3>
+                                2.2.1</span></h3>
                     </div>
                     <div class="action-buttons">
 
@@ -504,6 +504,34 @@
             </div>
         </div>
 
+        <!-- Monthly Check Edit Modal -->
+        <div id="monthly-check-edit-modal" class="modal hidden">
+            <div class="modal-content" style="max-width: 400px; height: auto;">
+                <div style="padding: 1.5rem; border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center;">
+                    <h3 style="font-size: 1.25rem; font-weight: 600; color: #0f766e;">Modifica Controllo Mensile</h3>
+                    <span onclick="document.getElementById('monthly-check-edit-modal').classList.add('hidden')"
+                        style="font-size: 1.5rem; cursor: pointer;">&times;</span>
+                </div>
+                <div style="padding: 1.5rem;">
+                    <input type="hidden" id="edit-check-vehicle-id">
+                    <input type="hidden" id="edit-check-original-date">
+                    <input type="hidden" id="edit-check-original-notes">
+                    
+                    <div class="form-group" style="margin-bottom: 1rem;">
+                        <label style="display: block; margin-bottom: 0.5rem; font-weight: 500;">Data Controllo</label>
+                        <input type="date" id="edit-check-date" required
+                            style="width: 100%; padding: 0.6rem; border: 1px solid var(--border-color); border-radius: 0.5rem; color-scheme: light; background-color: white; color: black;">
+                    </div>
+                    <div class="form-group" style="margin-bottom: 1rem;">
+                        <label style="display: block; margin-bottom: 0.5rem; font-weight: 500;">Note</label>
+                        <input type="text" id="edit-check-notes"
+                            style="width: 100%; padding: 0.6rem; border: 1px solid var(--border-color); border-radius: 0.5rem; color: black; background-color: white;">
+                    </div>
+                    <button class="btn btn-primary" onclick="saveEditedMonthlyCheck()" style="width: 100%; background-color: #14b8a6; border-color: #14b8a6;">Salva Modifiche</button>
+                </div>
+            </div>
+        </div>
+
         <!-- Admin Login Modal -->
         <div id="admin-login-modal" class="modal hidden">
             <div class="modal-content" style="max-width: 400px; height: auto;">
@@ -678,7 +706,7 @@
     <script src="firebase-config.js"></script>
 
     <script src="store.js?v=2.0"></script>
-    <script src="app.js?v=2.2.0"></script>
+    <script src="app.js?v=2.2.1"></script>
 </body>
 
 </html>

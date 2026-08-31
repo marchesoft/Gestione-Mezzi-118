@@ -1,4 +1,4 @@
-const APP_VERSION = "2.2.0";
+const APP_VERSION = "2.2.1";
 let isAdmin = false;
 let cachedVehicles = null;
 let cachedLocations = null;
@@ -1979,6 +1979,56 @@ window.deleteMonthlyCheckFromDb = async function (id, date, notes) {
     }
 }
 
+window.openEditMonthlyCheckModal = function (vehicleId, date, notes) {
+    document.getElementById('edit-check-vehicle-id').value = vehicleId;
+    document.getElementById('edit-check-original-date').value = date;
+    document.getElementById('edit-check-original-notes').value = notes;
+    
+    document.getElementById('edit-check-date').value = date;
+    document.getElementById('edit-check-notes').value = notes;
+    
+    document.getElementById('monthly-check-edit-modal').classList.remove('hidden');
+}
+
+window.saveEditedMonthlyCheck = async function () {
+    const vehicleId = document.getElementById('edit-check-vehicle-id').value;
+    const origDate = document.getElementById('edit-check-original-date').value;
+    const origNotes = document.getElementById('edit-check-original-notes').value;
+    
+    const newDate = document.getElementById('edit-check-date').value;
+    const newNotes = (document.getElementById('edit-check-notes').value || '').trim();
+    
+    if (!newDate) {
+        alert("La data è obbligatoria.");
+        return;
+    }
+    
+    try {
+        const vehicle = await store.getVehicleById(vehicleId);
+        if (vehicle && vehicle.monthly_checks) {
+            const idx = vehicle.monthly_checks.findIndex(c => c.date === origDate && c.notes === origNotes);
+            if (idx !== -1) {
+                vehicle.monthly_checks[idx] = {
+                    date: newDate,
+                    notes: newNotes
+                };
+                vehicle.monthly_checks.sort((a, b) => new Date(b.date) - new Date(a.date));
+                
+                await store.updateVehicle(vehicle);
+                alert("Controllo modificato con successo.");
+                document.getElementById('monthly-check-edit-modal').classList.add('hidden');
+                switchDataTable('controlli');
+                renderDashboard(true);
+            } else {
+                alert("Controllo originale non trovato.");
+            }
+        }
+    } catch (e) {
+        console.error("Error editing monthly check:", e);
+        alert("Errore durante il salvataggio delle modifiche.");
+    }
+}
+
 window.acknowledgeAppointmentAlert = async function (event, id) {
     if (event) {
         event.stopPropagation();
@@ -2677,6 +2727,7 @@ window.switchDataTable = async function (type) {
                                 + `<td class="col-shrink">${formatDate(c.date)}</td>`
                                 + `<td class="col-expand">${c.notes || '-'}</td>`
                                 + (isAdmin ? `<td class="col-actions">`
+                                    + `<button onclick="openEditMonthlyCheckModal('${c.vehicle_id}', '${c.date}', \`${(c.notes || '').replace(/`/g, '\\`').replace(/\$/g, '\\$')}\`)" style="cursor:pointer; background:none; border:none; color:var(--primary-color); margin-right:0.5rem;" title="Modifica"><i class="fa-solid fa-pen"></i></button>`
                                     + `<button onclick="deleteMonthlyCheckFromDb('${c.vehicle_id}', '${c.date}', \`${(c.notes || '').replace(/`/g, '\\`').replace(/\$/g, '\\$')}\`)" style="cursor:pointer; background:none; border:none; color:var(--status-to-repair);" title="Elimina"><i class="fa-solid fa-trash"></i></button>`
                                     + '</td>' : '') + '</tr>'
                             ).join('')}
