@@ -1,4 +1,4 @@
-const APP_VERSION = "2.2.1";
+const APP_VERSION = "2.2.2";
 let isAdmin = false;
 let cachedVehicles = null;
 let cachedLocations = null;
@@ -1688,38 +1688,40 @@ window.openVehicleModal = async function (id) {
                         ` : ''}
                     </div>
 
-                    <div style="margin-bottom: 1.5rem;">
-                        <label style="font-size: 0.75rem; text-transform: uppercase; color: black; font-weight: 600; margin-bottom: 0.25rem; display: block;"><i class="fa-solid fa-clipboard-list"></i> Da Fare (sospeso)</label>
+                    <div class="todo-block" style="margin-bottom: 1rem; background: #f8fafc; padding: 1rem; border: 2px solid #94a3b8; border-radius: 0.75rem;">
+                        <div style="font-size: 0.75rem; text-transform: uppercase; color: #475569; font-weight: 800; margin-bottom: 0.75rem; display: flex; align-items: center; gap: 0.5rem;">
+                            <i class="fa-solid fa-clipboard-list" style="font-size: 1rem;"></i> Segna le cose da fare
+                        </div>
                         ${(function () {
-            let todos = Array.isArray(vehicle.todo_notes) ? vehicle.todo_notes : (vehicle.todo_notes && typeof vehicle.todo_notes === 'string' && vehicle.todo_notes.trim() !== '' ? [vehicle.todo_notes] : []);
-            let html = '';
-            
-            if (todos.length > 0) {
-                html += todos.map((note, idx) => `
-                                    <div style="background-color: white; border: 1px solid var(--border-color); border-radius: 0.5rem; padding: 0.75rem; color: black; display: flex; justify-content: space-between; align-items: flex-start; gap: 0.5rem; margin-bottom: 0.5rem;">
+                            let todos = Array.isArray(vehicle.todo_notes) ? vehicle.todo_notes : (vehicle.todo_notes && typeof vehicle.todo_notes === 'string' && vehicle.todo_notes.trim() !== '' ? [vehicle.todo_notes] : []);
+                            let html = '';
+                            
+                            if (todos.length > 0) {
+                                html += '<div style="display: flex; flex-direction: column; gap: 0.5rem;">';
+                                html += todos.map((note, idx) => `
+                                    <div style="background-color: white; border: 1px solid var(--border-color); border-radius: 0.5rem; padding: 0.75rem; color: black; display: flex; justify-content: space-between; align-items: flex-start; gap: 0.5rem;">
                                         <div style="flex-grow: 1; font-size: 0.95rem; white-space: pre-wrap;">${note}</div>
                                         ${isAdmin ? `
-                                        <button class="btn" style="background: #ef4444; color: white; padding: 0.3rem 0.6rem; font-size: 0.8rem; border-radius: 0.3rem; flex-shrink: 0;" onclick="deleteTodoNote(event, '${vehicle.id}', ${idx})" title="Elimina Da Fare">
+                                        <button class="btn" style="background: #ef4444; color: white; padding: 0.3rem 0.6rem; font-size: 0.8rem; border-radius: 0.3rem; flex-shrink: 0;" onclick="deleteTodoNote(event, '${vehicle.id}', ${idx})" title="Elimina">
                                             <i class="fa-solid fa-trash"></i>
                                         </button>
                                         ` : ''}
                                     </div>
                                 `).join('');
-            } else {
-                if (!isAdmin) {
-                    html += `<div style="font-style: italic; color: var(--text-secondary); font-size: 0.85rem;">Nessuna attività in sospeso</div>`;
-                }
-            }
-            
-            if (isAdmin) {
-                html += `
-                                    <button class="btn" style="background: transparent; border: 1px dashed var(--border-color); color: var(--text-secondary); width: 100%; padding: 0.75rem; text-align: center; border-radius: 0.5rem; margin-top: 0.5rem;" onclick="addTodoNote(event, '${vehicle.id}')">
-                                        <i class="fa-solid fa-plus"></i> ${todos.length > 0 ? 'Aggiungi ulteriore nota Da Fare' : 'Aggiungi Da Fare'}
+                                html += '</div>';
+                            } else {
+                                html += `<div style="font-style: italic; color: var(--text-secondary); font-size: 0.85rem;">Nessuna attività da fare</div>`;
+                            }
+                            
+                            if (isAdmin) {
+                                html += `
+                                    <button class="btn" style="background: transparent; border: 1px dashed #94a3b8; color: #475569; width: 100%; padding: 0.75rem; text-align: center; border-radius: 0.5rem; margin-top: 0.75rem;" onclick="addTodoNote(event, '${vehicle.id}')">
+                                        <i class="fa-solid fa-plus"></i> ${todos.length > 0 ? 'Aggiungi ulteriore attività' : 'Aggiungi attività'}
                                     </button>
                                 `;
-            }
-            return html;
-        })()}
+                            }
+                            return html;
+                        })()}
                     </div>
 
                     <div style="margin-bottom: 1.5rem;">
