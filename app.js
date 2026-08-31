@@ -1,4 +1,4 @@
-const APP_VERSION = "2.1.0";
+const APP_VERSION = "2.1.1";
 let isAdmin = false;
 let cachedVehicles = null;
 let cachedLocations = null;
@@ -1646,15 +1646,15 @@ window.openVehicleModal = async function (id) {
                         ` : ''}
                     </div>
 
-                    <div class="monthly-check-block" style="margin-bottom: 1rem; background: #fdf2f8; padding: 1rem; border: 2px solid #ec4899; border-radius: 0.75rem;">
+                    <div class="monthly-check-block" style="margin-bottom: 1rem; background: #f0fdfa; padding: 1rem; border: 2px solid #2dd4bf; border-radius: 0.75rem;">
                         <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.75rem;">
                             <div style="display: flex; align-items: center; gap: 0.75rem;">
-                                <div style="background: #ec4899; color: white; padding: 0.5rem; border-radius: 0.5rem; display: flex; align-items: center; justify-content: center;">
+                                <div style="background: #2dd4bf; color: white; padding: 0.5rem; border-radius: 0.5rem; display: flex; align-items: center; justify-content: center;">
                                     <i class="fa-solid fa-circle-check" style="font-size: 1.2rem;"></i>
                                 </div>
                                 <div>
-                                    <div style="font-size: 0.75rem; text-transform: uppercase; color: #be185d; font-weight: 800; margin-bottom: 0.1rem;">Controllo Mensile</div>
-                                    <div style="font-size: 1rem; font-weight: 700; color: #be185d;">
+                                    <div style="font-size: 0.75rem; text-transform: uppercase; color: #0f766e; font-weight: 800; margin-bottom: 0.1rem;">Controllo Mensile</div>
+                                    <div style="font-size: 1rem; font-weight: 700; color: #0f766e;">
                                         ${(function() {
                                             const now = new Date();
                                             const currentYM = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
@@ -1671,28 +1671,28 @@ window.openVehicleModal = async function (id) {
                         </div>
 
                         ${isAdmin ? `
-                            <div style="border-top: 1px dashed #fbcfe8; padding-top: 0.75rem; margin-top: 0.75rem;">
+                            <div style="border-top: 1px dashed #99f6e4; padding-top: 0.75rem; margin-top: 0.75rem;">
                                 <div style="display: flex; flex-direction: column; gap: 0.5rem;">
                                     <div style="display: flex; gap: 0.5rem;">
                                         <input type="date" id="admin-monthly-check-date" value="${getLocalISODate()}" 
-                                               style="padding: 0.4rem; border: 1px solid #ec4899; border-radius: 0.4rem; font-size: 0.9rem; flex-grow: 1; min-width: 0; background-color: white; color: black; color-scheme: light;">
-                                        <button class="btn" style="padding: 0.4rem 0.8rem; background: #ec4899; color: white; font-weight: bold; font-size: 0.85rem; flex-shrink: 0;" 
+                                               style="padding: 0.4rem; border: 1px solid #2dd4bf; border-radius: 0.4rem; font-size: 0.9rem; flex-grow: 1; min-width: 0; background-color: white; color: black; color-scheme: light;">
+                                        <button class="btn" style="padding: 0.4rem 0.8rem; background: #14b8a6; color: white; font-weight: bold; font-size: 0.85rem; flex-shrink: 0;" 
                                                 onclick="saveMonthlyCheck('${vehicle.id}', document.getElementById('admin-monthly-check-date').value, document.getElementById('admin-monthly-check-notes').value)">
                                             Registra Controllo
                                         </button>
                                     </div>
                                     <input type="text" id="admin-monthly-check-notes" placeholder="Note controllo (es. OK, fari regolati...)" 
-                                           style="padding: 0.4rem; border: 1px solid #ec4899; border-radius: 0.4rem; font-size: 0.9rem; width: 100%; color: black; background-color: white;">
+                                           style="padding: 0.4rem; border: 1px solid #2dd4bf; border-radius: 0.4rem; font-size: 0.9rem; width: 100%; color: black; background-color: white;">
                                 </div>
                             </div>
                         ` : ''}
 
                         ${vehicle.monthly_checks && vehicle.monthly_checks.length > 0 ? `
-                            <div style="margin-top: 0.75rem; border-top: 1px solid #fbcfe8; padding-top: 0.75rem;">
-                                <div style="font-size: 0.75rem; font-weight: 700; color: #be185d; margin-bottom: 0.4rem; text-transform: uppercase;">Storico Controlli Mensili</div>
-                                <div style="max-height: 120px; overflow-y: auto; display: flex; flex-direction: column; gap: 0.4rem; background: white; padding: 0.5rem; border-radius: 0.5rem; border: 1px solid #fbcfe8;">
+                            <div style="margin-top: 0.75rem; border-top: 1px solid #99f6e4; padding-top: 0.75rem;">
+                                <div style="font-size: 0.75rem; font-weight: 700; color: #0f766e; margin-bottom: 0.4rem; text-transform: uppercase;">Storico Controlli Mensili</div>
+                                <div style="max-height: 120px; overflow-y: auto; display: flex; flex-direction: column; gap: 0.4rem; background: white; padding: 0.5rem; border-radius: 0.5rem; border: 1px solid #99f6e4;">
                                     ${vehicle.monthly_checks.map((check, idx) => `
-                                        <div style="font-size: 0.85rem; display: flex; justify-content: space-between; align-items: flex-start; gap: 0.5rem; padding-bottom: 0.25rem; border-bottom: 1px solid #fdf2f8;">
+                                        <div style="font-size: 0.85rem; display: flex; justify-content: space-between; align-items: flex-start; gap: 0.5rem; padding-bottom: 0.25rem; border-bottom: 1px solid #f0fdfa;">
                                             <div>
                                                 <strong>${formatDate(check.date)}</strong>
                                                 ${check.notes ? `<span style="color: #4b5563; margin-left: 0.5rem;">- ${check.notes}</span>` : ''}
