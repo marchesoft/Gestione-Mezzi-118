@@ -1713,8 +1713,9 @@ body.is-admin #admin-hint-text {
 
     .brand-credits {
         font-size: 0.65rem;
-        right: 8px;
+        left: 8px;
         bottom: 3px;
+        right: auto;
     }
 
     .action-buttons {
