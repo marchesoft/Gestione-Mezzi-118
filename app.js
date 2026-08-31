@@ -1,4 +1,4 @@
-const APP_VERSION = "2.0.2";
+const APP_VERSION = "2.0.3";
 let isAdmin = false;
 let cachedVehicles = null;
 let cachedLocations = null;
@@ -1625,15 +1625,13 @@ window.openVehicleModal = async function (id) {
                             <div class="admin-appointment-controls" style="display: flex; flex-direction: column; gap: 0.5rem; align-items: stretch; min-width: 260px; width: 100%;">
                                 <div style="display: flex; align-items: center; gap: 0.5rem; width: 100%;">
                                     <input type="date" id="admin-appointment-input" value="${vehicle.appointment_date || ''}" 
-                                           style="padding: 0.4rem; border: 1px solid #1e3a8a; border-radius: 0.4rem; font-size: 0.9rem; flex-grow: 1; min-width: 0;">
+                                           style="padding: 0.4rem; border: 1px solid #1e3a8a; border-radius: 0.4rem; font-size: 0.9rem; flex-grow: 1; min-width: 0; background-color: white; color: black; color-scheme: light;">
                                     <button class="btn btn-primary" style="padding: 0.4rem 0.6rem; flex-shrink: 0;" onclick="saveVehicleAppointment('${vehicle.id}', document.getElementById('admin-appointment-input').value, document.getElementById('admin-appointment-location').value)" title="Salva appuntamento">
                                         <i class="fa-solid fa-save"></i>
                                     </button>
-                                    ${vehicle.appointment_date ? `
-                                        <button class="btn" style="padding: 0.4rem 0.6rem; background: #ef4444; color: white; flex-shrink: 0;" onclick="if(confirm('Annullare l\\\'appuntamento corrente?')) saveVehicleAppointment('${vehicle.id}', '', '')" title="Cancella appuntamento">
-                                            <i class="fa-solid fa-trash"></i>
-                                        </button>
-                                    ` : ''}
+                                    <button class="btn" style="padding: 0.4rem 0.6rem; background: #ef4444; color: white; flex-shrink: 0;" onclick="if(confirm('Annullare l\\\'appuntamento corrente?')) { document.getElementById('admin-appointment-input').value = ''; document.getElementById('admin-appointment-location').value = ''; saveVehicleAppointment('${vehicle.id}', '', ''); }" title="Cancella appuntamento">
+                                        <i class="fa-solid fa-trash"></i>
+                                    </button>
                                 </div>
                                 <select id="admin-appointment-location" style="padding: 0.4rem; border: 1px solid #1e3a8a; border-radius: 0.4rem; font-size: 0.9rem; width: 100%;">
                                     <option value="">Seleziona Luogo...</option>
