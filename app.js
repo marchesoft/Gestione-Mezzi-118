@@ -1,4 +1,4 @@
-const APP_VERSION = "2.3.0";
+const APP_VERSION = "2.3.1";
 let isAdmin = false;
 let cachedVehicles = null;
 let cachedLocations = null;
@@ -2708,6 +2708,26 @@ window.switchDataTable = async function (type) {
             });
             data.sort((a, b) => new Date(b.date) - new Date(a.date));
 
+            const getItalianMonthYearName = (dateStr) => {
+                const [year, month] = dateStr.split('-');
+                const months = {
+                    '01': 'GENNAIO', '02': 'FEBBRAIO', '03': 'MARZO', '04': 'APRILE',
+                    '05': 'MAGGIO', '06': 'GIUGNO', '07': 'LUGLIO', '08': 'AGOSTO',
+                    '09': 'SETTEMBRE', '10': 'OTTOBRE', '11': 'NOVEMBRE', '12': 'DICEMBRE'
+                };
+                return `${months[month] || ''} ${year}`;
+            };
+
+            const groups = {};
+            data.forEach(c => {
+                if (c.date) {
+                    const ym = c.date.substring(0, 7); // 'YYYY-MM'
+                    if (!groups[ym]) groups[ym] = [];
+                    groups[ym].push(c);
+                }
+            });
+            const sortedYM = Object.keys(groups).sort((a, b) => b.localeCompare(a));
+
             html = `
                 <div style="margin-bottom: 1.5rem; background: #f8fafc; padding: 1rem; border-radius: 0.75rem; border: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; gap: 1rem;">
                     <h4 style="font-size: 0.9rem;">Storico Controlli Mensili</h4>
@@ -2731,17 +2751,27 @@ window.switchDataTable = async function (type) {
                             </tr>
                         </thead>
                         <tbody>
-                            ${data.map(c => 
-                                '<tr>'
-                                + `<td class="col-shrink text-bold text-primary">${c.sigla}</td>`
-                                + `<td class="col-shrink">${c.plate}</td>`
-                                + `<td class="col-shrink">${formatDate(c.date)}</td>`
-                                + `<td class="col-expand">${c.notes || '-'}</td>`
-                                + (isAdmin ? `<td class="col-actions">`
-                                    + `<button onclick="openEditMonthlyCheckModal('${c.vehicle_id}', '${c.date}', \`${(c.notes || '').replace(/`/g, '\\`').replace(/\$/g, '\\$')}\`)" style="cursor:pointer; background:none; border:none; color:var(--primary-color); margin-right:0.5rem;" title="Modifica"><i class="fa-solid fa-pen"></i></button>`
-                                    + `<button onclick="deleteMonthlyCheckFromDb('${c.vehicle_id}', '${c.date}', \`${(c.notes || '').replace(/`/g, '\\`').replace(/\$/g, '\\$')}\`)" style="cursor:pointer; background:none; border:none; color:var(--status-to-repair);" title="Elimina"><i class="fa-solid fa-trash"></i></button>`
-                                    + '</td>' : '') + '</tr>'
-                            ).join('')}
+                            ${sortedYM.map(ym => {
+                                const groupHeader = `
+                                    <tr style="background: #f1f5f9; font-weight: 800; color: #0f766e;">
+                                        <td colspan="${isAdmin ? 5 : 4}" style="padding: 0.6rem 1rem;">
+                                            <i class="fa-solid fa-calendar-days" style="margin-right: 6px;"></i> ${getItalianMonthYearName(ym)}
+                                        </td>
+                                    </tr>
+                                `;
+                                const groupRows = groups[ym].map(c => 
+                                    '<tr>'
+                                    + `<td class="col-shrink text-bold text-primary">${c.sigla}</td>`
+                                    + `<td class="col-shrink">${c.plate}</td>`
+                                    + `<td class="col-shrink">${formatDate(c.date)}</td>`
+                                    + `<td class="col-expand">${c.notes || '-'}</td>`
+                                    + (isAdmin ? `<td class="col-actions">`
+                                        + `<button onclick="openEditMonthlyCheckModal('${c.vehicle_id}', '${c.date}', \`${(c.notes || '').replace(/`/g, '\\`').replace(/\$/g, '\\$')}\`)" style="cursor:pointer; background:none; border:none; color:var(--primary-color); margin-right:0.5rem;" title="Modifica"><i class="fa-solid fa-pen"></i></button>`
+                                        + `<button onclick="deleteMonthlyCheckFromDb('${c.vehicle_id}', '${c.date}', \`${(c.notes || '').replace(/`/g, '\\`').replace(/\$/g, '\\$')}\`)" style="cursor:pointer; background:none; border:none; color:var(--status-to-repair);" title="Elimina"><i class="fa-solid fa-trash"></i></button>`
+                                        + '</td>' : '') + '</tr>'
+                                ).join('');
+                                return groupHeader + groupRows;
+                            }).join('')}
                         </tbody>
                     </table>
                 </div>`;
