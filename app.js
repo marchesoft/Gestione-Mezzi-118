@@ -1,4 +1,4 @@
-const APP_VERSION = "3.0.1";
+const APP_VERSION = "3.0.2";
 let isAdmin = false;
 let cachedVehicles = null;
 let cachedLocations = null;
@@ -376,7 +376,7 @@ async function renderVehicleGrid(vehicles) {
 
         let statusHtml = `
             <div style="position: relative; width: 100%;">
-                ${hasCheckThisMonth ? '<div class="monthly-check-dot" title="Controllo Mensile Effettuato"></div>' : ''}
+                ${hasCheckThisMonth ? '<div class="monthly-check-dot" title="Controllo Scadenze Mensile Effettuato"></div>' : ''}
                 ${isAdmin ? `
                     <select class="status-full-bar status-${vehicle.status}" onchange="quickUpdateStatus(event, '${vehicle.id}')" onclick="event.stopPropagation()" ${vehicle.status === 'internal-use' ? 'disabled' : ''}>
                         <option value="operative" ${vehicle.status === 'operative' ? 'selected' : ''}>In Servizio</option>
@@ -1656,7 +1656,7 @@ window.openVehicleModal = async function (id) {
                                         <i class="fa-solid fa-circle-check" style="font-size: 1.2rem;"></i>
                                     </div>
                                     <div>
-                                        <div style="font-size: 0.75rem; text-transform: uppercase; color: #0f766e; font-weight: 800; margin-bottom: 0.1rem;">Controllo Mensile</div>
+                                        <div style="font-size: 0.75rem; text-transform: uppercase; color: #0f766e; font-weight: 800; margin-bottom: 0.1rem;">Controllo Scadenze Mensile</div>
                                         <div style="font-size: 1rem; font-weight: 700; color: #0f766e;">
                                             ${(function() {
                                                 const now = new Date();
@@ -1970,13 +1970,13 @@ window.saveMonthlyCheck = async function (id, date, notes, executor, location) {
                 location: (location || '').toString().trim()
             });
             await store.updateVehicle(vehicle);
-            alert("Controllo mensile registrato.");
+            alert("Controllo scadenze mensile registrato.");
             closeVehicleModal();
             renderDashboard(true);
         }
     } catch (error) {
         console.error("Error saving monthly check:", error);
-        alert("Errore durante il salvataggio del controllo mensile.");
+        alert("Errore durante il salvataggio del controllo scadenze mensile.");
     }
 }
 
