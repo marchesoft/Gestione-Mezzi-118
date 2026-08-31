@@ -1,4 +1,4 @@
-const APP_VERSION = "3.0.6";
+const APP_VERSION = "3.0.7";
 let isAdmin = false;
 let cachedVehicles = null;
 let cachedLocations = null;
@@ -1683,12 +1683,19 @@ window.openVehicleModal = async function (id) {
                                         <div style="display: flex; gap: 0.5rem;">
                                             <input type="date" id="admin-monthly-check-date" value="${getLocalISODate()}" 
                                                    style="padding: 0.4rem; border: 1px solid #2dd4bf; border-radius: 0.4rem; font-size: 0.9rem; flex-grow: 1; min-width: 0; background-color: white; color: black; color-scheme: light;">
-                                            <button class="btn btn-register-check" 
-                                                    ${hasCheckThisMonth ? 'disabled style="opacity: 0.5; cursor: not-allowed; background-color: #94a3b8; border-color: #94a3b8;"' : ''}
-                                                    onclick="saveMonthlyCheck('${vehicle.id}', document.getElementById('admin-monthly-check-date').value, document.getElementById('admin-monthly-check-notes').value, document.getElementById('admin-monthly-check-executor').value, document.getElementById('admin-monthly-check-location').value)">
-                                                <span class="btn-text-desktop">Registra Controllo</span>
-                                                <span class="btn-text-mobile">Registra</span>
-                                            </button>
+                                            ${hasCheckThisMonth ? `
+                                                <button class="btn" style="background-color: #ef4444; color: white; padding: 0.4rem 0.8rem; font-weight: bold; font-size: 0.85rem; border-radius: 0.4rem; border: none; cursor: pointer;"
+                                                        onclick="deleteCurrentMonthCheck('${vehicle.id}')">
+                                                    <span class="btn-text-desktop">Elimina Controllo</span>
+                                                    <span class="btn-text-mobile">Elimina</span>
+                                                </button>
+                                            ` : `
+                                                <button class="btn btn-register-check" 
+                                                        onclick="saveMonthlyCheck('${vehicle.id}', document.getElementById('admin-monthly-check-date').value, document.getElementById('admin-monthly-check-notes').value, document.getElementById('admin-monthly-check-executor').value, document.getElementById('admin-monthly-check-location').value)">
+                                                    <span class="btn-text-desktop">Registra Controllo</span>
+                                                    <span class="btn-text-mobile">Registra</span>
+                                                </button>
+                                            `}
                                         </div>
                                         <div style="display: flex; gap: 0.5rem;">
                                             <input type="text" id="admin-monthly-check-executor" placeholder="Esecutore" 
@@ -2009,6 +2016,30 @@ window.deleteMonthlyCheckFromDb = async function (id, date, notes, executor, loc
     } catch (e) {
         console.error("Error deleting monthly check:", e);
         alert("Errore durante l'eliminazione del controllo.");
+    }
+}
+
+window.deleteCurrentMonthCheck = async function (id) {
+    if (!confirm("Eliminare la registrazione di controllo per questo mese?")) return;
+    try {
+        const vehicle = await store.getVehicleById(id);
+        if (vehicle && vehicle.monthly_checks) {
+            const now = new Date();
+            const currentYM = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+            const idx = vehicle.monthly_checks.findIndex(c => c.date && c.date.startsWith(currentYM));
+            if (idx !== -1) {
+                vehicle.monthly_checks.splice(idx, 1);
+                await store.updateVehicle(vehicle);
+                alert("Controllo mensile eliminato.");
+                closeVehicleModal();
+                renderDashboard(true);
+            } else {
+                alert("Nessun controllo mensile trovato per questo mese.");
+            }
+        }
+    } catch (e) {
+        console.error("Error deleting current monthly check:", e);
+        alert("Errore durante l'eliminazione del controllo mensile.");
     }
 }
 
