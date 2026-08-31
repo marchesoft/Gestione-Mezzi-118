@@ -1,4 +1,4 @@
-const APP_VERSION = "2.2.4";
+const APP_VERSION = "2.3.0";
 let isAdmin = false;
 let cachedVehicles = null;
 let cachedLocations = null;
@@ -1615,120 +1615,122 @@ window.openVehicleModal = async function (id) {
                         </div>
                     </div>
 
-                    <div class="appointment-block" style="margin-bottom: 1rem; background: #fff7ed; padding: 1rem; border: 2px solid #1e3a8a; border-radius: 0.75rem; display: flex; align-items: center; justify-content: space-between; gap: 1rem;">
-                        <div style="display: flex; align-items: center; gap: 1rem;">
-                            <div style="background: #1e3a8a; color: white; padding: 0.5rem; border-radius: 0.5rem;">
-                                <i class="fa-solid fa-calendar-check" style="font-size: 1.2rem;"></i>
-                            </div>
-                            <div>
-                                <div style="font-size: 0.75rem; text-transform: uppercase; color: #1e3a8a; font-weight: 800; margin-bottom: 0.1rem;">Prossimo Appuntamento</div>
-                                <div style="font-size: 1.1rem; font-weight: 700; color: #1e3a8a;">
-                                    ${vehicle.appointment_date ? formatDate(vehicle.appointment_date) : 'Nessun appuntamento'}
-                                    ${vehicle.appointment_location ? `<span style="font-weight: 400; font-size: 0.9rem; margin-left: 0.5rem;">(${vehicle.appointment_location})</span>` : ''}
-                                </div>
-                            </div>
-                        </div>
-                        ${isAdmin ? `
-                            <div class="admin-appointment-controls" style="display: flex; flex-direction: column; gap: 0.5rem; align-items: stretch; min-width: 260px; width: 100%;">
-                                <div style="display: flex; align-items: center; gap: 0.5rem; width: 100%;">
-                                    <input type="date" id="admin-appointment-input" value="${vehicle.appointment_date || ''}" 
-                                           style="padding: 0.4rem; border: 1px solid #1e3a8a; border-radius: 0.4rem; font-size: 0.9rem; flex-grow: 1; min-width: 0; background-color: white; color: black; color-scheme: light;">
-                                    <button class="btn btn-primary" style="padding: 0.4rem 0.6rem; flex-shrink: 0;" onclick="saveVehicleAppointment('${vehicle.id}', document.getElementById('admin-appointment-input').value, document.getElementById('admin-appointment-location').value)" title="Salva appuntamento">
-                                        <i class="fa-solid fa-save"></i>
-                                    </button>
-                                    <button class="btn" style="padding: 0.4rem 0.6rem; background: #ef4444; color: white; flex-shrink: 0;" onclick="if(confirm('Annullare l\\\'appuntamento corrente?')) { document.getElementById('admin-appointment-input').value = ''; document.getElementById('admin-appointment-location').value = ''; saveVehicleAppointment('${vehicle.id}', '', ''); }" title="Cancella appuntamento">
-                                        <i class="fa-solid fa-trash"></i>
-                                    </button>
-                                </div>
-                                <select id="admin-appointment-location" style="padding: 0.4rem; border: 1px solid #1e3a8a; border-radius: 0.4rem; font-size: 0.9rem; width: 100%;">
-                                    <option value="">Seleziona Luogo...</option>
-                                    ${cachedLocations.map(loc => `<option value="${loc.luogo}" ${vehicle.appointment_location === loc.luogo ? 'selected' : ''}>${loc.luogo}</option>`).join('')}
-                                </select>
-                            </div>
-                        ` : ''}
-                    </div>
-
-                    <div class="monthly-check-block" style="margin-bottom: 1rem; background: #f0fdfa; padding: 1rem; border: 2px solid #2dd4bf; border-radius: 0.75rem;">
-                        <div style="display: flex; align-items: center; justify-content: space-between;">
-                            <div style="display: flex; align-items: center; gap: 0.75rem;">
-                                <div style="background: #2dd4bf; color: white; padding: 0.5rem; border-radius: 0.5rem; display: flex; align-items: center; justify-content: center;">
-                                    <i class="fa-solid fa-circle-check" style="font-size: 1.2rem;"></i>
+                    <div class="vehicle-modal-sections-row">
+                        <div class="appointment-block" style="background: #fff7ed; padding: 1rem; border: 2px solid #1e3a8a; border-radius: 0.75rem; display: flex; flex-direction: column; align-items: stretch; gap: 0.75rem;">
+                            <div style="display: flex; align-items: center; gap: 1rem;">
+                                <div style="background: #1e3a8a; color: white; padding: 0.5rem; border-radius: 0.5rem;">
+                                    <i class="fa-solid fa-calendar-check" style="font-size: 1.2rem;"></i>
                                 </div>
                                 <div>
-                                    <div style="font-size: 0.75rem; text-transform: uppercase; color: #0f766e; font-weight: 800; margin-bottom: 0.1rem;">Controllo Mensile</div>
-                                    <div style="font-size: 1rem; font-weight: 700; color: #0f766e;">
-                                        ${(function() {
-                                            const now = new Date();
-                                            const currentYM = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
-                                            const thisMonthChecks = (vehicle.monthly_checks || []).filter(c => c.date && c.date.startsWith(currentYM));
-                                            if (thisMonthChecks.length > 0) {
-                                                return `EFFETTUATO (${formatDate(thisMonthChecks[0].date)})`;
-                                            } else {
-                                                return 'NON EFFETTUATO QUESTO MESE';
-                                            }
-                                        })()}
+                                    <div style="font-size: 0.75rem; text-transform: uppercase; color: #1e3a8a; font-weight: 800; margin-bottom: 0.1rem;">Prossimo Appuntamento</div>
+                                    <div style="font-size: 1.1rem; font-weight: 700; color: #1e3a8a;">
+                                        ${vehicle.appointment_date ? formatDate(vehicle.appointment_date) : 'Nessun appuntamento'}
+                                        ${vehicle.appointment_location ? `<span style="font-weight: 400; font-size: 0.9rem; margin-left: 0.5rem;">(${vehicle.appointment_location})</span>` : ''}
                                     </div>
                                 </div>
                             </div>
-                        </div>
-
-                        ${isAdmin ? `
-                            <div style="border-top: 1px dashed #99f6e4; padding-top: 0.75rem; margin-top: 0.75rem;">
-                                <div style="display: flex; flex-direction: column; gap: 0.5rem;">
-                                    <div style="display: flex; gap: 0.5rem;">
-                                        <input type="date" id="admin-monthly-check-date" value="${getLocalISODate()}" 
-                                               style="padding: 0.4rem; border: 1px solid #2dd4bf; border-radius: 0.4rem; font-size: 0.9rem; flex-grow: 1; min-width: 0; background-color: white; color: black; color-scheme: light;">
-                                        <button class="btn" style="padding: 0.4rem 0.8rem; background: #14b8a6; color: white; font-weight: bold; font-size: 0.85rem; flex-shrink: 0;" 
-                                                onclick="saveMonthlyCheck('${vehicle.id}', document.getElementById('admin-monthly-check-date').value, document.getElementById('admin-monthly-check-notes').value)">
-                                            Registra Controllo
+                            ${isAdmin ? `
+                                <div class="admin-appointment-controls" style="display: flex; flex-direction: column; gap: 0.5rem; align-items: stretch; width: 100%;">
+                                    <div style="display: flex; align-items: center; gap: 0.5rem; width: 100%;">
+                                        <input type="date" id="admin-appointment-input" value="${vehicle.appointment_date || ''}" 
+                                               style="padding: 0.4rem; border: 1px solid #1e3a8a; border-radius: 0.4rem; font-size: 0.9rem; flex-grow: 1; min-width: 0; background-color: white; color: black; color-scheme: light;">
+                                        <button class="btn btn-primary" style="padding: 0.4rem 0.6rem; flex-shrink: 0;" onclick="saveVehicleAppointment('${vehicle.id}', document.getElementById('admin-appointment-input').value, document.getElementById('admin-appointment-location').value)" title="Salva appuntamento">
+                                            <i class="fa-solid fa-save"></i>
                                         </button>
-                                    </div>
-                                    <input type="text" id="admin-monthly-check-notes" placeholder="Note controllo (es. OK, fari regolati...)" 
-                                           style="padding: 0.4rem; border: 1px solid #2dd4bf; border-radius: 0.4rem; font-size: 0.9rem; width: 100%; color: black; background-color: white;">
-                                </div>
-                            </div>
-                        ` : ''}
-                    </div>
-
-                    <div class="todo-block" style="margin-bottom: 1rem; background: #f8fafc; padding: 1rem; border: 2px solid #94a3b8; border-radius: 0.75rem;">
-                        <div style="font-size: 0.75rem; text-transform: uppercase; color: #475569; font-weight: 800; margin-bottom: 0.75rem; display: flex; align-items: center; gap: 0.5rem;">
-                            <i class="fa-solid fa-clipboard-list" style="font-size: 1rem;"></i> Segna le cose da fare
-                        </div>
-                        ${(function () {
-                            let todos = [];
-                            if (Array.isArray(vehicle.todo_notes)) {
-                                todos = vehicle.todo_notes.flatMap(note => (note || '').toString().split('\n').map(s => s.trim()).filter(s => s !== ''));
-                            } else if (vehicle.todo_notes && typeof vehicle.todo_notes === 'string' && vehicle.todo_notes.trim() !== '') {
-                                todos = vehicle.todo_notes.split('\n').map(s => s.trim()).filter(s => s !== '');
-                            }
-                            let html = '';
-                            
-                            if (todos.length > 0) {
-                                html += '<div style="display: flex; flex-direction: column; gap: 0.5rem;">';
-                                html += todos.map((note, idx) => `
-                                    <div style="background-color: white; border: 1px solid var(--border-color); border-radius: 0.5rem; padding: 0.75rem; color: black; display: flex; justify-content: space-between; align-items: flex-start; gap: 0.5rem;">
-                                        <div style="flex-grow: 1; font-size: 0.95rem; white-space: pre-wrap;">${note}</div>
-                                        ${isAdmin ? `
-                                        <button class="btn" style="background: #ef4444; color: white; padding: 0.3rem 0.6rem; font-size: 0.8rem; border-radius: 0.3rem; flex-shrink: 0;" onclick="deleteTodoNote(event, '${vehicle.id}', ${idx})" title="Elimina">
+                                        <button class="btn" style="padding: 0.4rem 0.6rem; background: #ef4444; color: white; flex-shrink: 0;" onclick="if(confirm('Annullare l\\\'appuntamento corrente?')) { document.getElementById('admin-appointment-input').value = ''; document.getElementById('admin-appointment-location').value = ''; saveVehicleAppointment('${vehicle.id}', '', ''); }" title="Cancella appuntamento">
                                             <i class="fa-solid fa-trash"></i>
                                         </button>
-                                        ` : ''}
                                     </div>
-                                `).join('');
-                                html += '</div>';
-                            } else {
-                                html += `<div style="font-style: italic; color: var(--text-secondary); font-size: 0.85rem;">Nessuna attività da fare</div>`;
-                            }
-                            
-                            if (isAdmin) {
-                                html += `
-                                    <button class="btn" style="background: transparent; border: 1px dashed #94a3b8; color: #475569; width: 100%; padding: 0.75rem; text-align: center; border-radius: 0.5rem; margin-top: 0.75rem;" onclick="addTodoNote(event, '${vehicle.id}')">
-                                        <i class="fa-solid fa-plus"></i> ${todos.length > 0 ? 'Aggiungi ulteriore attività' : 'Aggiungi attività'}
-                                    </button>
-                                `;
-                            }
-                            return html;
-                        })()}
+                                    <select id="admin-appointment-location" style="padding: 0.4rem; border: 1px solid #1e3a8a; border-radius: 0.4rem; font-size: 0.9rem; width: 100%;">
+                                        <option value="">Seleziona Luogo...</option>
+                                        ${cachedLocations.map(loc => `<option value="${loc.luogo}" ${vehicle.appointment_location === loc.luogo ? 'selected' : ''}>${loc.luogo}</option>`).join('')}
+                                    </select>
+                                </div>
+                            ` : ''}
+                        </div>
+
+                        <div class="monthly-check-block" style="background: #f0fdfa; padding: 1rem; border: 2px solid #2dd4bf; border-radius: 0.75rem;">
+                            <div style="display: flex; align-items: center; justify-content: space-between;">
+                                <div style="display: flex; align-items: center; gap: 0.75rem;">
+                                    <div style="background: #2dd4bf; color: white; padding: 0.5rem; border-radius: 0.5rem; display: flex; align-items: center; justify-content: center;">
+                                        <i class="fa-solid fa-circle-check" style="font-size: 1.2rem;"></i>
+                                    </div>
+                                    <div>
+                                        <div style="font-size: 0.75rem; text-transform: uppercase; color: #0f766e; font-weight: 800; margin-bottom: 0.1rem;">Controllo Mensile</div>
+                                        <div style="font-size: 1rem; font-weight: 700; color: #0f766e;">
+                                            ${(function() {
+                                                const now = new Date();
+                                                const currentYM = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+                                                const thisMonthChecks = (vehicle.monthly_checks || []).filter(c => c.date && c.date.startsWith(currentYM));
+                                                if (thisMonthChecks.length > 0) {
+                                                    return `EFFETTUATO (${formatDate(thisMonthChecks[0].date)})`;
+                                                } else {
+                                                    return 'NON EFFETTUATO QUESTO MESE';
+                                                }
+                                            })()}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            ${isAdmin ? `
+                                <div style="border-top: 1px dashed #99f6e4; padding-top: 0.75rem; margin-top: 0.75rem;">
+                                    <div style="display: flex; flex-direction: column; gap: 0.5rem;">
+                                        <div style="display: flex; gap: 0.5rem;">
+                                            <input type="date" id="admin-monthly-check-date" value="${getLocalISODate()}" 
+                                                   style="padding: 0.4rem; border: 1px solid #2dd4bf; border-radius: 0.4rem; font-size: 0.9rem; flex-grow: 1; min-width: 0; background-color: white; color: black; color-scheme: light;">
+                                            <button class="btn" style="padding: 0.4rem 0.8rem; background: #14b8a6; color: white; font-weight: bold; font-size: 0.85rem; flex-shrink: 0;" 
+                                                    onclick="saveMonthlyCheck('${vehicle.id}', document.getElementById('admin-monthly-check-date').value, document.getElementById('admin-monthly-check-notes').value)">
+                                                Registra Controllo
+                                            </button>
+                                        </div>
+                                        <input type="text" id="admin-monthly-check-notes" placeholder="Note controllo (es. OK, fari regolati...)" 
+                                               style="padding: 0.4rem; border: 1px solid #2dd4bf; border-radius: 0.4rem; font-size: 0.9rem; width: 100%; color: black; background-color: white;">
+                                    </div>
+                                </div>
+                            ` : ''}
+                        </div>
+
+                        <div class="todo-block" style="background: #f8fafc; padding: 1rem; border: 2px solid #94a3b8; border-radius: 0.75rem;">
+                            <div style="font-size: 0.75rem; text-transform: uppercase; color: #475569; font-weight: 800; margin-bottom: 0.75rem; display: flex; align-items: center; gap: 0.5rem;">
+                                <i class="fa-solid fa-clipboard-list" style="font-size: 1rem;"></i> Segna le cose da fare
+                            </div>
+                            ${(function () {
+                                let todos = [];
+                                if (Array.isArray(vehicle.todo_notes)) {
+                                    todos = vehicle.todo_notes.flatMap(note => (note || '').toString().split('\n').map(s => s.trim()).filter(s => s !== ''));
+                                } else if (vehicle.todo_notes && typeof vehicle.todo_notes === 'string' && vehicle.todo_notes.trim() !== '') {
+                                    todos = vehicle.todo_notes.split('\n').map(s => s.trim()).filter(s => s !== '');
+                                }
+                                let html = '';
+                                
+                                if (todos.length > 0) {
+                                    html += '<div style="display: flex; flex-direction: column; gap: 0.5rem;">';
+                                    html += todos.map((note, idx) => `
+                                        <div style="background-color: white; border: 1px solid var(--border-color); border-radius: 0.5rem; padding: 0.75rem; color: black; display: flex; justify-content: space-between; align-items: flex-start; gap: 0.5rem;">
+                                            <div style="flex-grow: 1; font-size: 0.95rem; white-space: pre-wrap;">${note}</div>
+                                            ${isAdmin ? `
+                                            <button class="btn" style="background: #ef4444; color: white; padding: 0.3rem 0.6rem; font-size: 0.8rem; border-radius: 0.3rem; flex-shrink: 0;" onclick="deleteTodoNote(event, '${vehicle.id}', ${idx})" title="Elimina">
+                                                <i class="fa-solid fa-trash"></i>
+                                            </button>
+                                            ` : ''}
+                                        </div>
+                                    `).join('');
+                                    html += '</div>';
+                                } else {
+                                    html += `<div style="font-style: italic; color: var(--text-secondary); font-size: 0.85rem;">Nessuna attività da fare</div>`;
+                                }
+                                
+                                if (isAdmin) {
+                                    html += `
+                                        <button class="btn" style="background: transparent; border: 1px dashed #94a3b8; color: #475569; width: 100%; padding: 0.75rem; text-align: center; border-radius: 0.5rem; margin-top: 0.75rem;" onclick="addTodoNote(event, '${vehicle.id}')">
+                                            <i class="fa-solid fa-plus"></i> ${todos.length > 0 ? 'Aggiungi ulteriore attività' : 'Aggiungi attività'}
+                                        </button>
+                                    `;
+                                }
+                                return html;
+                            })()}
+                        </div>
                     </div>
 
                     <div style="margin-bottom: 1.5rem;">

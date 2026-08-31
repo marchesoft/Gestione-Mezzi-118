@@ -1306,9 +1306,29 @@ body.is-admin #admin-hint-text {
     gap: 0.5rem;
 }
 
+/* --- VEHICLE MODAL SECTIONS ROW (DESKTOP) --- */
+.vehicle-modal-sections-row {
+    display: flex;
+    gap: 1rem;
+    align-items: stretch;
+    margin-bottom: 1rem;
+}
+
+.vehicle-modal-sections-row > div {
+    flex: 1;
+    margin-bottom: 0 !important;
+}
+
 /* --- MOBILE OPTIMIZATION --- */
 
 @media (max-width: 768px) {
+    .vehicle-modal-sections-row {
+        display: block;
+    }
+    .vehicle-modal-sections-row > div {
+        margin-bottom: 1rem !important;
+    }
+
     .main-content {
         padding: 0.5rem;
     }
