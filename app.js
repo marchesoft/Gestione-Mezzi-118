@@ -1,4 +1,4 @@
-const APP_VERSION = "2.0.3";
+const APP_VERSION = "2.1.0";
 let isAdmin = false;
 let cachedVehicles = null;
 let cachedLocations = null;
@@ -370,8 +370,13 @@ async function renderVehicleGrid(vehicles) {
             'not-present': 'Non più presente'
         };
 
+        const now = new Date();
+        const currentYearMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+        const hasCheckThisMonth = vehicle.monthly_checks && vehicle.monthly_checks.some(c => c.date && c.date.startsWith(currentYearMonth));
+
         let statusHtml = `
             <div style="position: relative; width: 100%;">
+                ${hasCheckThisMonth ? '<div class="monthly-check-dot" title="Controllo Mensile Effettuato"></div>' : ''}
                 ${isAdmin ? `
                     <select class="status-full-bar status-${vehicle.status}" onchange="quickUpdateStatus(event, '${vehicle.id}')" onclick="event.stopPropagation()" ${vehicle.status === 'internal-use' ? 'disabled' : ''}>
                         <option value="operative" ${vehicle.status === 'operative' ? 'selected' : ''}>In Servizio</option>
@@ -1641,6 +1646,69 @@ window.openVehicleModal = async function (id) {
                         ` : ''}
                     </div>
 
+                    <div class="monthly-check-block" style="margin-bottom: 1rem; background: #fdf2f8; padding: 1rem; border: 2px solid #ec4899; border-radius: 0.75rem;">
+                        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.75rem;">
+                            <div style="display: flex; align-items: center; gap: 0.75rem;">
+                                <div style="background: #ec4899; color: white; padding: 0.5rem; border-radius: 0.5rem; display: flex; align-items: center; justify-content: center;">
+                                    <i class="fa-solid fa-circle-check" style="font-size: 1.2rem;"></i>
+                                </div>
+                                <div>
+                                    <div style="font-size: 0.75rem; text-transform: uppercase; color: #be185d; font-weight: 800; margin-bottom: 0.1rem;">Controllo Mensile</div>
+                                    <div style="font-size: 1rem; font-weight: 700; color: #be185d;">
+                                        ${(function() {
+                                            const now = new Date();
+                                            const currentYM = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+                                            const thisMonthChecks = (vehicle.monthly_checks || []).filter(c => c.date && c.date.startsWith(currentYM));
+                                            if (thisMonthChecks.length > 0) {
+                                                return `EFFETTUATO (${formatDate(thisMonthChecks[0].date)})`;
+                                            } else {
+                                                return 'NON EFFETTUATO QUESTO MESE';
+                                            }
+                                        })()}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        ${isAdmin ? `
+                            <div style="border-top: 1px dashed #fbcfe8; padding-top: 0.75rem; margin-top: 0.75rem;">
+                                <div style="display: flex; flex-direction: column; gap: 0.5rem;">
+                                    <div style="display: flex; gap: 0.5rem;">
+                                        <input type="date" id="admin-monthly-check-date" value="${getLocalISODate()}" 
+                                               style="padding: 0.4rem; border: 1px solid #ec4899; border-radius: 0.4rem; font-size: 0.9rem; flex-grow: 1; min-width: 0; background-color: white; color: black; color-scheme: light;">
+                                        <button class="btn" style="padding: 0.4rem 0.8rem; background: #ec4899; color: white; font-weight: bold; font-size: 0.85rem; flex-shrink: 0;" 
+                                                onclick="saveMonthlyCheck('${vehicle.id}', document.getElementById('admin-monthly-check-date').value, document.getElementById('admin-monthly-check-notes').value)">
+                                            Registra Controllo
+                                        </button>
+                                    </div>
+                                    <input type="text" id="admin-monthly-check-notes" placeholder="Note controllo (es. OK, fari regolati...)" 
+                                           style="padding: 0.4rem; border: 1px solid #ec4899; border-radius: 0.4rem; font-size: 0.9rem; width: 100%; color: black; background-color: white;">
+                                </div>
+                            </div>
+                        ` : ''}
+
+                        ${vehicle.monthly_checks && vehicle.monthly_checks.length > 0 ? `
+                            <div style="margin-top: 0.75rem; border-top: 1px solid #fbcfe8; padding-top: 0.75rem;">
+                                <div style="font-size: 0.75rem; font-weight: 700; color: #be185d; margin-bottom: 0.4rem; text-transform: uppercase;">Storico Controlli Mensili</div>
+                                <div style="max-height: 120px; overflow-y: auto; display: flex; flex-direction: column; gap: 0.4rem; background: white; padding: 0.5rem; border-radius: 0.5rem; border: 1px solid #fbcfe8;">
+                                    ${vehicle.monthly_checks.map((check, idx) => `
+                                        <div style="font-size: 0.85rem; display: flex; justify-content: space-between; align-items: flex-start; gap: 0.5rem; padding-bottom: 0.25rem; border-bottom: 1px solid #fdf2f8;">
+                                            <div>
+                                                <strong>${formatDate(check.date)}</strong>
+                                                ${check.notes ? `<span style="color: #4b5563; margin-left: 0.5rem;">- ${check.notes}</span>` : ''}
+                                            </div>
+                                            ${isAdmin ? `
+                                                <button onclick="deleteMonthlyCheck(event, '${vehicle.id}', ${idx})" style="background: transparent; border: none; color: #ef4444; cursor: pointer; font-size: 0.75rem; padding: 0 0.25rem;" title="Elimina">
+                                                    <i class="fa-solid fa-trash"></i>
+                                                </button>
+                                            ` : ''}
+                                        </div>
+                                    `).join('')}
+                                </div>
+                            </div>
+                        ` : ''}
+                    </div>
+
                     <div style="margin-bottom: 1.5rem;">
                         <label style="font-size: 0.75rem; text-transform: uppercase; color: black; font-weight: 600; margin-bottom: 0.25rem; display: block;"><i class="fa-solid fa-clipboard-list"></i> Da Fare (sospeso)</label>
                         ${(function () {
@@ -1884,6 +1952,49 @@ window.saveVehicleAppointment = async function (id, date, location) {
     } catch (error) {
         console.error("Error saving appointment:", error);
         alert("Errore durante il salvataggio dell'appuntamento.");
+    }
+}
+
+// Monthly Check Save (Admin Only)
+window.saveMonthlyCheck = async function (id, date, notes) {
+    try {
+        const vehicle = await store.getVehicleById(id);
+        if (vehicle) {
+            if (!vehicle.monthly_checks) {
+                vehicle.monthly_checks = [];
+            }
+            vehicle.monthly_checks.unshift({
+                date: date || getLocalISODate(),
+                notes: (notes || '').toString().trim()
+            });
+            await store.updateVehicle(vehicle);
+            alert("Controllo mensile registrato.");
+            openVehicleModal(id);
+            renderDashboard(true);
+        }
+    } catch (error) {
+        console.error("Error saving monthly check:", error);
+        alert("Errore durante il salvataggio del controllo mensile.");
+    }
+}
+
+window.deleteMonthlyCheck = async function (event, id, index) {
+    if (event) {
+        event.stopPropagation();
+        event.preventDefault();
+    }
+    if (!confirm("Eliminare questa registrazione di controllo?")) return;
+    try {
+        const vehicle = await store.getVehicleById(id);
+        if (vehicle && vehicle.monthly_checks) {
+            vehicle.monthly_checks.splice(index, 1);
+            await store.updateVehicle(vehicle);
+            openVehicleModal(id);
+            renderDashboard(true);
+        }
+    } catch (error) {
+        console.error("Error deleting monthly check:", error);
+        alert("Errore durante l'eliminazione del controllo mensile.");
     }
 }
 

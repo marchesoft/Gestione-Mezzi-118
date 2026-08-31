@@ -68,6 +68,20 @@ input[type="date"] {
     color: #000000 !important;
 }
 
+.monthly-check-dot {
+    position: absolute;
+    top: 50%;
+    left: 1.2rem;
+    transform: translateY(-50%);
+    width: 14px;
+    height: 14px;
+    background-color: #ec4899; /* Fuchsia/Pink */
+    border-radius: 50%;
+    border: 2px solid white;
+    filter: drop-shadow(0 0 6px #ec4899);
+    z-index: 5;
+}
+
 /* Layout */
 .app-container {
     display: flex;
