@@ -75,7 +75,7 @@ input[type="date"] {
     transform: translateY(-50%);
     width: 14px;
     height: 14px;
-    background-color: #ffcc00; /* Yellow */
+    background-color: #ffff00; /* Fluo Yellow */
     border-radius: 50%;
     border: 2px solid white;
     z-index: 5;

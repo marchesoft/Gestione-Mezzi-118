@@ -1,4 +1,4 @@
-const APP_VERSION = "3.0.5";
+const APP_VERSION = "3.0.6";
 let isAdmin = false;
 let cachedVehicles = null;
 let cachedLocations = null;
@@ -1506,6 +1506,10 @@ window.openVehicleModal = async function (id) {
     const vehicle = await store.getVehicleById(id);
     if (!vehicle) return;
 
+    const now = new Date();
+    const currentYM = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+    const hasCheckThisMonth = vehicle.monthly_checks && vehicle.monthly_checks.some(c => c.date && c.date.startsWith(currentYM));
+
     const modal = document.getElementById('vehicle-modal');
     const content = document.getElementById('vehicle-details-content');
 
@@ -1680,6 +1684,7 @@ window.openVehicleModal = async function (id) {
                                             <input type="date" id="admin-monthly-check-date" value="${getLocalISODate()}" 
                                                    style="padding: 0.4rem; border: 1px solid #2dd4bf; border-radius: 0.4rem; font-size: 0.9rem; flex-grow: 1; min-width: 0; background-color: white; color: black; color-scheme: light;">
                                             <button class="btn btn-register-check" 
+                                                    ${hasCheckThisMonth ? 'disabled style="opacity: 0.5; cursor: not-allowed; background-color: #94a3b8; border-color: #94a3b8;"' : ''}
                                                     onclick="saveMonthlyCheck('${vehicle.id}', document.getElementById('admin-monthly-check-date').value, document.getElementById('admin-monthly-check-notes').value, document.getElementById('admin-monthly-check-executor').value, document.getElementById('admin-monthly-check-location').value)">
                                                 <span class="btn-text-desktop">Registra Controllo</span>
                                                 <span class="btn-text-mobile">Registra</span>
