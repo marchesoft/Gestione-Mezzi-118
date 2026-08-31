@@ -1,4 +1,4 @@
-const APP_VERSION = "3.0.0";
+const APP_VERSION = "3.0.1";
 let isAdmin = false;
 let cachedVehicles = null;
 let cachedLocations = null;
@@ -1679,9 +1679,10 @@ window.openVehicleModal = async function (id) {
                                         <div style="display: flex; gap: 0.5rem;">
                                             <input type="date" id="admin-monthly-check-date" value="${getLocalISODate()}" 
                                                    style="padding: 0.4rem; border: 1px solid #2dd4bf; border-radius: 0.4rem; font-size: 0.9rem; flex-grow: 1; min-width: 0; background-color: white; color: black; color-scheme: light;">
-                                            <button class="btn" style="padding: 0.4rem 0.8rem; background: #14b8a6; color: white; font-weight: bold; font-size: 0.85rem; flex-shrink: 0;" 
+                                            <button class="btn btn-register-check" 
                                                     onclick="saveMonthlyCheck('${vehicle.id}', document.getElementById('admin-monthly-check-date').value, document.getElementById('admin-monthly-check-notes').value, document.getElementById('admin-monthly-check-executor').value, document.getElementById('admin-monthly-check-location').value)">
-                                                Registra Controllo
+                                                <span class="btn-text-desktop">Registra Controllo</span>
+                                                <span class="btn-text-mobile">Registra</span>
                                             </button>
                                         </div>
                                         <div style="display: flex; gap: 0.5rem;">

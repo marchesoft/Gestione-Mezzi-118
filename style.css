@@ -1638,6 +1638,25 @@ body.is-admin #admin-hint-text {
     }
 }
 
+/* Custom utility classes to hide/show content based on mobile screen width */
+.btn-text-mobile {
+    display: none;
+}
+.btn-register-check {
+    padding: 0.4rem 0.8rem;
+    background: #14b8a6;
+    color: white;
+    font-weight: bold;
+    font-size: 0.85rem;
+    flex-shrink: 0;
+    border-radius: 0.4rem;
+    border: none;
+    cursor: pointer;
+}
+.btn-register-check:hover {
+    background: #0d9488;
+}
+
 /* Note sempre visibili (stile fisso sotto la card) */
 .mobile-notes {
     display: block !important;
@@ -1775,6 +1794,17 @@ body.is-admin #admin-hint-text {
     }
 
     /* .mobile-notes già gestito globalmente */
+
+    .btn-text-desktop {
+        display: none !important;
+    }
+    .btn-text-mobile {
+        display: inline !important;
+    }
+    .btn-register-check {
+        font-size: 0.75rem !important;
+        padding: 0.4rem 0.5rem !important;
+    }
 }
 
 @media (max-width: 480px) {
