@@ -1,4 +1,4 @@
-const APP_VERSION = "3.0.2";
+const APP_VERSION = "3.0.3";
 let isAdmin = false;
 let cachedVehicles = null;
 let cachedLocations = null;
@@ -1625,7 +1625,7 @@ window.openVehicleModal = async function (id) {
                                     <div style="font-size: 0.75rem; text-transform: uppercase; color: #1e3a8a; font-weight: 800; margin-bottom: 0.1rem;">Prossimo Appuntamento</div>
                                     <div style="font-size: 1.1rem; font-weight: 700; color: #1e3a8a;">
                                         ${vehicle.appointment_date ? formatDate(vehicle.appointment_date) : 'Nessun appuntamento'}
-                                        ${vehicle.appointment_location ? `<span style="font-weight: 400; font-size: 0.9rem; margin-left: 0.5rem;">(${vehicle.appointment_location})</span>` : ''}
+                                        ${(vehicle.appointment_date && vehicle.appointment_location) ? `<span style="font-weight: 400; font-size: 0.9rem; margin-left: 0.5rem;">(${vehicle.appointment_location})</span>` : ''}
                                     </div>
                                 </div>
                             </div>
@@ -1643,7 +1643,7 @@ window.openVehicleModal = async function (id) {
                                     </div>
                                     <select id="admin-appointment-location" style="padding: 0.4rem; border: 1px solid #1e3a8a; border-radius: 0.4rem; font-size: 0.9rem; width: 100%;">
                                         <option value="">Seleziona Luogo...</option>
-                                        ${cachedLocations.map(loc => `<option value="${loc.luogo}" ${vehicle.appointment_location === loc.luogo ? 'selected' : ''}>${loc.luogo}</option>`).join('')}
+                                        ${cachedLocations.map(loc => `<option value="${loc.luogo}" ${(vehicle.appointment_date && vehicle.appointment_location === loc.luogo) ? 'selected' : ''}>${loc.luogo}</option>`).join('')}
                                     </select>
                                 </div>
                             ` : ''}
@@ -1941,7 +1941,7 @@ window.saveVehicleAppointment = async function (id, date, location) {
         const vehicle = await store.getVehicleById(id);
         if (vehicle) {
             vehicle.appointment_date = date || null;
-            vehicle.appointment_location = upper(location) || null;
+            vehicle.appointment_location = vehicle.appointment_date ? (upper(location) || null) : null;
             vehicle.alert_ack_date = null; // Reset ack for new appointment
             await store.updateVehicle(vehicle);
             alert("Appuntamento aggiornato.");
