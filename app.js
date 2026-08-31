@@ -1,4 +1,4 @@
-const APP_VERSION = "2.3.1";
+const APP_VERSION = "2.3.2";
 let isAdmin = false;
 let cachedVehicles = null;
 let cachedLocations = null;
@@ -1680,9 +1680,18 @@ window.openVehicleModal = async function (id) {
                                             <input type="date" id="admin-monthly-check-date" value="${getLocalISODate()}" 
                                                    style="padding: 0.4rem; border: 1px solid #2dd4bf; border-radius: 0.4rem; font-size: 0.9rem; flex-grow: 1; min-width: 0; background-color: white; color: black; color-scheme: light;">
                                             <button class="btn" style="padding: 0.4rem 0.8rem; background: #14b8a6; color: white; font-weight: bold; font-size: 0.85rem; flex-shrink: 0;" 
-                                                    onclick="saveMonthlyCheck('${vehicle.id}', document.getElementById('admin-monthly-check-date').value, document.getElementById('admin-monthly-check-notes').value)">
+                                                    onclick="saveMonthlyCheck('${vehicle.id}', document.getElementById('admin-monthly-check-date').value, document.getElementById('admin-monthly-check-notes').value, document.getElementById('admin-monthly-check-executor').value, document.getElementById('admin-monthly-check-location').value)">
                                                 Registra Controllo
                                             </button>
+                                        </div>
+                                        <div style="display: flex; gap: 0.5rem;">
+                                            <input type="text" id="admin-monthly-check-executor" placeholder="Esecutore" 
+                                                   style="padding: 0.4rem; border: 1px solid #2dd4bf; border-radius: 0.4rem; font-size: 0.9rem; width: 50%; color: black; background-color: white;">
+                                            <select id="admin-monthly-check-location" 
+                                                    style="padding: 0.4rem; border: 1px solid #2dd4bf; border-radius: 0.4rem; font-size: 0.9rem; width: 50%; color: black; background-color: white;">
+                                                <option value="">Posizione...</option>
+                                                ${cachedLocations.map(loc => `<option value="${loc.luogo}">${loc.luogo}</option>`).join('')}
+                                            </select>
                                         </div>
                                         <input type="text" id="admin-monthly-check-notes" placeholder="Note controllo (es. OK, fari regolati...)" 
                                                style="padding: 0.4rem; border: 1px solid #2dd4bf; border-radius: 0.4rem; font-size: 0.9rem; width: 100%; color: black; background-color: white;">
@@ -1946,7 +1955,7 @@ window.saveVehicleAppointment = async function (id, date, location) {
 }
 
 // Monthly Check Save (Admin Only)
-window.saveMonthlyCheck = async function (id, date, notes) {
+window.saveMonthlyCheck = async function (id, date, notes, executor, location) {
     try {
         const vehicle = await store.getVehicleById(id);
         if (vehicle) {
@@ -1955,7 +1964,9 @@ window.saveMonthlyCheck = async function (id, date, notes) {
             }
             vehicle.monthly_checks.unshift({
                 date: date || getLocalISODate(),
-                notes: (notes || '').toString().trim()
+                notes: (notes || '').toString().trim(),
+                executor: (executor || '').toString().trim(),
+                location: (location || '').toString().trim()
             });
             await store.updateVehicle(vehicle);
             alert("Controllo mensile registrato.");
@@ -1968,12 +1979,17 @@ window.saveMonthlyCheck = async function (id, date, notes) {
     }
 }
 
-window.deleteMonthlyCheckFromDb = async function (id, date, notes) {
+window.deleteMonthlyCheckFromDb = async function (id, date, notes, executor, location) {
     if (!confirm("Eliminare questa registrazione di controllo?")) return;
     try {
         const vehicle = await store.getVehicleById(id);
         if (vehicle && vehicle.monthly_checks) {
-            const idx = vehicle.monthly_checks.findIndex(c => c.date === date && c.notes === notes);
+            const idx = vehicle.monthly_checks.findIndex(c => 
+                c.date === date && 
+                (c.notes || '') === (notes || '') && 
+                (c.executor || '') === (executor || '') && 
+                (c.location || '') === (location || '')
+            );
             if (idx !== -1) {
                 vehicle.monthly_checks.splice(idx, 1);
                 await store.updateVehicle(vehicle);
@@ -1990,13 +2006,23 @@ window.deleteMonthlyCheckFromDb = async function (id, date, notes) {
     }
 }
 
-window.openEditMonthlyCheckModal = function (vehicleId, date, notes) {
+window.openEditMonthlyCheckModal = function (vehicleId, date, notes, executor, location) {
     document.getElementById('edit-check-vehicle-id').value = vehicleId;
     document.getElementById('edit-check-original-date').value = date;
-    document.getElementById('edit-check-original-notes').value = notes;
+    document.getElementById('edit-check-original-notes').value = notes || '';
+    document.getElementById('edit-check-original-executor').value = executor || '';
+    document.getElementById('edit-check-original-location').value = location || '';
     
     document.getElementById('edit-check-date').value = date;
-    document.getElementById('edit-check-notes').value = notes;
+    document.getElementById('edit-check-notes').value = notes || '';
+    document.getElementById('edit-check-executor').value = executor || '';
+    
+    // Populate locations select dynamically
+    const select = document.getElementById('edit-check-location');
+    if (select) {
+        select.innerHTML = '<option value="">Posizione...</option>' +
+            cachedLocations.map(loc => `<option value="${loc.luogo}" ${location === loc.luogo ? 'selected' : ''}>${loc.luogo}</option>`).join('');
+    }
     
     document.getElementById('monthly-check-edit-modal').classList.remove('hidden');
 }
@@ -2005,9 +2031,13 @@ window.saveEditedMonthlyCheck = async function () {
     const vehicleId = document.getElementById('edit-check-vehicle-id').value;
     const origDate = document.getElementById('edit-check-original-date').value;
     const origNotes = document.getElementById('edit-check-original-notes').value;
+    const origExecutor = document.getElementById('edit-check-original-executor').value;
+    const origLocation = document.getElementById('edit-check-original-location').value;
     
     const newDate = document.getElementById('edit-check-date').value;
     const newNotes = (document.getElementById('edit-check-notes').value || '').trim();
+    const newExecutor = (document.getElementById('edit-check-executor').value || '').trim();
+    const newLocation = document.getElementById('edit-check-location').value;
     
     if (!newDate) {
         alert("La data è obbligatoria.");
@@ -2017,11 +2047,18 @@ window.saveEditedMonthlyCheck = async function () {
     try {
         const vehicle = await store.getVehicleById(vehicleId);
         if (vehicle && vehicle.monthly_checks) {
-            const idx = vehicle.monthly_checks.findIndex(c => c.date === origDate && c.notes === origNotes);
+            const idx = vehicle.monthly_checks.findIndex(c => 
+                c.date === origDate && 
+                (c.notes || '') === origNotes && 
+                (c.executor || '') === origExecutor && 
+                (c.location || '') === origLocation
+            );
             if (idx !== -1) {
                 vehicle.monthly_checks[idx] = {
                     date: newDate,
-                    notes: newNotes
+                    notes: newNotes,
+                    executor: newExecutor,
+                    location: newLocation
                 };
                 vehicle.monthly_checks.sort((a, b) => new Date(b.date) - new Date(a.date));
                 
@@ -2153,6 +2190,8 @@ window.exportCurrentTableToCSV = async function () {
                             plate: v.plate || '-',
                             model: v.model || '-',
                             date: check.date,
+                            executor: check.executor || '',
+                            location: check.location || '',
                             notes: check.notes
                         });
                     });
@@ -2191,8 +2230,8 @@ window.exportCurrentTableToCSV = async function () {
             const italianHeaders = ['ID (Non modificare)', 'Categoria', 'Nome/Sigla', 'Fisso', 'Cellulare 1', 'Cellulare 2', 'Cell. Medico'];
             csvRows.push(italianHeaders.join(';'));
         } else if (type === 'controlli') {
-            headers = ['vehicle_id', 'sigla', 'plate', 'model', 'date', 'notes'];
-            const italianHeaders = ['ID Veicolo', 'Sigla', 'Targa', 'Modello', 'Data Controllo', 'Note'];
+            headers = ['vehicle_id', 'sigla', 'plate', 'model', 'date', 'executor', 'location', 'notes'];
+            const italianHeaders = ['ID Veicolo', 'Sigla', 'Targa', 'Modello', 'Data Controllo', 'Esecutore', 'Posizione', 'Note'];
             csvRows.push(italianHeaders.join(';'));
         } else {
             headers = Object.keys(data[0]);
@@ -2701,7 +2740,9 @@ window.switchDataTable = async function (type) {
                             plate: v.plate || '-',
                             model: v.model || '-',
                             date: check.date,
-                            notes: check.notes
+                            notes: check.notes,
+                            executor: check.executor || '',
+                            location: check.location || ''
                         });
                     });
                 }
@@ -2746,6 +2787,8 @@ window.switchDataTable = async function (type) {
                                 <th class="col-shrink">Mezzo (Sigla)</th>
                                 <th class="col-shrink">Targa</th>
                                 <th class="col-shrink">Data Controllo</th>
+                                <th class="col-shrink">Esecutore</th>
+                                <th class="col-shrink">Posizione</th>
                                 <th class="col-expand">Note</th>
                                 ${isAdmin ? '<th class="col-actions">Azioni</th>' : ''}
                             </tr>
@@ -2754,7 +2797,7 @@ window.switchDataTable = async function (type) {
                             ${sortedYM.map(ym => {
                                 const groupHeader = `
                                     <tr style="background: #f1f5f9; font-weight: 800; color: #0f766e;">
-                                        <td colspan="${isAdmin ? 5 : 4}" style="padding: 0.6rem 1rem;">
+                                        <td colspan="${isAdmin ? 7 : 6}" style="padding: 0.6rem 1rem;">
                                             <i class="fa-solid fa-calendar-days" style="margin-right: 6px;"></i> ${getItalianMonthYearName(ym)}
                                         </td>
                                     </tr>
@@ -2764,10 +2807,12 @@ window.switchDataTable = async function (type) {
                                     + `<td class="col-shrink text-bold text-primary">${c.sigla}</td>`
                                     + `<td class="col-shrink">${c.plate}</td>`
                                     + `<td class="col-shrink">${formatDate(c.date)}</td>`
+                                    + `<td class="col-shrink">${c.executor || '-'}</td>`
+                                    + `<td class="col-shrink">${c.location || '-'}</td>`
                                     + `<td class="col-expand">${c.notes || '-'}</td>`
                                     + (isAdmin ? `<td class="col-actions">`
-                                        + `<button onclick="openEditMonthlyCheckModal('${c.vehicle_id}', '${c.date}', \`${(c.notes || '').replace(/`/g, '\\`').replace(/\$/g, '\\$')}\`)" style="cursor:pointer; background:none; border:none; color:var(--primary-color); margin-right:0.5rem;" title="Modifica"><i class="fa-solid fa-pen"></i></button>`
-                                        + `<button onclick="deleteMonthlyCheckFromDb('${c.vehicle_id}', '${c.date}', \`${(c.notes || '').replace(/`/g, '\\`').replace(/\$/g, '\\$')}\`)" style="cursor:pointer; background:none; border:none; color:var(--status-to-repair);" title="Elimina"><i class="fa-solid fa-trash"></i></button>`
+                                        + `<button onclick="openEditMonthlyCheckModal('${c.vehicle_id}', '${c.date}', \`${(c.notes || '').replace(/`/g, '\\`').replace(/\$/g, '\\$')}\`, \`${(c.executor || '').replace(/`/g, '\\`').replace(/\$/g, '\\$')}\`, \`${(c.location || '').replace(/`/g, '\\`').replace(/\$/g, '\\$')}\`)" style="cursor:pointer; background:none; border:none; color:var(--primary-color); margin-right:0.5rem;" title="Modifica"><i class="fa-solid fa-pen"></i></button>`
+                                        + `<button onclick="deleteMonthlyCheckFromDb('${c.vehicle_id}', '${c.date}', \`${(c.notes || '').replace(/`/g, '\\`').replace(/\$/g, '\\$')}\`, \`${(c.executor || '').replace(/`/g, '\\`').replace(/\$/g, '\\$')}\`, \`${(c.location || '').replace(/`/g, '\\`').replace(/\$/g, '\\$')}\`)" style="cursor:pointer; background:none; border:none; color:var(--status-to-repair);" title="Elimina"><i class="fa-solid fa-trash"></i></button>`
                                         + '</td>' : '') + '</tr>'
                                 ).join('');
                                 return groupHeader + groupRows;

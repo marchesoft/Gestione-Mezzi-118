@@ -25,7 +25,7 @@
     <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <!-- App Styles -->
-    <link rel="stylesheet" href="style.css?v=2.3.1">
+    <link rel="stylesheet" href="style.css?v=2.3.2">
 </head>
 
 <body>
@@ -52,7 +52,7 @@
                     <div class="section-header" style="margin-bottom: 0;">
                         <h3 style="margin: 0; white-space: nowrap;">VEICOLI IN GESTIONE <span id="app-version-display"
                                 style="font-size: 0.8rem; font-weight: 400; opacity: 0.8; margin-left: 0.5rem; vertical-align: middle; text-transform: none;">v
-                                2.3.1</span></h3>
+                                2.3.2</span></h3>
                     </div>
                     <div class="action-buttons">
 
@@ -516,11 +516,25 @@
                     <input type="hidden" id="edit-check-vehicle-id">
                     <input type="hidden" id="edit-check-original-date">
                     <input type="hidden" id="edit-check-original-notes">
+                    <input type="hidden" id="edit-check-original-executor">
+                    <input type="hidden" id="edit-check-original-location">
                     
                     <div class="form-group" style="margin-bottom: 1rem;">
                         <label style="display: block; margin-bottom: 0.5rem; font-weight: 500;">Data Controllo</label>
                         <input type="date" id="edit-check-date" required
                             style="width: 100%; padding: 0.6rem; border: 1px solid var(--border-color); border-radius: 0.5rem; color-scheme: light; background-color: white; color: black;">
+                    </div>
+                    <div class="form-group" style="margin-bottom: 1rem;">
+                        <label style="display: block; margin-bottom: 0.5rem; font-weight: 500;">Esecutore</label>
+                        <input type="text" id="edit-check-executor"
+                            style="width: 100%; padding: 0.6rem; border: 1px solid var(--border-color); border-radius: 0.5rem; color: black; background-color: white;">
+                    </div>
+                    <div class="form-group" style="margin-bottom: 1rem;">
+                        <label style="display: block; margin-bottom: 0.5rem; font-weight: 500;">Posizione Attuale</label>
+                        <select id="edit-check-location"
+                            style="width: 100%; padding: 0.6rem; border: 1px solid var(--border-color); border-radius: 0.5rem; color: black; background-color: white;">
+                            <option value="">Posizione...</option>
+                        </select>
                     </div>
                     <div class="form-group" style="margin-bottom: 1rem;">
                         <label style="display: block; margin-bottom: 0.5rem; font-weight: 500;">Note</label>
@@ -706,7 +720,7 @@
     <script src="firebase-config.js"></script>
 
     <script src="store.js?v=2.0"></script>
-    <script src="app.js?v=2.3.1"></script>
+    <script src="app.js?v=2.3.2"></script>
 </body>
 
 </html>
