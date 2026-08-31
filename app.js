@@ -1,4 +1,4 @@
-const APP_VERSION = "3.0.7";
+const APP_VERSION = "3.0.8";
 let isAdmin = false;
 let cachedVehicles = null;
 let cachedLocations = null;
@@ -668,33 +668,35 @@ window.dismissAlert = function (event, vehicleId) {
 window.deleteTodoNote = async function (event, id, noteIndex) {
     event.stopPropagation();
     if (!isAdmin) return;
-    if (!confirm("Hai completato questa attività? La nota verrà eliminata.")) return;
+    setTimeout(() => {
+        if (!confirm("Hai completato questa attività? La nota verrà eliminata.")) return;
 
-    if (cachedVehicles) {
-        const idx = cachedVehicles.findIndex(v => v.id === id);
-        if (idx !== -1) {
-            const vehicle = cachedVehicles[idx];
-            let todos = Array.isArray(vehicle.todo_notes) ? [...vehicle.todo_notes] : (vehicle.todo_notes && typeof vehicle.todo_notes === 'string' && vehicle.todo_notes.trim() !== '' ? [vehicle.todo_notes] : []);
-            
-            if (noteIndex !== undefined && noteIndex >= 0 && noteIndex < todos.length) {
-                todos.splice(noteIndex, 1);
-            } else {
-                todos = [];
-            }
-            vehicle.todo_notes = todos;
-
-            store.updateVehicle(vehicle).then(() => {
-                const modal = document.getElementById('vehicle-modal');
-                if (modal && !modal.classList.contains('hidden')) {
-                    openVehicleModal(id);
+        if (cachedVehicles) {
+            const idx = cachedVehicles.findIndex(v => v.id === id);
+            if (idx !== -1) {
+                const vehicle = cachedVehicles[idx];
+                let todos = Array.isArray(vehicle.todo_notes) ? [...vehicle.todo_notes] : (vehicle.todo_notes && typeof vehicle.todo_notes === 'string' && vehicle.todo_notes.trim() !== '' ? [vehicle.todo_notes] : []);
+                
+                if (noteIndex !== undefined && noteIndex >= 0 && noteIndex < todos.length) {
+                    todos.splice(noteIndex, 1);
+                } else {
+                    todos = [];
                 }
-            }).catch(err => {
-                console.error("Failed to delete todo note:", err);
-                alert("Errore salvataggio nota da fare.");
-            });
-            renderDashboard(false);
+                vehicle.todo_notes = todos;
+
+                store.updateVehicle(vehicle).then(() => {
+                    const modal = document.getElementById('vehicle-modal');
+                    if (modal && !modal.classList.contains('hidden')) {
+                        openVehicleModal(id);
+                    }
+                }).catch(err => {
+                    console.error("Failed to delete todo note:", err);
+                    alert("Errore salvataggio nota da fare.");
+                });
+                renderDashboard(false);
+            }
         }
-    }
+    }, 50);
 }
 
 window.quickUpdateStatus = async function (event, id) {
@@ -1641,7 +1643,7 @@ window.openVehicleModal = async function (id) {
                                         <button class="btn btn-primary" style="padding: 0.4rem 0.6rem; flex-shrink: 0;" onclick="saveVehicleAppointment('${vehicle.id}', document.getElementById('admin-appointment-input').value, document.getElementById('admin-appointment-location').value)" title="Salva appuntamento">
                                             <i class="fa-solid fa-save"></i>
                                         </button>
-                                        <button class="btn" style="padding: 0.4rem 0.6rem; background: #ef4444; color: white; flex-shrink: 0;" onclick="if(confirm('Annullare l\\\'appuntamento corrente?')) { document.getElementById('admin-appointment-input').value = ''; document.getElementById('admin-appointment-location').value = ''; saveVehicleAppointment('${vehicle.id}', '', ''); }" title="Cancella appuntamento">
+                                        <button class="btn" style="padding: 0.4rem 0.6rem; background: #ef4444; color: white; flex-shrink: 0;" onclick="setTimeout(() => { if(confirm('Annullare l\\\'appuntamento corrente?')) { document.getElementById('admin-appointment-input').value = ''; document.getElementById('admin-appointment-location').value = ''; saveVehicleAppointment('${vehicle.id}', '', ''); } }, 50)" title="Cancella appuntamento">
                                             <i class="fa-solid fa-trash"></i>
                                         </button>
                                     </div>
@@ -1816,18 +1818,24 @@ window.openVehicleModal = async function (id) {
 }
 
 window.deleteVehicleHandler = async function (id) {
-    if (confirm('Sei sicuro di voler eliminare questo veicolo?')) {
-        await store.deleteVehicle(id);
-        document.getElementById('vehicle-modal').classList.add('hidden');
-        await renderDashboard();
-    }
+    setTimeout(() => {
+        if (confirm('Sei sicuro di voler eliminare questo veicolo?')) {
+            store.deleteVehicle(id).then(() => {
+                document.getElementById('vehicle-modal').classList.add('hidden');
+                renderDashboard();
+            });
+        }
+    }, 50);
 }
 
 window.deleteMaintenanceRecord = async function (recordId, vehicleId) {
-    if (confirm('Eliminare questo record?')) {
-        await store.deleteIntervention(recordId);
-        await openVehicleModal(vehicleId);
-    }
+    setTimeout(() => {
+        if (confirm('Eliminare questo record?')) {
+            store.deleteIntervention(recordId).then(() => {
+                openVehicleModal(vehicleId);
+            });
+        }
+    }, 50);
 }
 
 window.openMaintenanceForm = function (vehicleId, vehicleSigla, record = null) {
@@ -1993,54 +2001,61 @@ window.saveMonthlyCheck = async function (id, date, notes, executor, location) {
 }
 
 window.deleteMonthlyCheckFromDb = async function (id, date, notes, executor, location) {
-    if (!confirm("Eliminare questa registrazione di controllo?")) return;
-    try {
-        const vehicle = await store.getVehicleById(id);
-        if (vehicle && vehicle.monthly_checks) {
-            const idx = vehicle.monthly_checks.findIndex(c => 
-                c.date === date && 
-                (c.notes || '') === (notes || '') && 
-                (c.executor || '') === (executor || '') && 
-                (c.location || '') === (location || '')
-            );
-            if (idx !== -1) {
-                vehicle.monthly_checks.splice(idx, 1);
-                await store.updateVehicle(vehicle);
-                alert("Controllo eliminato.");
-                switchDataTable('controlli');
-                renderDashboard(true);
-            } else {
-                alert("Controllo non trovato nel database.");
-            }
+    setTimeout(() => {
+        if (!confirm("Eliminare questa registrazione di controllo?")) return;
+        try {
+            const vehicle = cachedVehicles.find(v => v.id === id); // fetch from cache for sync check or query
+            store.getVehicleById(id).then(vehicle => {
+                if (vehicle && vehicle.monthly_checks) {
+                    const idx = vehicle.monthly_checks.findIndex(c => 
+                        c.date === date && 
+                        (c.notes || '') === (notes || '') && 
+                        (c.executor || '') === (executor || '') && 
+                        (c.location || '') === (location || '')
+                    );
+                    if (idx !== -1) {
+                        vehicle.monthly_checks.splice(idx, 1);
+                        store.updateVehicle(vehicle).then(() => {
+                            alert("Controllo eliminato.");
+                            switchDataTable('controlli');
+                            renderDashboard(true);
+                        });
+                    } else {
+                        alert("Controllo non trovato nel database.");
+                    }
+                }
+            });
+        } catch (e) {
+            console.error("Error deleting monthly check:", e);
+            alert("Errore durante l'eliminazione del controllo.");
         }
-    } catch (e) {
-        console.error("Error deleting monthly check:", e);
-        alert("Errore durante l'eliminazione del controllo.");
-    }
+    }, 50);
 }
 
 window.deleteCurrentMonthCheck = async function (id) {
-    if (!confirm("Eliminare la registrazione di controllo per questo mese?")) return;
-    try {
-        const vehicle = await store.getVehicleById(id);
-        if (vehicle && vehicle.monthly_checks) {
-            const now = new Date();
-            const currentYM = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
-            const idx = vehicle.monthly_checks.findIndex(c => c.date && c.date.startsWith(currentYM));
-            if (idx !== -1) {
-                vehicle.monthly_checks.splice(idx, 1);
-                await store.updateVehicle(vehicle);
-                alert("Controllo mensile eliminato.");
-                closeVehicleModal();
-                renderDashboard(true);
-            } else {
-                alert("Nessun controllo mensile trovato per questo mese.");
+    setTimeout(() => {
+        if (!confirm("Eliminare la registrazione di controllo per questo mese?")) return;
+        store.getVehicleById(id).then(vehicle => {
+            if (vehicle && vehicle.monthly_checks) {
+                const now = new Date();
+                const currentYM = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+                const idx = vehicle.monthly_checks.findIndex(c => c.date && c.date.startsWith(currentYM));
+                if (idx !== -1) {
+                    vehicle.monthly_checks.splice(idx, 1);
+                    store.updateVehicle(vehicle).then(() => {
+                        alert("Controllo mensile eliminato.");
+                        closeVehicleModal();
+                        renderDashboard(true);
+                    });
+                } else {
+                    alert("Nessun controllo mensile trovato per questo mese.");
+                }
             }
-        }
-    } catch (e) {
-        console.error("Error deleting current monthly check:", e);
-        alert("Errore durante l'eliminazione del controllo mensile.");
-    }
+        }).catch(e => {
+            console.error("Error deleting current monthly check:", e);
+            alert("Errore durante l'eliminazione del controllo mensile.");
+        });
+    }, 50);
 }
 
 window.openEditMonthlyCheckModal = function (vehicleId, date, notes, executor, location) {
@@ -2605,7 +2620,7 @@ window.switchDataTable = async function (type) {
                 + `<td>${l.luogo}</td>`
                 + (isAdmin ? '<td class="col-actions">'
                     + `<button onclick="window.editLocationHandler('${l.luogo}')" style="margin-right:0.5rem; cursor:pointer; background:none; border:none; color:var(--primary-color);"><i class="fa-solid fa-edit"></i></button>`
-                    + `<button onclick="if(confirm('Eliminare questo luogo?')){store.deleteLocation('${l.luogo}').then(() => switchDataTable('locations'))}" style="cursor:pointer; background:none; border:none; color:var(--status-to-repair);"><i class="fa-solid fa-trash"></i></button>`
+                    + `<button onclick="setTimeout(() => { if(confirm('Eliminare questo luogo?')){store.deleteLocation('${l.luogo}').then(() => switchDataTable('locations'))} }, 50)" style="cursor:pointer; background:none; border:none; color:var(--status-to-repair);"><i class="fa-solid fa-trash"></i></button>`
                     + '</td>' : '') + '</tr>'
             ).join('')}
                         </tbody>
@@ -2656,7 +2671,7 @@ window.switchDataTable = async function (type) {
                 + `<td class="col-expand">${i.description}</td>`
                 + (isAdmin ? '<td class="col-actions">'
                     + `<button onclick="editInterventionHandler('${i.id}')" style="margin-right:0.5rem; cursor:pointer; background:none; border:none; color:var(--primary-color);"><i class="fa-solid fa-pen"></i></button>`
-                    + `<button onclick="if(confirm('Eliminare questo intervento?')){store.deleteIntervention('${i.id}').then(() => switchDataTable('interventions'))}" style="cursor:pointer; background:none; border:none; color:var(--status-to-repair);"><i class="fa-solid fa-trash"></i></button>`
+                    + `<button onclick="setTimeout(() => { if(confirm('Eliminare questo intervento?')){store.deleteIntervention('${i.id}').then(() => switchDataTable('interventions'))} }, 50)" style="cursor:pointer; background:none; border:none; color:var(--status-to-repair);"><i class="fa-solid fa-trash"></i></button>`
                     + '</td>' : '') + '</tr>'
             ).join('')}
                         </tbody>
@@ -2702,7 +2717,7 @@ window.switchDataTable = async function (type) {
                 + `<td class="col-shrink text-bold" style="color:var(--status-available);">${c.al_mezzo}</td>`
                 + (isAdmin ? '<td class="col-actions">'
                     + `<button onclick="openCambioMezzoModal('${c.id}')" style="cursor:pointer; background:none; border:none; color:var(--primary-color); margin-right: 0.5rem;"><i class="fa-solid fa-edit"></i></button>`
-                    + `<button onclick="if(confirm('Eliminare questo cambio?')){store.deleteCambioMezzo('${c.id}').then(() => switchDataTable('cambiomezzo'))}" style="cursor:pointer; background:none; border:none; color:var(--status-to-repair);"><i class="fa-solid fa-trash"></i></button>`
+                    + `<button onclick="setTimeout(() => { if(confirm('Eliminare questo cambio?')){store.deleteCambioMezzo('${c.id}').then(() => switchDataTable('cambiomezzo'))} }, 50)" style="cursor:pointer; background:none; border:none; color:var(--status-to-repair);"><i class="fa-solid fa-trash"></i></button>`
                     + '</td>' : '') + '</tr>'
             ).join('')}
                         </tbody>
@@ -2759,7 +2774,7 @@ window.switchDataTable = async function (type) {
                     + `<td class="col-shrink">${c.mobile_medical ? (isAdmin ? `<a href="tel:${c.mobile_medical.replace(/[\\/\s+]/g, '')}" class="tel-link" style="display:inline-block; padding:0.2rem 0.5rem; background:#ecfdf5; color:#059669; text-decoration:none; border-radius:0.3rem; font-weight:700; font-size:0.8rem;">${c.mobile_medical}</a>` : c.mobile_medical) : '<span style="color:#cbd5e1">-</span>'}</td>`
                     + (isAdmin ? `<td class="col-actions">`
                         + `<button onclick="openContactForm('${c.id}')" style="cursor:pointer;background:none;border:none;color:var(--primary-color);margin-right:0.5rem;" title="Modifica"><i class="fa-solid fa-pen-to-square"></i></button>`
-                        + `<button onclick="if(confirm('Eliminare questo contatto?')){store.deleteContact('${c.id}').then(() => switchDataTable('contacts'))}" style="cursor:pointer;background:none;border:none;color:var(--status-to-repair);" title="Elimina"><i class="fa-solid fa-trash"></i></button>`
+                        + `<button onclick="setTimeout(() => { if(confirm('Eliminare questo contatto?')){store.deleteContact('${c.id}').then(() => switchDataTable('contacts'))} }, 50)" style="cursor:pointer;background:none;border:none;color:var(--status-to-repair);" title="Elimina"><i class="fa-solid fa-trash"></i></button>`
                         + '</td>' : '') + '</tr>';
             }).join('')}
                         </tbody>
