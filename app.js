@@ -1,4 +1,4 @@
-const APP_VERSION = "2.0";
+const APP_VERSION = "2.0.1";
 let isAdmin = false;
 let cachedVehicles = null;
 let cachedLocations = null;
@@ -1626,9 +1626,14 @@ window.openVehicleModal = async function (id) {
                                 <div style="display: flex; align-items: center; gap: 0.5rem;">
                                     <input type="date" id="admin-appointment-input" value="${vehicle.appointment_date || ''}" 
                                            style="padding: 0.4rem; border: 1px solid #1e3a8a; border-radius: 0.4rem; font-size: 0.9rem;">
-                                    <button class="btn btn-primary" style="padding: 0.4rem 0.6rem;" onclick="saveVehicleAppointment('${vehicle.id}', document.getElementById('admin-appointment-input').value, document.getElementById('admin-appointment-location').value)">
+                                    <button class="btn btn-primary" style="padding: 0.4rem 0.6rem;" onclick="saveVehicleAppointment('${vehicle.id}', document.getElementById('admin-appointment-input').value, document.getElementById('admin-appointment-location').value)" title="Salva appuntamento">
                                         <i class="fa-solid fa-save"></i>
                                     </button>
+                                    ${vehicle.appointment_date ? `
+                                        <button class="btn" style="padding: 0.4rem 0.6rem; background: #ef4444; color: white;" onclick="if(confirm('Annullare l\\\'appuntamento corrente?')) saveVehicleAppointment('${vehicle.id}', '', '')" title="Cancella appuntamento">
+                                            <i class="fa-solid fa-trash"></i>
+                                        </button>
+                                    ` : ''}
                                 </div>
                                 <select id="admin-appointment-location" style="padding: 0.4rem; border: 1px solid #1e3a8a; border-radius: 0.4rem; font-size: 0.9rem; width: 100%;">
                                     <option value="">Seleziona Luogo...</option>
