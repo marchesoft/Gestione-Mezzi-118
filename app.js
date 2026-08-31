@@ -1,4 +1,4 @@
-const APP_VERSION = "3.0.0";
+const APP_VERSION = "3.0.1";
 let isAdmin = false;
 let cachedVehicles = null;
 let cachedLocations = null;
@@ -631,7 +631,7 @@ window.addTodoNote = async function (event, id) {
             store.updateVehicle(vehicle).then(() => {
                 const modal = document.getElementById('vehicle-modal');
                 if (modal && !modal.classList.contains('hidden')) {
-                    openVehicleModal(id);
+                    closeVehicleModal();
                 }
             }).catch(err => {
                 console.error("Failed to update todo note:", err);
@@ -1703,7 +1703,7 @@ window.openVehicleModal = async function (id) {
 
                         <div class="todo-block" style="background: #f8fafc; padding: 1rem; border: 2px solid #94a3b8; border-radius: 0.75rem;">
                             <div style="font-size: 0.75rem; text-transform: uppercase; color: #475569; font-weight: 800; margin-bottom: 0.75rem; display: flex; align-items: center; gap: 0.5rem;">
-                                <i class="fa-solid fa-clipboard-list" style="font-size: 1rem;"></i> Segna le cose da fare
+                                <i class="fa-solid fa-clipboard-list" style="font-size: 1rem;"></i> Memo
                             </div>
                             ${(function () {
                                 let todos = [];
@@ -1946,7 +1946,7 @@ window.saveVehicleAppointment = async function (id, date, location) {
             await store.updateVehicle(vehicle);
             alert("Appuntamento aggiornato.");
             // Refresh detail modal and dashboard
-            openVehicleModal(id);
+            closeVehicleModal();
             renderDashboard(true);
         }
     } catch (error) {
@@ -1971,7 +1971,7 @@ window.saveMonthlyCheck = async function (id, date, notes, executor, location) {
             });
             await store.updateVehicle(vehicle);
             alert("Controllo mensile registrato.");
-            openVehicleModal(id);
+            closeVehicleModal();
             renderDashboard(true);
         }
     } catch (error) {
