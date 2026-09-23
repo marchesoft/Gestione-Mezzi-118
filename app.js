@@ -1,4 +1,4 @@
-const APP_VERSION = "3.0.5";
+const APP_VERSION = "3.0.6";
 let isAdmin = false;
 let cachedVehicles = null;
 let cachedLocations = null;
@@ -501,19 +501,6 @@ async function renderVehicleGrid(vehicles) {
         const allBadges = [revBadge, kmIntervalBadge].filter(Boolean).join('');
         const expiryBadgesHtml = allBadges ? `<div class="expiry-badges">${allBadges}</div>` : '';
 
-        // --- Appointment Label HTML (card) ---
-        let appointmentLabelHtml = '';
-        if (vehicle.appointment_date) {
-            const locText = vehicle.appointment_location ? ` @ ${vehicle.appointment_location}` : '';
-            const apptLabel = `📅 ${formatDate(vehicle.appointment_date)}${locText}`;
-            appointmentLabelHtml = `
-            <div class="appointment-label-box" style="width: 100%; margin-bottom: 0.5rem;" onclick="event.stopPropagation()">
-                <div class="todo-text"><i class="fa-solid fa-calendar-day" style="margin-right:4px;"></i>${apptLabel}</div>
-                ${isAdmin ? `<button class="appointment-ack-btn" onclick="acknowledgeAppointmentAlert(event, '${vehicle.id}')" title="Segna come visto"><i class="fa-solid fa-check"></i></button>` : ''}
-            </div>
-            `;
-        }
-
         // --- Da Fare HTML ---
         let todoHtml = '';
         let todos = [];
@@ -550,7 +537,6 @@ async function renderVehicleGrid(vehicles) {
                 ${alertHTML}
                 ${statusHtml}
                 <div class="card-body">
-                    ${appointmentLabelHtml}
                     ${todoHtml}
                     <div class="vehicle-id" style="text-align: center; margin-bottom: 0.5rem; display: flex; flex-direction: column; gap: 0.1rem;">
                         ${vehicle.sigla ? `<div class="sigla-text">${vehicle.sigla}</div>` : ''}
