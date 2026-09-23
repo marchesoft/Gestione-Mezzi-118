@@ -2186,6 +2186,37 @@ body.is-admin #admin-hint-text {
     cursor: not-allowed;
 }
 
+/* Appointment Label Box (card) */
+.appointment-label-box {
+    background-color: #fefce8;
+    border: 1px solid #ca8a04;
+    color: #713f12;
+    border-radius: 4px;
+    padding: 4px 8px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 90%;
+    margin-bottom: 4px;
+    gap: 4px;
+}
+.appointment-ack-btn {
+    background: #16a34a;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    padding: 4px 8px;
+    cursor: pointer;
+    font-size: 0.75rem;
+    transition: background-color 0.2s;
+    flex-shrink: 0;
+}
+.appointment-ack-btn:hover {
+    background: #15803d;
+}
+
 /* Da Fare Styles */
 .todo-note-box {
     background-color: #fee2e2;

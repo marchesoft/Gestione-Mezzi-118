@@ -1,4 +1,4 @@
-const APP_VERSION = "3.0.3";
+const APP_VERSION = "3.0.4";
 let isAdmin = false;
 let cachedVehicles = null;
 let cachedLocations = null;
@@ -496,6 +496,19 @@ async function renderVehicleGrid(vehicles) {
         const allBadges = [revBadge, kmIntervalBadge].filter(Boolean).join('');
         const expiryBadgesHtml = allBadges ? `<div class="expiry-badges">${allBadges}</div>` : '';
 
+        // --- Appointment Label HTML (card) ---
+        let appointmentLabelHtml = '';
+        if (vehicle.appointment_date) {
+            const locText = vehicle.appointment_location ? ` @ ${vehicle.appointment_location}` : '';
+            const apptLabel = `📅 ${formatDate(vehicle.appointment_date)}${locText}`;
+            appointmentLabelHtml = `
+            <div class="appointment-label-box" style="width: 100%; margin-bottom: 0.5rem;" onclick="event.stopPropagation()">
+                <div class="todo-text"><i class="fa-solid fa-calendar-day" style="margin-right:4px;"></i>${apptLabel}</div>
+                <button class="appointment-ack-btn" onclick="acknowledgeAppointmentAlert(event, '${vehicle.id}')" title="Segna come visto"><i class="fa-solid fa-check"></i></button>
+            </div>
+            `;
+        }
+
         // --- Da Fare HTML ---
         let todoHtml = '';
         let todos = [];
@@ -532,6 +545,7 @@ async function renderVehicleGrid(vehicles) {
                 ${alertHTML}
                 ${statusHtml}
                 <div class="card-body">
+                    ${appointmentLabelHtml}
                     ${todoHtml}
                     <div class="vehicle-id" style="text-align: center; margin-bottom: 0.5rem; display: flex; flex-direction: column; gap: 0.1rem;">
                         ${vehicle.sigla ? `<div class="sigla-text">${vehicle.sigla}</div>` : ''}
@@ -863,6 +877,9 @@ window.openVehicleForm = async function (vehicleId = null) {
             document.getElementById('vehicle-revision-o2').value = vehicle.revision_o2 || '';
             document.getElementById('vehicle-type').value = vehicle.type;
             document.getElementById('vehicle-notes').value = vehicle.notes || '';
+            if (document.getElementById('vehicle-db-notes')) {
+                document.getElementById('vehicle-db-notes').value = vehicle.db_notes || '';
+            }
             if (document.getElementById('vehicle-todo-notes')) {
                 const todoVal = Array.isArray(vehicle.todo_notes) ? vehicle.todo_notes.join('\n') : (vehicle.todo_notes || '');
                 document.getElementById('vehicle-todo-notes').value = todoVal;
@@ -1432,6 +1449,8 @@ window.saveVehicleForm = async function () {
     const inspection_expiry = document.getElementById('vehicle-inspection').value;
     const revision_o2 = document.getElementById('vehicle-revision-o2').value;
     const notes = document.getElementById('vehicle-notes').value;
+    const dbNotesEl = document.getElementById('vehicle-db-notes');
+    const db_notes = dbNotesEl ? dbNotesEl.value.trim() : '';
     const todoNotesEl = document.getElementById('vehicle-todo-notes');
     const todo_notes_raw = todoNotesEl ? todoNotesEl.value : '';
     const todo_notes = todo_notes_raw.split('\n').map(s => s.trim()).map(upper).filter(s => s !== '');
@@ -1450,6 +1469,7 @@ window.saveVehicleForm = async function () {
         inspection_expiry: inspection_expiry || null,
         revision_o2: revision_o2 || null,
         notes: upper(notes),
+        db_notes: db_notes,
         todo_notes: todo_notes
     };
 
@@ -2262,8 +2282,8 @@ window.exportCurrentTableToCSV = async function () {
 
         // Mapping for headers
         if (type === 'vehicles') {
-            headers = ['id', 'plate', 'model', 'sigla', 'station', 'status', 'mileage', 'mileage_month', 'notes', 'radio_id', 'inspection_expiry', 'revision_o2'];
-            const italianHeaders = ['ID (Non modificare)', 'Targa', 'Modello', 'Sigla', 'Stazione', 'Stato', 'Km', 'Mese Km', 'Note', 'Radio ID', 'Scadenza Revisione', 'Revisione O2'];
+            headers = ['id', 'plate', 'model', 'sigla', 'station', 'status', 'mileage', 'mileage_month', 'notes', 'db_notes', 'radio_id', 'inspection_expiry', 'revision_o2'];
+            const italianHeaders = ['ID (Non modificare)', 'Targa', 'Modello', 'Sigla', 'Stazione', 'Stato', 'Km', 'Mese Km', 'Note', 'Note Interne', 'Radio ID', 'Scadenza Revisione', 'Revisione O2'];
             csvRows.push(italianHeaders.join(';'));
         } else if (type === 'locations') {
             headers = ['luogo', 'colore'];

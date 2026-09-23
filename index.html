@@ -25,7 +25,7 @@
     <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <!-- App Styles -->
-    <link rel="stylesheet" href="style.css?v=3.0.3">
+    <link rel="stylesheet" href="style.css?v=3.0.4">
 </head>
 
 <body>
@@ -308,6 +308,15 @@
                                     style="width: 100%; padding: 0.6rem; border: 1px solid var(--border-color); border-radius: 0.5rem; font-family: inherit;"></textarea>
                             </div>
 
+                            <div class="form-group" style="margin-bottom: 1.5rem;">
+                                <label
+                                    style="display: block; margin-bottom: 0.5rem; font-weight: 500; font-size: 0.9rem;">
+                                    <i class="fa-solid fa-database" style="margin-right: 4px; color: #6366f1;"></i>
+                                    Note Interne <span style="font-size: 0.75rem; color: #64748b; font-weight: 400;">(solo database, non visibile nelle card)</span>
+                                </label>
+                                <textarea id="vehicle-db-notes" rows="3" placeholder="Appunti interni, dati tecnici riservati, riferimenti..."
+                                    style="width: 100%; padding: 0.6rem; border: 1px solid #a5b4fc; border-radius: 0.5rem; font-family: inherit; background: #f5f3ff; color: black;"></textarea>
+                            </div>
 
 
                             <div style="display: flex; justify-content: flex-end; gap: 1rem;">
@@ -721,7 +730,7 @@
     <script src="firebase-config.js"></script>
 
     <script src="store.js?v=2.0"></script>
-    <script src="app.js?v=3.0.3"></script>
+    <script src="app.js?v=3.0.4"></script>
 </body>
 
 </html>
