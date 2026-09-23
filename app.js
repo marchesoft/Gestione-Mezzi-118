@@ -1,4 +1,4 @@
-const APP_VERSION = "3.0.4";
+const APP_VERSION = "3.0.5";
 let isAdmin = false;
 let cachedVehicles = null;
 let cachedLocations = null;
@@ -504,7 +504,7 @@ async function renderVehicleGrid(vehicles) {
             appointmentLabelHtml = `
             <div class="appointment-label-box" style="width: 100%; margin-bottom: 0.5rem;" onclick="event.stopPropagation()">
                 <div class="todo-text"><i class="fa-solid fa-calendar-day" style="margin-right:4px;"></i>${apptLabel}</div>
-                <button class="appointment-ack-btn" onclick="acknowledgeAppointmentAlert(event, '${vehicle.id}')" title="Segna come visto"><i class="fa-solid fa-check"></i></button>
+                ${isAdmin ? `<button class="appointment-ack-btn" onclick="acknowledgeAppointmentAlert(event, '${vehicle.id}')" title="Segna come visto"><i class="fa-solid fa-check"></i></button>` : ''}
             </div>
             `;
         }
