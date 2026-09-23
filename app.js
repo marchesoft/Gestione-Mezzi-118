@@ -63,6 +63,11 @@ async function initApp() {
     }
 
     console.log(`%c APP START: Version ${APP_VERSION}`, 'background: #1e3a8a; color: #fff; font-weight: bold; padding: 4px;');
+
+    // Sync version display in header dynamically (so HTML never needs manual update)
+    const versionEl = document.getElementById('app-version-display');
+    if (versionEl) versionEl.textContent = `v${APP_VERSION}`;
+
     setupEventListeners();
 
     // Observe Firebase Auth State
