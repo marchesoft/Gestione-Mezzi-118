@@ -1,4 +1,4 @@
-const APP_VERSION = "3.1.6";
+const APP_VERSION = "3.1.7";
 let isAdmin = false;
 let cachedVehicles = null;
 let cachedLocations = null;
@@ -8,6 +8,45 @@ let currentFilter = 'all';
 
 // Helper to ensure strings are uppercase
 const upper = (str) => (str || '').toString().toUpperCase().trim();
+
+// Helper to normalize text removing accents/diacritics and uppercasing
+window.normalizeVehicleText = function (str) {
+    if (!str) return '';
+    return str
+        .toString()
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .toUpperCase()
+        .trim();
+};
+
+// Helper per generare il nome del file Word: "richiesta riparazione <SIGLA> <TARGA>.docx"
+window.buildRepairFileName = function (vehicle) {
+    if (!vehicle) return 'richiesta riparazione.docx';
+    const sigla = (vehicle.sigla || '').trim();
+    const plate = (vehicle.plate || '').trim();
+    const model = (vehicle.model || '').trim();
+
+    const parts = ['richiesta riparazione'];
+    if (sigla) parts.push(sigla);
+    if (plate) {
+        const plateCompact = plate.replace(/\s+/g, '').toUpperCase();
+        const siglaCompact = sigla.replace(/\s+/g, '').toUpperCase();
+        if (!siglaCompact.includes(plateCompact)) {
+            parts.push(plate);
+        }
+    }
+    if (!sigla && !plate && model) {
+        parts.push(model);
+    }
+
+    let fileName = parts.join(' ').replace(/\s+/g, ' ').trim();
+    fileName = fileName.replace(/[\\/:*?"<>|]/g, "_");
+    if (!fileName.toLowerCase().endsWith('.docx')) {
+        fileName += '.docx';
+    }
+    return fileName;
+};
 
 // Helper to format date strings from YYYY-MM-DD to DD/MM/YYYY
 function formatDate(dateStr) {
@@ -957,12 +996,20 @@ window.openVehicleForm = async function (vehicleId = null) {
                 const todoVal = Array.isArray(vehicle.todo_notes) ? vehicle.todo_notes.join('\n') : (vehicle.todo_notes || '');
                 document.getElementById('vehicle-todo-notes').value = todoVal;
             }
+            const aleaFormChk = document.getElementById('vehicle-is-alea');
+            if (aleaFormChk) {
+                aleaFormChk.checked = !!(vehicle.is_alea === true || vehicle.is_alea === 'true' || window.isAleaVehicle(vehicle));
+            }
         }
     } else {
         title.textContent = 'Aggiungi Nuovo Mezzo';
         document.getElementById('vehicle-mileage-month').value = ''; // Reset
         document.getElementById('vehicle-station').value = '';
         document.getElementById('vehicle-type').value = 'Ambulanza';
+        const aleaFormChk = document.getElementById('vehicle-is-alea');
+        if (aleaFormChk) {
+            aleaFormChk.checked = false;
+        }
     }
 
     modal.classList.remove('hidden');
@@ -1531,6 +1578,8 @@ window.saveVehicleForm = async function () {
     const todoNotesEl = document.getElementById('vehicle-todo-notes');
     const todo_notes_raw = todoNotesEl ? todoNotesEl.value : '';
     const todo_notes = todo_notes_raw.split('\n').map(s => s.trim()).map(upper).filter(s => s !== '');
+    const aleaChk = document.getElementById('vehicle-is-alea');
+    const is_alea = aleaChk ? aleaChk.checked : false;
 
     const vehicleData = {
         model: upper(model),
@@ -1542,6 +1591,7 @@ window.saveVehicleForm = async function () {
         mileage: parseInt(mileage) || 0,
         mileage_month: upper(mileage_month),
         radio_id: upper(radio_id),
+        is_alea: is_alea,
 
         inspection_expiry: inspection_expiry || null,
         revision_o2: revision_o2 || null,
@@ -1629,9 +1679,10 @@ window.openVehicleModal = async function (id) {
                     <div class="modal-main-title" style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1rem;">
                         <div>
                             <div>
-                                <div style="display: flex; gap: 0.75rem; align-items: baseline; margin-bottom: 0.25rem;">
+                                <div style="display: flex; gap: 0.75rem; align-items: center; margin-bottom: 0.25rem; flex-wrap: wrap;">
                                     ${vehicle.sigla ? `<h1 style="font-size: 1.5rem; font-weight: 800; color: var(--primary-color); margin: 0;">${vehicle.sigla}</h1>` : ''}
                                     <h1 style="font-size: 1.5rem; font-weight: 800; color: var(--text-primary); margin: 0;">${vehicle.plate}</h1>
+                                    ${(window.isAleaVehicle && window.isAleaVehicle(vehicle)) ? '<span style="background: #fef3c7; color: #92400e; border: 1px solid #fde68a; font-size: 0.75rem; font-weight: 700; padding: 0.15rem 0.5rem; border-radius: 6px; letter-spacing: 0.05em; vertical-align: middle;"><i class="fa-solid fa-file-contract"></i> ALEA</span>' : ''}
                                 </div>
                                 <div style="display: flex; gap: 0.5rem; align-items: center;">
                                     <h2 style="font-size: 1.1rem; margin: 0; color: var(--text-secondary); font-weight: 600;">${vehicle.model}</h2>
@@ -3202,29 +3253,49 @@ window.isAleaVehicle = function (vehicle) {
     if (!vehicle) return false;
     if (vehicle.is_alea === true || vehicle.is_alea === 'true') return true;
 
-    const checkStr = [
+    // Controllo su tutti i campi di testo con rimozione di accenti/diacritici (es. aléa, alèa, alea, alia)
+    const todoStr = Array.isArray(vehicle.todo_notes) ? vehicle.todo_notes.join(' ') : (vehicle.todo_notes || '');
+    const checkFields = [
         vehicle.sigla || '',
         vehicle.model || '',
         vehicle.plate || '',
         vehicle.notes || '',
         vehicle.db_notes || '',
-        vehicle.type || ''
-    ].join(' ').toUpperCase();
+        vehicle.type || '',
+        vehicle.station || '',
+        todoStr
+    ];
 
-    if (checkStr.includes('ALEA') || checkStr.includes('ALIA') || checkStr.includes('ALÈA')) {
+    const normalizedJoined = checkFields.map(window.normalizeVehicleText).join(' ');
+
+    if (normalizedJoined.includes('ALEA') || normalizedJoined.includes('ALIA')) {
         return true;
     }
 
-    const aleaSigle = ['ECHO 20', 'ECHO 21', 'ECHO 22', 'ECHO 26', 'ECHO20', 'ECHO21', 'ECHO22', 'ECHO26', 'E20', 'E21', 'E22', 'E26'];
-    const aleaPlates = ['HA514AY', 'HA 514 AY', 'HA550AY', 'HA 550 AY', 'FF837RS', 'FF 837 RS', 'FV414RW', 'FV 414 RW'];
+    const aleaSigle = [
+        'ECHO 20', 'ECHO 21', 'ECHO 22', 'ECHO 26',
+        'ECHO20', 'ECHO21', 'ECHO22', 'ECHO26',
+        'E20', 'E21', 'E22', 'E26',
+        'MIKE 20', 'MIKE 21', 'MIKE 22', 'MIKE 26',
+        'M20', 'M21', 'M22', 'M26'
+    ];
+    const aleaPlates = [
+        'HA514AY', 'HA 514 AY',
+        'HA550AY', 'HA 550 AY',
+        'FF837RS', 'FF 837 RS',
+        'FV414RW', 'FV 414 RW'
+    ];
 
-    const siglaUpper = (vehicle.sigla || '').toUpperCase().trim();
-    if (aleaSigle.some(s => siglaUpper === s || siglaUpper.includes(s))) {
+    const siglaNorm = window.normalizeVehicleText(vehicle.sigla);
+    if (aleaSigle.some(s => {
+        const sNorm = window.normalizeVehicleText(s);
+        return siglaNorm === sNorm || siglaNorm.includes(sNorm);
+    })) {
         return true;
     }
 
-    const plateUpper = (vehicle.plate || '').toUpperCase().replace(/\s+/g, '');
-    if (aleaPlates.some(p => plateUpper === p.replace(/\s+/g, ''))) {
+    const plateNorm = window.normalizeVehicleText(vehicle.plate).replace(/\s+/g, '');
+    if (aleaPlates.some(p => plateNorm === window.normalizeVehicleText(p).replace(/\s+/g, ''))) {
         return true;
     }
 
@@ -3233,6 +3304,18 @@ window.isAleaVehicle = function (vehicle) {
 
 window.toggleRepairTemplate = function (isAlea) {
     const badge = document.getElementById('repair-template-badge');
+    const aleaChk = document.getElementById('repair-is-alea');
+    const radioStd = document.getElementById('repair-radio-std');
+    const radioAlea = document.getElementById('repair-radio-alea');
+    const cardStd = document.getElementById('repair-card-std');
+    const cardAlea = document.getElementById('repair-card-alea');
+
+    if (aleaChk) {
+        aleaChk.checked = !!isAlea;
+    }
+    if (radioStd) radioStd.checked = !isAlea;
+    if (radioAlea) radioAlea.checked = !!isAlea;
+
     if (badge) {
         if (isAlea) {
             badge.textContent = 'Modello Alea';
@@ -3244,6 +3327,24 @@ window.toggleRepairTemplate = function (isAlea) {
             badge.style.color = '#1e40af';
         }
     }
+
+    if (cardStd && cardAlea) {
+        if (isAlea) {
+            cardAlea.style.borderColor = '#d97706';
+            cardAlea.style.background = '#fef3c7';
+            cardStd.style.borderColor = '#cbd5e1';
+            cardStd.style.background = '#ffffff';
+        } else {
+            cardStd.style.borderColor = '#2563eb';
+            cardStd.style.background = '#eff6ff';
+            cardAlea.style.borderColor = '#cbd5e1';
+            cardAlea.style.background = '#ffffff';
+        }
+    }
+};
+
+window.selectRepairTemplate = function (isAlea) {
+    window.toggleRepairTemplate(isAlea);
 };
 
 window.openRepairRequestModal = async function (vehicleId) {
@@ -3276,12 +3377,8 @@ window.openRepairRequestModal = async function (vehicleId) {
             vehicleDisplay.value = parts.length > 0 ? parts.join(' - ') : (vehicle.type || vehicle.id);
         }
 
-        // Rilevamento automatico Mezzo Alea e aggiornamento interfaccia / badge
+        // Rilevamento automatico Mezzo Alea e aggiornamento interfaccia / selettore a schede
         const isAlea = window.isAleaVehicle(vehicle);
-        const aleaChk = document.getElementById('repair-is-alea');
-        if (aleaChk) {
-            aleaChk.checked = isAlea;
-        }
         window.toggleRepairTemplate(isAlea);
 
         // 2. Popola menu a discesa Ubicazioni (ordinate alfabeticamente)
@@ -3317,9 +3414,8 @@ window.openRepairRequestModal = async function (vehicleId) {
         // Descrizione: precarica eventuali problematiche note del mezzo o lascia vuoto
         document.getElementById('repair-description').value = vehicle.notes || '';
 
-        // Nome file predefinito: "richiesta riparazione " + sigla del mezzo (o modello/targa)
-        const siglaMezzo = vehicle.sigla || vehicle.model || vehicle.plate || '';
-        const defaultFileName = siglaMezzo ? `richiesta riparazione ${siglaMezzo}` : 'richiesta riparazione';
+        // Nome file predefinito: "richiesta riparazione <SIGLA> <TARGA>"
+        const defaultFileName = window.buildRepairFileName(vehicle).replace(/\.docx$/i, '');
         document.getElementById('repair-filename').value = defaultFileName;
 
         // Mostra modal
@@ -3739,7 +3835,8 @@ window.generateAndDownloadRepairDocx = async function () {
 
         const descRaw = document.getElementById('repair-description').value.trim();
 
-        let filename = (document.getElementById('repair-filename').value || 'richiesta riparazione').trim();
+        let filenameInput = (document.getElementById('repair-filename').value || '').trim();
+        let filename = filenameInput ? filenameInput : window.buildRepairFileName(vehicle).replace(/\.docx$/i, '');
         filename = filename.replace(/[\\/:*?"<>|]/g, "_");
         if (!filename.toLowerCase().endsWith(".docx")) {
             filename += ".docx";
@@ -3786,6 +3883,10 @@ window.generateAndDownloadRepairDocx = async function () {
                     targetVehicle.repair_requests = [];
                 }
                 targetVehicle.repair_requests.unshift(reqData);
+                // Se la richiesta è per mezzo Alea, salva permanentemente is_alea sul veicolo
+                if (isAlea && !targetVehicle.is_alea) {
+                    targetVehicle.is_alea = true;
+                }
                 await store.updateVehicle(targetVehicle);
 
                 // Aggiorna la vista dei dettagli del veicolo
@@ -3832,9 +3933,16 @@ window.downloadSavedRepairDocx = async function (vehicleId, reqIndex) {
             req.station = (vehicle.station || 'FERRARA').toUpperCase();
         }
 
-        const siglaMezzo = vehicle.sigla || vehicle.model || vehicle.plate || '';
-        const fallbackName = siglaMezzo ? `richiesta riparazione ${siglaMezzo}` : 'richiesta riparazione';
-        let filename = (req.filename || fallbackName).trim();
+        const defaultName = window.buildRepairFileName(vehicle);
+        let filename = (req.filename || defaultName).trim();
+        // Se nel nome file salvato precedentemente mancava la targa del veicolo, aggiungila
+        if (vehicle.plate) {
+            const plateClean = vehicle.plate.replace(/\s+/g, '').toUpperCase();
+            if (!filename.toUpperCase().replace(/\s+/g, '').includes(plateClean)) {
+                const baseWithoutExt = filename.replace(/\.docx$/i, '').trim();
+                filename = `${baseWithoutExt} ${vehicle.plate.trim()}`;
+            }
+        }
         filename = filename.replace(/[\\/:*?"<>|]/g, "_");
         if (!filename.toLowerCase().endsWith(".docx")) {
             filename += ".docx";
