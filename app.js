@@ -1,4 +1,4 @@
-const APP_VERSION = "3.1.5";
+const APP_VERSION = "3.1.6";
 let isAdmin = false;
 let cachedVehicles = null;
 let cachedLocations = null;
@@ -1923,9 +1923,6 @@ window.openVehicleModal = async function (id) {
                                 </div>
                                 <h3 style="font-size: 1.1rem; margin: 0; color: black;">Storico Richieste di Riparazione</h3>
                             </div>
-                            <button class="btn" style="background: #2563eb; color: white; font-size: 0.85rem; padding: 0.4rem 0.8rem; display: flex; align-items: center; gap: 0.4rem; border: none; border-radius: 0.375rem; cursor: pointer;" onclick="openRepairRequestModal('${vehicle.id}')">
-                                <i class="fa-solid fa-plus"></i> Nuova Richiesta
-                            </button>
                         </div>
 
                         <div style="background: white; border: 1px solid var(--border-color); border-radius: 1rem; overflow-x: auto;">
@@ -3908,15 +3905,11 @@ window.openVehicleRepairHistoryModal = async function (vehicleId) {
         const titleElem = document.getElementById('repair-history-modal-title');
         const subElem = document.getElementById('repair-history-modal-subtitle');
         const countBadge = document.getElementById('repair-history-count-badge');
-        const newBtn = document.getElementById('repair-history-modal-new-btn');
         const bodyElem = document.getElementById('vehicle-repair-history-body');
 
         const vehicleTitle = [vehicle.sigla, vehicle.plate].filter(Boolean).join(' - ') || vehicle.model || 'Mezzo';
         if (titleElem) titleElem.textContent = `Storico Richieste: ${vehicleTitle}`;
         if (subElem) subElem.textContent = `${vehicle.model || ''} • Tipo: ${vehicle.type || '-'} • Sede: ${vehicle.station || '-'}`;
-        if (newBtn) {
-            newBtn.onclick = () => openRepairRequestModal(vehicle.id);
-        }
 
         const requests = vehicle.repair_requests || [];
         if (countBadge) {
@@ -3928,10 +3921,6 @@ window.openVehicleRepairHistoryModal = async function (vehicleId) {
                 <div style="padding: 3rem 1rem; text-align: center; color: var(--text-secondary);">
                     <i class="fa-solid fa-file-circle-question" style="font-size: 3rem; color: #cbd5e1; margin-bottom: 1rem; display: block;"></i>
                     <p style="font-size: 1rem; font-weight: 600; color: #475569; margin-bottom: 0.5rem;">Nessuna richiesta di riparazione registrata per questo mezzo.</p>
-                    <p style="font-size: 0.85rem; color: #94a3b8; margin-bottom: 1.5rem;">Puoi compilare e scaricare una nuova richiesta ufficiale in formato Word con il pulsante in alto a destra.</p>
-                    <button class="btn" style="background: #2563eb; color: white; padding: 0.5rem 1rem; font-size: 0.9rem; border: none; border-radius: 0.375rem; cursor: pointer; display: inline-flex; align-items: center; gap: 0.5rem;" onclick="openRepairRequestModal('${vehicle.id}')">
-                        <i class="fa-solid fa-plus"></i> Compila Richiesta Riparazione
-                    </button>
                 </div>
             `;
         } else {

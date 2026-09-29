@@ -1,16 +1,16 @@
-# Regole e Contesto del Progetto (v3.1.5)
+# Regole e Contesto del Progetto (v3.1.6)
 
-Questo file definisce le linee guida e lo stato di salvataggio del progetto per garantire la coerenza con la versione **3.1.5**.
+Questo file definisce le linee guida e lo stato di salvataggio del progetto per garantire la coerenza con la versione **3.1.6**.
 
-## Stato di Riferimento (v3.1.5)
+## Stato di Riferimento (v3.1.6)
 
 1. **Gestione Versioni**:
-   - La versione attuale di riferimento è **3.1.5**.
-   - Qualsiasi modifica futura richiede l'avanzamento della versione (es. `3.1.6` o successive) in `app.js` (`const APP_VERSION = "X.Y.Z";`) e in `index.html` (header).
+   - La versione attuale di riferimento è **3.1.6**.
+   - Qualsiasi modifica futura richiede l'avanzamento della versione (es. `3.1.7` o successive) in `app.js` (`const APP_VERSION = "X.Y.Z";`) e in `index.html` (header).
 
 2. **Bypass della Cache (Cache-Busting)**:
    - I file `app.js` e `style.css` sono importati in `index.html` con il parametro di versione `?v=X.Y.Z` per forzare il caricamento immediato degli aggiornamenti sui dispositivi client (specialmente mobili).
-   - Esempio: `<link rel="stylesheet" href="style.css?v=3.1.5">` e `<script src="app.js?v=3.1.5"></script>`.
+   - Esempio: `<link rel="stylesheet" href="style.css?v=3.1.6">` e `<script src="app.js?v=3.1.6"></script>`.
    - Ad ogni cambio di codice, aggiornare questa stringa con la nuova versione dell'applicazione.
 
 3. **Integrazione Git e GitHub**:
@@ -37,7 +37,7 @@ Questo file definisce le linee guida e lo stato di salvataggio del progetto per 
 
 7. **Richiesta di Riparazione Word (.docx) e Storico Richieste**:
    - È presente un pulsante blu **Richiesta Riparazione** nei dettagli di ciascun veicolo (`openVehicleModal`) per compilare e scaricare una nuova richiesta.
-   - È presente un pulsante azzurro **Storico Richieste** con badge contatore nei dettagli di ciascun veicolo (`openVehicleRepairHistoryModal`) che apre una finestra dedicata con la tabella di tutte le richieste effettuate per quel singolo mezzo, con download Word ed eliminazione per gli amministratori.
+   - È presente un pulsante azzurro **Storico Richieste** con badge contatore nei dettagli di ciascun veicolo (`openVehicleRepairHistoryModal`) che apre una finestra dedicata con la tabella di tutte le richieste effettuate per quel singolo mezzo, con download Word ed eliminazione per gli amministratori. La finestra dello storico è una vista di sola consultazione/download provvista esclusivamente del pulsante **Chiudi** (i pulsanti di compilazione/nuova richiesta sono stati rimossi per evitare ridondanze con la card del mezzo).
    - Il modulo di richiesta contiene:
      - Indicazione del mezzo specifico della card corrente (`#repair-vehicle-display`, campo in sola lettura con sigla, targa e modello).
      - Menu a tendina per selezione ubicazione (`#repair-station`) con tutte le sedi/postazioni disponibili, preselezionata sull'ubicazione attuale del mezzo.
