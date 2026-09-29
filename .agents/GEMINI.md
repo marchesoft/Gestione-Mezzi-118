@@ -1,16 +1,16 @@
-# Regole e Contesto del Progetto (v3.1.8)
+# Regole e Contesto del Progetto (v3.1.9)
 
-Questo file definisce le linee guida e lo stato di salvataggio del progetto per garantire la coerenza con la versione **3.1.8**.
+Questo file definisce le linee guida e lo stato di salvataggio del progetto per garantire la coerenza con la versione **3.1.9**.
 
-## Stato di Riferimento (v3.1.8)
+## Stato di Riferimento (v3.1.9)
 
 1. **Gestione Versioni**:
-   - La versione attuale di riferimento è **3.1.8**.
-   - Qualsiasi modifica futura richiede l'avanzamento della versione (es. `3.1.9` o successive) in `app.js` (`const APP_VERSION = "X.Y.Z";`) e in `index.html` (header).
+   - La versione attuale di riferimento è **3.1.9**.
+   - Qualsiasi modifica futura richiede l'avanzamento della versione (es. `3.2.0` o successive) in `app.js` (`const APP_VERSION = "X.Y.Z";`) e in `index.html` (header).
 
 2. **Bypass della Cache (Cache-Busting)**:
    - I file `app.js` e `style.css` sono importati in `index.html` con il parametro di versione `?v=X.Y.Z` per forzare il caricamento immediato degli aggiornamenti sui dispositivi client (specialmente mobili).
-   - Esempio: `<link rel="stylesheet" href="style.css?v=3.1.8">` e `<script src="app.js?v=3.1.8"></script>`.
+   - Esempio: `<link rel="stylesheet" href="style.css?v=3.1.9">` e `<script src="app.js?v=3.1.9"></script>`.
    - Ad ogni cambio di codice, aggiornare questa stringa con la nuova versione dell'applicazione.
 
 3. **Integrazione Git e GitHub**:
@@ -37,9 +37,10 @@ Questo file definisce le linee guida e lo stato di salvataggio del progetto per 
    - **Pallino Controllo**: L'indicatore di controllo mensile sulla card è giallo fluo (#ffff00) con contorno bianco solido di 2px (classe .monthly-check-dot in style.css), per essere visibile anche sullo sfondo verde dello stato "disponibile" (#008000).
    - **Gestione Database**: Lo storico di tutti i controlli mensili è visibile, modificabile ed eliminabile esclusivamente nella scheda tab "Controlli" del modal "Gestione Database", provvisto di esportazione in formato Excel/CSV. I controlli sono visualizzati raggruppati cronologicamente per mese ed anno con divisori colorati e mostrano le colonne Esecutore e Posizione Attuale.
 
-7. **Richiesta di Riparazione Word (.docx) ed Esclusività dei Modelli (v3.1.8)**:
+7. **Richiesta di Riparazione Word (.docx) ed Esclusività dei Modelli (v3.1.9)**:
    - È presente un pulsante blu **Richiesta Riparazione** nei dettagli di ciascun veicolo (`openVehicleModal`) per compilare e scaricare una nuova richiesta.
    - È presente un pulsante azzurro **Storico Richieste** con badge contatore nei dettagli di ciascun veicolo (`openVehicleRepairHistoryModal`) che apre una finestra dedicata con la tabella di tutte le richieste effettuate per quel singolo mezzo, con download Word ed eliminazione per gli amministratori. La finestra dello storico è una vista di sola consultazione/download provvista esclusivamente del pulsante **Chiudi**.
+   - **Tipologia Intervento di Default**: Nel modulo di richiesta riparazione, la casella **Manutenzione Meccanica / Elettrauto** (`repair-chk-meccanica`) è selezionata di default (`checked`), mentre le altre opzioni rimangono deselezionate.
    - **Esclusività Assoluta dei Modelli Word**:
      - Nei mezzi appartenenti alla flotta **Alea** è presente **ESCLUSIVAMENTE lo stampato ufficiale Alea** (banner ambra dedicato, pulsante di download *Scarica Word Alea (.docx)*, nessun selettore standard consentito).
      - In tutti gli altri mezzi non Alea è presente **ESCLUSIVAMENTE lo stampato standard 118** (banner blu dedicato, pulsante di download *Scarica Word (.docx)*, nessun selettore Alea consentito).

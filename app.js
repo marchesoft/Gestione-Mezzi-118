@@ -1,4 +1,4 @@
-const APP_VERSION = "3.1.8";
+const APP_VERSION = "3.1.9";
 let isAdmin = false;
 let cachedVehicles = null;
 let cachedLocations = null;
@@ -3487,8 +3487,8 @@ window.openRepairRequestModal = async function (vehicleId) {
         document.getElementById('repair-phone').value = '3209229345';
         document.getElementById('repair-email').value = 'logistica118fe@ausl.fe.it';
 
-        // Checkbox reset
-        document.getElementById('repair-chk-meccanica').checked = false;
+        // Checkbox reset (Manutenzione Mecc. / Elettrauto selezionata di default)
+        document.getElementById('repair-chk-meccanica').checked = true;
         document.getElementById('repair-chk-gommista').checked = false;
         document.getElementById('repair-chk-carrozzeria').checked = false;
         document.getElementById('repair-chk-lavaggio').checked = false;
