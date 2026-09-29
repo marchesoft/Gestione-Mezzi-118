@@ -25,7 +25,7 @@
     <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <!-- App Styles -->
-    <link rel="stylesheet" href="style.css?v=3.1.1">
+    <link rel="stylesheet" href="style.css?v=3.1.2">
 </head>
 
 <body>
@@ -53,7 +53,7 @@
                     <div class="section-header" style="margin-bottom: 0;">
                         <h3 style="margin: 0; white-space: nowrap;">VEICOLI IN GESTIONE <span id="app-version-display"
                                 style="font-size: 0.8rem; font-weight: 400; opacity: 0.8; margin-left: 0.5rem; vertical-align: middle; text-transform: none;">v
-                                3.1.1</span></h3>
+                                3.1.2</span></h3>
                     </div>
                     <div class="action-buttons">
 
@@ -751,15 +751,19 @@
                     <div class="form-grid-2" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 0.75rem;">
                         <div>
                             <label style="font-size: 0.75rem; font-weight: 700; color: #334155; margin-bottom: 0.25rem; display: block;">TARGA E SIGLA VEICOLO</label>
-                            <input type="text" id="repair-targa" class="form-input" placeholder="Es. AMBULANZA FH 885 CZ ECHO 01" style="width: 100%; padding: 0.5rem 0.75rem; border: 1px solid var(--border-color); border-radius: 0.375rem;">
+                            <select id="repair-vehicle-select" class="form-input" style="width: 100%; padding: 0.5rem 0.75rem; border: 1px solid var(--border-color); border-radius: 0.375rem; background-color: white; color: black; font-weight: 600;" onchange="onRepairVehicleChange(this.value)">
+                                <!-- Populated dynamically -->
+                            </select>
                         </div>
                         <div>
                             <label style="font-size: 0.75rem; font-weight: 700; color: #334155; margin-bottom: 0.25rem; display: block;">UBICAZIONE VEICOLO</label>
-                            <input type="text" id="repair-station" class="form-input" placeholder="Es. FERRARA" style="width: 100%; padding: 0.5rem 0.75rem; border: 1px solid var(--border-color); border-radius: 0.375rem;">
+                            <select id="repair-station" class="form-input" style="width: 100%; padding: 0.5rem 0.75rem; border: 1px solid var(--border-color); border-radius: 0.375rem; background-color: white; color: black; font-weight: 600;">
+                                <!-- Populated dynamically -->
+                            </select>
                         </div>
                         <div>
                             <label style="font-size: 0.75rem; font-weight: 700; color: #334155; margin-bottom: 0.25rem; display: block;">DATA RICHIESTA</label>
-                            <input type="text" id="repair-date" class="form-input" placeholder="GG/MM/AAAA" style="width: 100%; padding: 0.5rem 0.75rem; border: 1px solid var(--border-color); border-radius: 0.375rem;">
+                            <input type="date" id="repair-date" class="form-input" style="width: 100%; padding: 0.5rem 0.75rem; border: 1px solid var(--border-color); border-radius: 0.375rem; background-color: white; color: black; color-scheme: light; font-weight: 600;">
                         </div>
                         <div>
                             <label style="font-size: 0.75rem; font-weight: 700; color: #334155; margin-bottom: 0.25rem; display: block;">DIPARTIMENTO / SERVIZIO</label>
@@ -851,7 +855,7 @@
     <script src="firebase-config.js"></script>
 
     <script src="store.js?v=2.0"></script>
-    <script src="app.js?v=3.1.1"></script>
+    <script src="app.js?v=3.1.2"></script>
 </body>
 
 </html>

@@ -1,16 +1,16 @@
-# Regole e Contesto del Progetto (v3.1.1)
+# Regole e Contesto del Progetto (v3.1.2)
 
-Questo file definisce le linee guida e lo stato di salvataggio del progetto per garantire la coerenza con la versione **3.1.1**.
+Questo file definisce le linee guida e lo stato di salvataggio del progetto per garantire la coerenza con la versione **3.1.2**.
 
-## Stato di Riferimento (v3.1.1)
+## Stato di Riferimento (v3.1.2)
 
 1. **Gestione Versioni**:
-   - La versione attuale di riferimento è **3.1.1**.
-   - Qualsiasi modifica futura richiede l'avanzamento della versione (es. `3.1.2` o successive) in `app.js` (`const APP_VERSION = "X.Y.Z";`) e in `index.html` (header).
+   - La versione attuale di riferimento è **3.1.2**.
+   - Qualsiasi modifica futura richiede l'avanzamento della versione (es. `3.1.3` o successive) in `app.js` (`const APP_VERSION = "X.Y.Z";`) e in `index.html` (header).
 
 2. **Bypass della Cache (Cache-Busting)**:
    - I file `app.js` e `style.css` sono importati in `index.html` con il parametro di versione `?v=X.Y.Z` per forzare il caricamento immediato degli aggiornamenti sui dispositivi client (specialmente mobili).
-   - Esempio: `<link rel="stylesheet" href="style.css?v=3.1.1">` e `<script src="app.js?v=3.1.1"></script>`.
+   - Esempio: `<link rel="stylesheet" href="style.css?v=3.1.2">` e `<script src="app.js?v=3.1.2"></script>`.
    - Ad ogni cambio di codice, aggiornare questa stringa con la nuova versione dell'applicazione.
 
 3. **Integrazione Git e GitHub**:
@@ -37,7 +37,11 @@ Questo file definisce le linee guida e lo stato di salvataggio del progetto per 
 
 7. **Richiesta di Riparazione Word (.docx) e Storico Richieste**:
    - È presente un pulsante blu **Richiesta Riparazione** nei dettagli di ciascun veicolo (`openVehicleModal`).
-   - Cliccandolo si apre un modal con i dati del veicolo precompilati (targa, ubicazione, data corrente, richiedente/driver, dipartimento, recapiti), le caselle di controllo per tipologia di intervento (Meccanica/Elettrauto, Gommista, Carrozzeria, Lavaggio, Sinistro, Soccorso Stradale) e un'area di testo per descrivere il guasto o i lavori.
+   - Cliccandolo si apre un modal con:
+     - Menu a tendina per selezione veicolo (`#repair-vehicle-select`) contenente tutti i mezzi della flotta; cambiando veicolo si aggiornano automaticamente ubicazione, note e nome file.
+     - Menu a tendina per selezione ubicazione (`#repair-station`) con tutte le sedi/postazioni disponibili.
+     - Calendario nativo a finestra per selezione data richiesta (`<input type="date" id="repair-date">`) preimpostato sulla data odierna e convertito automaticamente in formato `DD/MM/YYYY`.
+     - Dati richiedente precompilati (dipartimento, driver, recapiti), caselle di controllo per tipologia di intervento (Meccanica/Elettrauto, Gommista, Carrozzeria, Lavaggio, Sinistro, Soccorso Stradale) e un'area di testo per descrivere il guasto o i lavori.
    - Il documento Word (`.docx`) generato e scaricato sul PC è identico al template ufficiale `All.1_Richiesta di Riparazione.docx`, preservando tabelle, loghi, caratteri e formattazione, e viene salvato con il prefisso predefinito e il nome del mezzo (es. `richiesta riparazione <SIGLA_MEZZO>.docx`).
    - La generazione avviene interamente client-side tramite `JSZip` e il template incorporato in `repair_template_base64.js`.
    - **Storico per Mezzo**: Nella schermata di dettaglio di ogni veicolo è presente la sezione **Storico Richieste di Riparazione** con la tabella cronologica di tutte le richieste effettuate per quel mezzo (Data, Tipologia con tag colorati, Descrizione guasto, Driver/Contatti), con pulsante per riscaricare istantaneamente il file Word precompilato (`downloadSavedRepairDocx`) ed eliminazione per gli amministratori (`deleteRepairRequest`).

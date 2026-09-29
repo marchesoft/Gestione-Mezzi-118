@@ -1,4 +1,4 @@
-const APP_VERSION = "3.1.1";
+const APP_VERSION = "3.1.2";
 let isAdmin = false;
 let cachedVehicles = null;
 let cachedLocations = null;
@@ -3195,32 +3195,53 @@ window.saveAndCloseOperationalNotes = async function () {
 
 window.openRepairRequestModal = async function (vehicleId) {
     try {
-        const vehicle = await store.getVehicleById(vehicleId);
+        if (!cachedVehicles || !cachedLocations) {
+            const [vehicles, locations] = await Promise.all([
+                cachedVehicles ? Promise.resolve(cachedVehicles) : store.getVehicles(),
+                cachedLocations ? Promise.resolve(cachedLocations) : store.getLocations()
+            ]);
+            if (!cachedVehicles) cachedVehicles = vehicles;
+            if (!cachedLocations) cachedLocations = locations.sort((a, b) => a.luogo.localeCompare(b.luogo));
+        }
+
+        const vehicle = vehicleId ? (cachedVehicles.find(v => v.id === vehicleId) || await store.getVehicleById(vehicleId)) : cachedVehicles[0];
         if (!vehicle) {
             alert("Dati veicolo non trovati.");
             return;
         }
 
-        // Targa e tipo veicolo
-        const vehicleTypeStr = (vehicle.type || '').toUpperCase();
-        const plateStr = (vehicle.plate || '').toUpperCase();
-        const siglaStr = (vehicle.sigla || '').toUpperCase();
+        // Salva ID veicolo per la richiesta corrente
+        window.currentRepairVehicleId = vehicle.id;
 
-        let targaValue = '';
-        if (vehicleTypeStr) targaValue += vehicleTypeStr + '  ';
-        if (plateStr) targaValue += plateStr + '  ';
-        if (siglaStr) targaValue += siglaStr;
-        document.getElementById('repair-targa').value = targaValue.trim();
+        // 1. Popola menu a discesa Veicoli (ordinati per sigla/targa)
+        const vehicleSelect = document.getElementById('repair-vehicle-select');
+        if (vehicleSelect) {
+            const sortedVehicles = [...cachedVehicles].sort((a, b) => (a.sigla || a.plate || '').localeCompare(b.sigla || b.plate || ''));
+            vehicleSelect.innerHTML = sortedVehicles.map(v => {
+                const parts = [];
+                if (v.sigla) parts.push(v.sigla);
+                if (v.plate) parts.push(v.plate);
+                if (v.model) parts.push(`(${v.model})`);
+                const label = parts.length > 0 ? parts.join(' - ') : (v.type || v.id);
+                return `<option value="${v.id}" ${v.id === vehicle.id ? 'selected' : ''}>${label}</option>`;
+            }).join('');
+        }
 
-        // Ubicazione
-        document.getElementById('repair-station').value = (vehicle.station || 'FERRARA').toUpperCase();
+        // 2. Popola menu a discesa Ubicazioni (ordinate alfabeticamente)
+        const stationSelect = document.getElementById('repair-station');
+        if (stationSelect) {
+            const sortedLocations = [...cachedLocations].sort((a, b) => a.luogo.localeCompare(b.luogo));
+            stationSelect.innerHTML = sortedLocations.map(loc => {
+                const isSelected = (vehicle.station && vehicle.station.toUpperCase() === loc.luogo.toUpperCase());
+                return `<option value="${loc.luogo}" ${isSelected ? 'selected' : ''}>${loc.luogo}</option>`;
+            }).join('');
+        }
 
-        // Data corrente DD/MM/YYYY
-        const now = new Date();
-        const dd = String(now.getDate()).padStart(2, '0');
-        const mm = String(now.getMonth() + 1).padStart(2, '0');
-        const yyyy = now.getFullYear();
-        document.getElementById('repair-date').value = `${dd}/${mm}/${yyyy}`;
+        // 3. Data corrente impostata nel selettore a finestra (date picker)
+        const dateInput = document.getElementById('repair-date');
+        if (dateInput) {
+            dateInput.value = getLocalISODate();
+        }
 
         // Contatti e richiedente di default
         document.getElementById('repair-dept').value = 'LOGISTICA 118';
@@ -3244,9 +3265,6 @@ window.openRepairRequestModal = async function (vehicleId) {
         const defaultFileName = siglaMezzo ? `richiesta riparazione ${siglaMezzo}` : 'richiesta riparazione';
         document.getElementById('repair-filename').value = defaultFileName;
 
-        // Salva ID veicolo per la richiesta corrente
-        window.currentRepairVehicleId = vehicleId;
-
         // Mostra modal
         const modal = document.getElementById('repair-request-modal');
         if (modal) {
@@ -3254,6 +3272,37 @@ window.openRepairRequestModal = async function (vehicleId) {
         }
     } catch (err) {
         console.error("Errore nell'apertura del modulo richiesta riparazione:", err);
+    }
+};
+
+window.onRepairVehicleChange = async function (vehicleId) {
+    try {
+        if (!vehicleId) return;
+        window.currentRepairVehicleId = vehicleId;
+        const vehicle = (cachedVehicles && cachedVehicles.find(v => v.id === vehicleId)) || await store.getVehicleById(vehicleId);
+        if (!vehicle) return;
+
+        // Aggiorna ubicazione nel dropdown se presente
+        const stationSelect = document.getElementById('repair-station');
+        if (stationSelect && vehicle.station) {
+            const found = Array.from(stationSelect.options).find(opt => opt.value.toUpperCase() === vehicle.station.toUpperCase());
+            if (found) {
+                stationSelect.value = found.value;
+            }
+        }
+
+        // Aggiorna nome file predefinito
+        const siglaMezzo = vehicle.sigla || vehicle.model || vehicle.plate || '';
+        const defaultFileName = siglaMezzo ? `richiesta riparazione ${siglaMezzo}` : 'richiesta riparazione';
+        document.getElementById('repair-filename').value = defaultFileName;
+
+        // Se la descrizione è vuota, precarica le note del nuovo mezzo
+        const descElem = document.getElementById('repair-description');
+        if (descElem && (!descElem.value || descElem.value.trim() === '')) {
+            descElem.value = vehicle.notes || '';
+        }
+    } catch (err) {
+        console.error("Errore durante il cambio del veicolo nel modulo riparazione:", err);
     }
 };
 
@@ -3425,14 +3474,44 @@ window.createRepairDocxBlob = async function (data) {
 
 window.generateAndDownloadRepairDocx = async function () {
     try {
+        // Veicolo selezionato
+        const vehicleSelect = document.getElementById('repair-vehicle-select');
+        const selectedVehicleId = vehicleSelect ? vehicleSelect.value : window.currentRepairVehicleId;
+        const vehicle = (cachedVehicles && cachedVehicles.find(v => v.id === selectedVehicleId)) || (selectedVehicleId ? await store.getVehicleById(selectedVehicleId) : null);
+
+        let targa = '';
+        if (vehicle) {
+            const vehicleTypeStr = (vehicle.type || '').toUpperCase();
+            const plateStr = (vehicle.plate || '').toUpperCase();
+            const siglaStr = (vehicle.sigla || '').toUpperCase();
+            if (vehicleTypeStr) targa += vehicleTypeStr + '  ';
+            if (plateStr) targa += plateStr + '  ';
+            if (siglaStr) targa += siglaStr;
+            targa = targa.trim();
+        } else if (vehicleSelect && vehicleSelect.selectedOptions && vehicleSelect.selectedOptions[0]) {
+            targa = vehicleSelect.selectedOptions[0].textContent.trim();
+        }
+
         // Valori campi informativi
         const driver = document.getElementById('repair-driver').value.trim();
         const dept = document.getElementById('repair-dept').value.trim();
         const phone = document.getElementById('repair-phone').value.trim();
-        const targa = document.getElementById('repair-targa').value.trim();
         const station = document.getElementById('repair-station').value.trim();
         const email = document.getElementById('repair-email').value.trim();
-        const dateVal = document.getElementById('repair-date').value.trim();
+
+        // Conversione data YYYY-MM-DD -> DD/MM/YYYY per Word e storico
+        const rawDate = document.getElementById('repair-date').value.trim();
+        let dateVal = rawDate;
+        if (rawDate && rawDate.includes('-')) {
+            const parts = rawDate.split('-');
+            if (parts.length === 3) {
+                dateVal = `${parts[2]}/${parts[1]}/${parts[0]}`;
+            }
+        }
+        if (!dateVal) {
+            const now = new Date();
+            dateVal = `${String(now.getDate()).padStart(2, '0')}/${String(now.getMonth() + 1).padStart(2, '0')}/${now.getFullYear()}`;
+        }
 
         const checks = [
             document.getElementById('repair-chk-meccanica').checked,
@@ -3492,15 +3571,15 @@ window.generateAndDownloadRepairDocx = async function () {
         URL.revokeObjectURL(url);
 
         // Salva la richiesta nello storico del veicolo su Firestore
-        const vehicleId = window.currentRepairVehicleId || currentOpenedVehicleId;
+        const vehicleId = selectedVehicleId || window.currentRepairVehicleId || currentOpenedVehicleId;
         if (vehicleId) {
-            const vehicle = await store.getVehicleById(vehicleId);
-            if (vehicle) {
-                if (!vehicle.repair_requests) {
-                    vehicle.repair_requests = [];
+            const targetVehicle = (cachedVehicles && cachedVehicles.find(v => v.id === vehicleId)) || await store.getVehicleById(vehicleId);
+            if (targetVehicle) {
+                if (!targetVehicle.repair_requests) {
+                    targetVehicle.repair_requests = [];
                 }
-                vehicle.repair_requests.unshift(reqData);
-                await store.updateVehicle(vehicle);
+                targetVehicle.repair_requests.unshift(reqData);
+                await store.updateVehicle(targetVehicle);
 
                 // Aggiorna la vista dei dettagli del veicolo
                 if (currentOpenedVehicleId === vehicleId) {
@@ -3549,6 +3628,7 @@ window.downloadSavedRepairDocx = async function (vehicleId, reqIndex) {
             filename += ".docx";
         }
 
+        const blob = await window.createRepairDocxBlob(req);
         const url = URL.createObjectURL(blob);
         const a = document.createElement("a");
         a.href = url;
