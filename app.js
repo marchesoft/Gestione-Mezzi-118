@@ -1,4 +1,4 @@
-const APP_VERSION = "3.1.7";
+const APP_VERSION = "3.1.8";
 let isAdmin = false;
 let cachedVehicles = null;
 let cachedLocations = null;
@@ -46,6 +46,59 @@ window.buildRepairFileName = function (vehicle) {
         fileName += '.docx';
     }
     return fileName;
+};
+
+// Funzione per sincronizzare la richiesta di lavaggio (Modulo parti & services) per l'ambulanza ECHO 22 (FF 837 RS)
+window.syncHistoricalWashRequest = async function (vehicles) {
+    if (!vehicles || !Array.isArray(vehicles) || vehicles.length === 0) return;
+
+    const echo22 = vehicles.find(v => {
+        const siglaNorm = window.normalizeVehicleText(v.sigla);
+        const plateNorm = window.normalizeVehicleText(v.plate).replace(/\s+/g, '');
+        return siglaNorm === 'ECHO 22' || siglaNorm.includes('ECHO 22') || siglaNorm.includes('ECHO22') || plateNorm === 'FF837RS';
+    });
+
+    if (!echo22) return;
+
+    if (!echo22.repair_requests) {
+        echo22.repair_requests = [];
+    }
+
+    const washReqId = 'req_wash_echo22_20260129';
+    const alreadyExists = echo22.repair_requests.some(r =>
+        r.id === washReqId ||
+        (r.date === '29/01/2026' && (r.station || '').toUpperCase().includes('CAVAGION')) ||
+        (r.date === '29/01/2026' && (r.description || '').toUpperCase().includes('LAVAGGIO'))
+    );
+
+    if (!alreadyExists) {
+        const washReq = {
+            id: washReqId,
+            is_alea: true,
+            date: '29/01/2026',
+            created_at: '2026-01-29T08:30:00.000Z',
+            driver: 'MARSILI PAOLO – GAMBERONI FEDERICO – MARCHESINI LUCA',
+            dept: 'LOGISTICA 118',
+            phone: '3209229345',
+            targa: 'AMBULANZA ALEA FF 837 RS ECHO 22',
+            station: 'CAVAGION',
+            email: 'logistica118fe@ausl.fe.it',
+            checks: [false, false, false, true, false, false],
+            types: ['Autolavaggio'],
+            description: 'LAVAGGIO ESTERNO\nRicovero veicolo per manutenzione presso officina CAVAGION',
+            filename: 'richiesta riparazione ECHO 22 FF 837 RS.docx'
+        };
+
+        echo22.repair_requests.unshift(washReq);
+        echo22.is_alea = true;
+
+        try {
+            await store.updateVehicle(echo22);
+            console.log("Richiesta modulo lavaggio ECHO 22 salvata su Firestore con successo.");
+        } catch (err) {
+            console.error("Errore salvataggio richiesta lavaggio ECHO 22:", err);
+        }
+    }
 };
 
 // Helper to format date strings from YYYY-MM-DD to DD/MM/YYYY
@@ -272,6 +325,9 @@ async function renderDashboard(forceRefresh = false) {
             cachedLocations = locations.sort((a, b) => a.luogo.localeCompare(b.luogo));
             sortVehiclesBySigla(cachedVehicles);
             lastVehicleSync = Date.now();
+            if (cachedVehicles) {
+                await window.syncHistoricalWashRequest(cachedVehicles);
+            }
         }
 
         // AUTO-CLEANUP: Only if admin (optimization)
@@ -1652,8 +1708,16 @@ window.saveVehicleForm = async function () {
 
 window.openVehicleModal = async function (id) {
     currentOpenedVehicleId = id;
-    const vehicle = await store.getVehicleById(id);
+    let vehicle = await store.getVehicleById(id);
     if (!vehicle) return;
+
+    if (cachedVehicles) {
+        await window.syncHistoricalWashRequest(cachedVehicles);
+        const updated = cachedVehicles.find(v => v.id === id);
+        if (updated) vehicle = updated;
+    } else {
+        await window.syncHistoricalWashRequest([vehicle]);
+    }
 
     const now = new Date();
     const currentYM = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
@@ -3118,6 +3182,9 @@ window.switchDataTable = async function (type) {
                 </div>`;
         } else if (type === 'riparazioni') {
             const vehicles = await store.getVehicles();
+            if (vehicles) {
+                await window.syncHistoricalWashRequest(vehicles);
+            }
             data = [];
             vehicles.forEach(v => {
                 if (v.repair_requests && Array.isArray(v.repair_requests)) {
@@ -3303,24 +3370,23 @@ window.isAleaVehicle = function (vehicle) {
 };
 
 window.toggleRepairTemplate = function (isAlea) {
+    const banner = document.getElementById('repair-template-banner');
+    const icon = document.getElementById('repair-template-icon');
+    const title = document.getElementById('repair-template-title');
+    const sub = document.getElementById('repair-template-sub');
     const badge = document.getElementById('repair-template-badge');
     const aleaChk = document.getElementById('repair-is-alea');
-    const radioStd = document.getElementById('repair-radio-std');
-    const radioAlea = document.getElementById('repair-radio-alea');
-    const cardStd = document.getElementById('repair-card-std');
-    const cardAlea = document.getElementById('repair-card-alea');
+    const submitBtn = document.getElementById('repair-submit-btn');
 
     if (aleaChk) {
         aleaChk.checked = !!isAlea;
     }
-    if (radioStd) radioStd.checked = !isAlea;
-    if (radioAlea) radioAlea.checked = !!isAlea;
 
     if (badge) {
         if (isAlea) {
             badge.textContent = 'Modello Alea';
-            badge.style.background = '#fef3c7';
-            badge.style.color = '#92400e';
+            badge.style.background = '#d97706';
+            badge.style.color = '#ffffff';
         } else {
             badge.textContent = 'Standard 118';
             badge.style.background = '#dbeafe';
@@ -3328,17 +3394,35 @@ window.toggleRepairTemplate = function (isAlea) {
         }
     }
 
-    if (cardStd && cardAlea) {
+    if (banner && icon && title && sub) {
         if (isAlea) {
-            cardAlea.style.borderColor = '#d97706';
-            cardAlea.style.background = '#fef3c7';
-            cardStd.style.borderColor = '#cbd5e1';
-            cardStd.style.background = '#ffffff';
+            banner.style.background = '#fef3c7';
+            banner.style.borderColor = '#f59e0b';
+            icon.style.background = '#d97706';
+            icon.innerHTML = '<i class="fa-solid fa-file-contract"></i>';
+            title.style.color = '#92400e';
+            title.innerHTML = 'Modello Ufficiale Flotta Alea <span style="background: #d97706; color: white; font-size: 0.68rem; font-weight: 700; padding: 0.15rem 0.45rem; border-radius: 4px; text-transform: uppercase; margin-left: 0.35rem; vertical-align: middle;">Alea</span>';
+            sub.style.color = '#78350f';
+            sub.textContent = 'Modulo di richiesta riparazione e ricovero dedicato esclusivamente ai mezzi della flotta Alea';
         } else {
-            cardStd.style.borderColor = '#2563eb';
-            cardStd.style.background = '#eff6ff';
-            cardAlea.style.borderColor = '#cbd5e1';
-            cardAlea.style.background = '#ffffff';
+            banner.style.background = '#eff6ff';
+            banner.style.borderColor = '#3b82f6';
+            icon.style.background = '#2563eb';
+            icon.innerHTML = '<i class="fa-solid fa-file-word"></i>';
+            title.style.color = '#1e3a8a';
+            title.innerHTML = 'Modello Standard 118 (AUSL Ferrara)';
+            sub.style.color = '#1e40af';
+            sub.textContent = 'Modulo ufficiale di richiesta riparazione All. 1 per i mezzi della flotta 118';
+        }
+    }
+
+    if (submitBtn) {
+        if (isAlea) {
+            submitBtn.innerHTML = '<i class="fa-solid fa-download"></i> Scarica Word Alea (.docx)';
+            submitBtn.style.background = '#d97706';
+        } else {
+            submitBtn.innerHTML = '<i class="fa-solid fa-download"></i> Scarica Word (.docx)';
+            submitBtn.style.background = '#2563eb';
         }
     }
 };
@@ -4001,10 +4085,18 @@ window.deleteRepairRequest = async function (vehicleId, reqIndex) {
 
 window.openVehicleRepairHistoryModal = async function (vehicleId) {
     try {
-        const vehicle = (cachedVehicles && cachedVehicles.find(v => v.id === vehicleId)) || await store.getVehicleById(vehicleId);
+        let vehicle = (cachedVehicles && cachedVehicles.find(v => v.id === vehicleId)) || await store.getVehicleById(vehicleId);
         if (!vehicle) {
             alert("Dati veicolo non trovati.");
             return;
+        }
+
+        if (cachedVehicles) {
+            await window.syncHistoricalWashRequest(cachedVehicles);
+            const updated = cachedVehicles.find(v => v.id === vehicleId);
+            if (updated) vehicle = updated;
+        } else {
+            await window.syncHistoricalWashRequest([vehicle]);
         }
 
         const modal = document.getElementById('vehicle-repair-history-modal');
