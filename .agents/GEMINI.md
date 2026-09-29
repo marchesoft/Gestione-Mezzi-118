@@ -1,16 +1,16 @@
-# Regole e Contesto del Progetto (v3.2.6)
+# Regole e Contesto del Progetto (v3.2.7)
 
-Questo file definisce le linee guida e lo stato di salvataggio del progetto per garantire la coerenza con la versione **3.2.6**.
+Questo file definisce le linee guida e lo stato di salvataggio del progetto per garantire la coerenza con la versione **3.2.7**.
 
-## Stato di Riferimento (v3.2.6)
+## Stato di Riferimento (v3.2.7)
 
 1. **Gestione Versioni**:
-   - La versione attuale di riferimento è **3.2.6**.
-   - Qualsiasi modifica futura richiede l'avanzamento della versione (es. `3.2.7` o successive) in `app.js` (`const APP_VERSION = "X.Y.Z";`) e in `index.html` (header).
+   - La versione attuale di riferimento è **3.2.7**.
+   - Qualsiasi modifica futura richiede l'avanzamento della versione (es. `3.2.8` o successive) in `app.js` (`const APP_VERSION = "X.Y.Z";`) e in `index.html` (header).
 
 2. **Bypass della Cache (Cache-Busting)**:
    - I file `app.js` e `style.css` sono importati in `index.html` con il parametro di versione `?v=X.Y.Z` per forzare il caricamento immediato degli aggiornamenti sui dispositivi client (specialmente mobili).
-   - Esempio: `<link rel="stylesheet" href="style.css?v=3.2.6">` e `<script src="app.js?v=3.2.6"></script>`.
+   - Esempio: `<link rel="stylesheet" href="style.css?v=3.2.7">` e `<script src="app.js?v=3.2.7"></script>`.
    - Ad ogni cambio di codice, aggiornare questa stringa con la nuova versione dell'applicazione.
 
 3. **Integrazione Git e GitHub**:
@@ -79,3 +79,13 @@ Questo file definisce le linee guida e lo stato di salvataggio del progetto per 
       - Selettore "Mostra solo con ricoveri" per escludere i mezzi senza passaggi in officina.
     - **Esportazione Excel (CSV con BOM UTF-8)**:
       - *Esporta Riepilogo Excel*: Scarica il foglio aggregato con Sigla, Targa, Modello, Sede, Stato Attuale, Totale Giorni, Numero Ricoveri, Ultimi Km e Mese Riferimento Km.
+
+11. **Correzione Eliminazione Richieste di Lavaggio dalla Tabella Riparazioni (v3.2.7)**:
+    - Risolto il bug per cui le richieste di lavaggio esterno (tipologia `Autolavaggio`) non potevano essere eliminate dalla scheda **Riparazioni** della Gestione Database né dallo storico del singolo mezzo.
+    - **Causa Radice**: La funzione `syncHistoricalWashRequest` rilevava se la richiesta ECHO 22 era stata eliminata e la ricreava automaticamente su Firestore ad ogni apertura del modale veicolo, del modale storico richieste e al caricamento della dashboard. Questo creava un ciclo in cui la cancellazione veniva subito annullata.
+    - **Soluzione**:
+      - `syncHistoricalWashRequest` è stata disabilitata (restituisce `return` immediato) — la richiesta storica ECHO 22 rimane su Firestore così com'è e può essere eliminata liberamente dall'amministratore.
+      - Rimossi tutti i punti di chiamata a `syncHistoricalWashRequest` in `renderDashboard`, `openVehicleModal` e `openVehicleRepairHistoryModal`.
+      - `deleteRepairRequest` è stata riscritta per ricercare la richiesta **prima per ID univoco** (`req.id`) e solo in fallback per posizione nell'array (`reqIndex`), evitando eliminazioni errate in caso di riordino dell'array.
+      - `downloadSavedRepairDocx` aggiornato con la stessa logica doppia ID + indice.
+      - Tutti i pulsanti Elimina e Scarica Word (in `openVehicleModal`, `openVehicleRepairHistoryModal` e `switchDataTable('riparazioni')`) trasmettono ora sia l'ID della richiesta che il suo indice posizionale.

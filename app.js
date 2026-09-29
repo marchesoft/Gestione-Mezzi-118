@@ -1,4 +1,4 @@
-const APP_VERSION = "3.2.6";
+const APP_VERSION = "3.2.7";
 let isAdmin = false;
 let cachedVehicles = null;
 let cachedLocations = null;
@@ -48,57 +48,10 @@ window.buildRepairFileName = function (vehicle) {
     return fileName;
 };
 
-// Funzione per sincronizzare la richiesta di lavaggio (Modulo parti & services) per l'ambulanza ECHO 22 (FF 837 RS)
+// Funzione legacy per sincronizzazione richiesta lavaggio ECHO 22:
+// Disabilitata per evitare la ricreazione automatica di richieste cancellate dall'amministratore
 window.syncHistoricalWashRequest = async function (vehicles) {
-    if (!vehicles || !Array.isArray(vehicles) || vehicles.length === 0) return;
-
-    const echo22 = vehicles.find(v => {
-        const siglaNorm = window.normalizeVehicleText(v.sigla);
-        const plateNorm = window.normalizeVehicleText(v.plate).replace(/\s+/g, '');
-        return siglaNorm === 'ECHO 22' || siglaNorm.includes('ECHO 22') || siglaNorm.includes('ECHO22') || plateNorm === 'FF837RS';
-    });
-
-    if (!echo22) return;
-
-    if (!echo22.repair_requests) {
-        echo22.repair_requests = [];
-    }
-
-    const washReqId = 'req_wash_echo22_20260129';
-    const alreadyExists = echo22.repair_requests.some(r =>
-        r.id === washReqId ||
-        (r.date === '29/01/2026' && (r.station || '').toUpperCase().includes('CAVAGION')) ||
-        (r.date === '29/01/2026' && (r.description || '').toUpperCase().includes('LAVAGGIO'))
-    );
-
-    if (!alreadyExists) {
-        const washReq = {
-            id: washReqId,
-            is_alea: true,
-            date: '29/01/2026',
-            created_at: '2026-01-29T08:30:00.000Z',
-            driver: 'MARSILI PAOLO – GAMBERONI FEDERICO – MARCHESINI LUCA',
-            dept: 'LOGISTICA 118',
-            phone: '3209229345',
-            targa: 'AMBULANZA ALEA FF 837 RS ECHO 22',
-            station: 'CAVAGION',
-            email: 'logistica118fe@ausl.fe.it',
-            checks: [false, false, false, true, false, false],
-            types: ['Autolavaggio'],
-            description: 'LAVAGGIO ESTERNO\nRicovero veicolo per manutenzione presso officina CAVAGION',
-            filename: 'richiesta riparazione ECHO 22 FF 837 RS.docx'
-        };
-
-        echo22.repair_requests.unshift(washReq);
-        echo22.is_alea = true;
-
-        try {
-            await store.updateVehicle(echo22);
-            console.log("Richiesta modulo lavaggio ECHO 22 salvata su Firestore con successo.");
-        } catch (err) {
-            console.error("Errore salvataggio richiesta lavaggio ECHO 22:", err);
-        }
-    }
+    return;
 };
 
 // Helper to format date strings from YYYY-MM-DD to DD/MM/YYYY
@@ -375,9 +328,6 @@ async function renderDashboard(forceRefresh = false) {
             cachedLocations = locations.sort((a, b) => a.luogo.localeCompare(b.luogo));
             sortVehiclesBySigla(cachedVehicles);
             lastVehicleSync = Date.now();
-            if (cachedVehicles) {
-                await window.syncHistoricalWashRequest(cachedVehicles);
-            }
         }
 
         // AUTO-CLEANUP: Only if admin (optimization)
@@ -1762,11 +1712,8 @@ window.openVehicleModal = async function (id) {
     if (!vehicle) return;
 
     if (cachedVehicles) {
-        await window.syncHistoricalWashRequest(cachedVehicles);
         const updated = cachedVehicles.find(v => v.id === id);
         if (updated) vehicle = updated;
-    } else {
-        await window.syncHistoricalWashRequest([vehicle]);
     }
 
     const now = new Date();
@@ -2118,11 +2065,11 @@ window.openVehicleModal = async function (id) {
                                             ${(req.dept || req.phone) ? `<div style="font-size: 0.75rem; color: #64748b;">${[req.dept, req.phone].filter(Boolean).join(' • ')}</div>` : ''}
                                         </td>
                                         <td style="padding: 0.85rem 1rem; text-align: right; white-space: nowrap;">
-                                            <button class="btn" style="background: #2563eb; color: white; padding: 0.3rem 0.6rem; font-size: 0.8rem; margin-right: 0.4rem; border: none; border-radius: 0.3rem; cursor: pointer;" onclick="downloadSavedRepairDocx('${vehicle.id}', ${reqIdx})" title="Scarica di nuovo il file Word">
+                                            <button class="btn" style="background: #2563eb; color: white; padding: 0.3rem 0.6rem; font-size: 0.8rem; margin-right: 0.4rem; border: none; border-radius: 0.3rem; cursor: pointer;" onclick="downloadSavedRepairDocx('${vehicle.id}', '${req.id || ''}', ${reqIdx})" title="Scarica di nuovo il file Word">
                                                 <i class="fa-solid fa-download"></i> Word
                                             </button>
                                             ${isAdmin ? `
-                                            <button class="btn" style="background: var(--status-to-repair); color: white; padding: 0.3rem 0.6rem; font-size: 0.8rem; border: none; border-radius: 0.3rem; cursor: pointer;" onclick="deleteRepairRequest('${vehicle.id}', ${reqIdx})" title="Elimina richiesta">
+                                            <button class="btn" style="background: var(--status-to-repair); color: white; padding: 0.3rem 0.6rem; font-size: 0.8rem; border: none; border-radius: 0.3rem; cursor: pointer;" onclick="deleteRepairRequest('${vehicle.id}', '${req.id || ''}', ${reqIdx})" title="Elimina richiesta">
                                                 <i class="fa-solid fa-trash"></i>
                                             </button>
                                             ` : ''}
@@ -3446,9 +3393,6 @@ window.switchDataTable = async function (type) {
                 </div>`;
         } else if (type === 'riparazioni') {
             const vehicles = await store.getVehicles();
-            if (vehicles) {
-                await window.syncHistoricalWashRequest(vehicles);
-            }
             data = [];
             vehicles.forEach(v => {
                 if (v.repair_requests && Array.isArray(v.repair_requests)) {
@@ -3513,8 +3457,8 @@ window.switchDataTable = async function (type) {
                                     <td class="col-expand" style="font-size: 0.85rem; white-space: pre-wrap;">${item.description || '-'}</td>
                                     <td class="col-shrink" style="font-size: 0.85rem;"><strong>${item.driver || '-'}</strong><div style="font-size: 0.75rem; color: #64748b;">${[item.dept, item.phone].filter(Boolean).join(' • ')}</div></td>
                                     <td class="col-actions" style="white-space: nowrap;">
-                                        <button onclick="downloadSavedRepairDocx('${item.vehicle_id}', ${item.req_index})" style="cursor:pointer; background:none; border:none; color:#2563eb; margin-right:0.5rem; font-size:1.1rem;" title="Scarica Word (.docx)"><i class="fa-solid fa-download"></i></button>
-                                        ${isAdmin ? `<button onclick="deleteRepairRequest('${item.vehicle_id}', ${item.req_index})" style="cursor:pointer; background:none; border:none; color:var(--status-to-repair); font-size:1.1rem;" title="Elimina"><i class="fa-solid fa-trash"></i></button>` : ''}
+                                        <button onclick="downloadSavedRepairDocx('${item.vehicle_id}', '${item.id || ''}', ${item.req_index})" style="cursor:pointer; background:none; border:none; color:#2563eb; margin-right:0.5rem; font-size:1.1rem;" title="Scarica Word (.docx)"><i class="fa-solid fa-download"></i></button>
+                                        ${isAdmin ? `<button onclick="deleteRepairRequest('${item.vehicle_id}', '${item.id || ''}', ${item.req_index})" style="cursor:pointer; background:none; border:none; color:var(--status-to-repair); font-size:1.1rem;" title="Elimina"><i class="fa-solid fa-trash"></i></button>` : ''}
                                     </td>
                                 </tr>
                             `).join('')}
@@ -4647,15 +4591,45 @@ window.generateAndDownloadRepairDocx = async function () {
     }
 };
 
-window.downloadSavedRepairDocx = async function (vehicleId, reqIndex) {
+window.downloadSavedRepairDocx = async function (vehicleId, reqIdOrIndex, fallbackIndex) {
     try {
         const vehicle = await store.getVehicleById(vehicleId);
-        if (!vehicle || !vehicle.repair_requests || !vehicle.repair_requests[reqIndex]) {
+        if (!vehicle || !vehicle.repair_requests || !Array.isArray(vehicle.repair_requests)) {
             alert("Richiesta non trovata.");
             return;
         }
 
-        const req = { ...vehicle.repair_requests[reqIndex] };
+        let req = null;
+        if (fallbackIndex !== undefined && fallbackIndex !== null) {
+            const fIdx = parseInt(fallbackIndex, 10);
+            if (!isNaN(fIdx) && fIdx >= 0 && fIdx < vehicle.repair_requests.length) {
+                if (!reqIdOrIndex || vehicle.repair_requests[fIdx].id === reqIdOrIndex) {
+                    req = vehicle.repair_requests[fIdx];
+                }
+            }
+        }
+
+        if (!req && typeof reqIdOrIndex === 'string' && reqIdOrIndex.startsWith('req_')) {
+            req = vehicle.repair_requests.find(r => r.id === reqIdOrIndex);
+        }
+
+        if (!req && reqIdOrIndex !== undefined && reqIdOrIndex !== null) {
+            const numIdx = parseInt(reqIdOrIndex, 10);
+            if (!isNaN(numIdx) && numIdx >= 0 && numIdx < vehicle.repair_requests.length) {
+                req = vehicle.repair_requests[numIdx];
+            }
+        }
+
+        if (!req && typeof reqIdOrIndex === 'string' && reqIdOrIndex.length > 0) {
+            req = vehicle.repair_requests.find(r => r.id === reqIdOrIndex);
+        }
+
+        if (!req) {
+            alert("Richiesta non trovata.");
+            return;
+        }
+
+        req = { ...req };
 
         // Assicura campi fondamentali
         if (!req.targa) {
@@ -4701,13 +4675,48 @@ window.downloadSavedRepairDocx = async function (vehicleId, reqIndex) {
     }
 };
 
-window.deleteRepairRequest = async function (vehicleId, reqIndex) {
+window.deleteRepairRequest = async function (vehicleId, reqIdOrIndex, fallbackIndex) {
     setTimeout(async () => {
         if (!confirm("Sei sicuro di voler eliminare questa richiesta di riparazione dallo storico?")) return;
         try {
             const vehicle = await store.getVehicleById(vehicleId);
-            if (vehicle && vehicle.repair_requests && vehicle.repair_requests[reqIndex]) {
-                vehicle.repair_requests.splice(reqIndex, 1);
+            if (!vehicle || !vehicle.repair_requests || !Array.isArray(vehicle.repair_requests)) {
+                alert("Dati veicolo non trovati.");
+                return;
+            }
+
+            let targetIdx = -1;
+
+            // 1. Se fornito fallbackIndex valido, verifica se corrisponde all'ID o all'indice
+            if (fallbackIndex !== undefined && fallbackIndex !== null) {
+                const fIdx = parseInt(fallbackIndex, 10);
+                if (!isNaN(fIdx) && fIdx >= 0 && fIdx < vehicle.repair_requests.length) {
+                    if (!reqIdOrIndex || vehicle.repair_requests[fIdx].id === reqIdOrIndex) {
+                        targetIdx = fIdx;
+                    }
+                }
+            }
+
+            // 2. Se non ancora trovato, cerca per ID univoco (es. req_...)
+            if (targetIdx === -1 && typeof reqIdOrIndex === 'string' && reqIdOrIndex.startsWith('req_')) {
+                targetIdx = vehicle.repair_requests.findIndex(r => r.id === reqIdOrIndex);
+            }
+
+            // 3. Se non ancora trovato, prova reqIdOrIndex come indice numerico
+            if (targetIdx === -1 && reqIdOrIndex !== undefined && reqIdOrIndex !== null) {
+                const numIdx = parseInt(reqIdOrIndex, 10);
+                if (!isNaN(numIdx) && numIdx >= 0 && numIdx < vehicle.repair_requests.length) {
+                    targetIdx = numIdx;
+                }
+            }
+
+            // 4. Ultimo fallback: cerca corrispondenza su qualsiasi ID stringa
+            if (targetIdx === -1 && typeof reqIdOrIndex === 'string' && reqIdOrIndex.length > 0) {
+                targetIdx = vehicle.repair_requests.findIndex(r => r.id === reqIdOrIndex);
+            }
+
+            if (targetIdx !== -1) {
+                vehicle.repair_requests.splice(targetIdx, 1);
                 await store.updateVehicle(vehicle);
                 alert("Richiesta eliminata con successo.");
 
@@ -4726,6 +4735,8 @@ window.deleteRepairRequest = async function (vehicleId, reqIndex) {
                 if (window.lastDataManagerTab === 'riparazioni') {
                     switchDataTable('riparazioni');
                 }
+            } else {
+                alert("Richiesta non trovata o già eliminata.");
             }
         } catch (err) {
             console.error("Errore nell'eliminazione della richiesta:", err);
@@ -4743,11 +4754,8 @@ window.openVehicleRepairHistoryModal = async function (vehicleId) {
         }
 
         if (cachedVehicles) {
-            await window.syncHistoricalWashRequest(cachedVehicles);
             const updated = cachedVehicles.find(v => v.id === vehicleId);
             if (updated) vehicle = updated;
-        } else {
-            await window.syncHistoricalWashRequest([vehicle]);
         }
 
         const modal = document.getElementById('vehicle-repair-history-modal');
@@ -4803,11 +4811,11 @@ window.openVehicleRepairHistoryModal = async function (vehicleId) {
                                         ${(req.dept || req.phone) ? `<div style="font-size: 0.75rem; color: #64748b; margin-top: 0.15rem;">${[req.dept, req.phone].filter(Boolean).join(' • ')}</div>` : ''}
                                     </td>
                                     <td style="padding: 0.85rem 1rem; text-align: right; white-space: nowrap;">
-                                        <button class="btn" style="background: #2563eb; color: white; padding: 0.35rem 0.7rem; font-size: 0.8rem; margin-right: 0.35rem; border: none; border-radius: 0.3rem; cursor: pointer;" onclick="downloadSavedRepairDocx('${vehicle.id}', ${reqIdx})" title="Riscarica il file Word precompilato">
+                                        <button class="btn" style="background: #2563eb; color: white; padding: 0.35rem 0.7rem; font-size: 0.8rem; margin-right: 0.35rem; border: none; border-radius: 0.3rem; cursor: pointer;" onclick="downloadSavedRepairDocx('${vehicle.id}', '${req.id || ''}', ${reqIdx})" title="Riscarica il file Word precompilato">
                                             <i class="fa-solid fa-download"></i> Word
                                         </button>
                                         ${isAdmin ? `
-                                        <button class="btn" style="background: var(--status-to-repair); color: white; padding: 0.35rem 0.65rem; font-size: 0.8rem; border: none; border-radius: 0.3rem; cursor: pointer;" onclick="deleteRepairRequest('${vehicle.id}', ${reqIdx})" title="Elimina richiesta">
+                                        <button class="btn" style="background: var(--status-to-repair); color: white; padding: 0.35rem 0.65rem; font-size: 0.8rem; border: none; border-radius: 0.3rem; cursor: pointer;" onclick="deleteRepairRequest('${vehicle.id}', '${req.id || ''}', ${reqIdx})" title="Elimina richiesta">
                                             <i class="fa-solid fa-trash"></i>
                                         </button>
                                         ` : ''}
