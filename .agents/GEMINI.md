@@ -1,16 +1,16 @@
-# Regole e Contesto del Progetto (v3.2.7)
+# Regole e Contesto del Progetto (v3.2.8)
 
-Questo file definisce le linee guida e lo stato di salvataggio del progetto per garantire la coerenza con la versione **3.2.7**.
+Questo file definisce le linee guida e lo stato di salvataggio del progetto per garantire la coerenza con la versione **3.2.8**.
 
-## Stato di Riferimento (v3.2.7)
+## Stato di Riferimento (v3.2.8)
 
 1. **Gestione Versioni**:
-   - La versione attuale di riferimento è **3.2.7**.
-   - Qualsiasi modifica futura richiede l'avanzamento della versione (es. `3.2.8` o successive) in `app.js` (`const APP_VERSION = "X.Y.Z";`) e in `index.html` (header).
+   - La versione attuale di riferimento è **3.2.8**.
+   - Qualsiasi modifica futura richiede l'avanzamento della versione (es. `3.2.9` o successive) in `app.js` (`const APP_VERSION = "X.Y.Z";`) e in `index.html` (header).
 
 2. **Bypass della Cache (Cache-Busting)**:
    - I file `app.js` e `style.css` sono importati in `index.html` con il parametro di versione `?v=X.Y.Z` per forzare il caricamento immediato degli aggiornamenti sui dispositivi client (specialmente mobili).
-   - Esempio: `<link rel="stylesheet" href="style.css?v=3.2.7">` e `<script src="app.js?v=3.2.7"></script>`.
+   - Esempio: `<link rel="stylesheet" href="style.css?v=3.2.8">` e `<script src="app.js?v=3.2.8"></script>`.
    - Ad ogni cambio di codice, aggiornare questa stringa con la nuova versione dell'applicazione.
 
 3. **Integrazione Git e GitHub**:
@@ -63,22 +63,21 @@ Questo file definisce le linee guida e lo stato di salvataggio del progetto per 
    - **Interfaccia Pulita**: eliminata la dicitura informativa e qualsiasi avviso popup sul mancato salvataggio nello storico, garantendo un'esperienza rapida e diretta.
    - **Regola di Non-Persistenza**: Questo modulo serve esclusivamente come stampato compilabile da scaricare e **NON viene salvato nello storico delle richieste del veicolo né su Firestore**.
 
-10. **Report Tempo di Permanenza in Officina per Mezzo (v3.2.6)**:
+10. **Report Tempo di Permanenza in Officina per Mezzo (v3.2.8)**:
     - Accessibile direttamente dalla finestra **Gestione Database** tramite:
       1. Il pulsante tab dedicato **Report Officina** (`switchDataTable('report_officina')`) nella barra superiore delle sezioni.
       2. Il pulsante in evidenza **Report Tempi Officina** all'interno della scheda *Interventi*.
     - **Metriche e KPI Flotta**: Schede riassuntive che mostrano i *Giorni Totali Fermo Flotta*, i *Ricoveri Complessivi* e i *Mezzi Attualmente in Officina*.
     - **Analisi Snellita per Singola Ambulanza**:
-      - Tabella a 7 colonne pulita ed essenziale: *Mezzo (Sigla e Targa, con eventuale badge Alea)*, *Modello*, *Sede Attuale*, *Stato Attuale*, *Giorni in Officina*, *N° Ricoveri* e *Ultimi Km Rilevati*.
-      - **Officina Ospitante nello Stato**: Per i mezzi attualmente in officina, il badge di stato riporta direttamente il nome dell'officina che ospita il veicolo (es. `⚠️ In Officina (CAVAGION)`).
-      - **Ultimi Km Rilevati**: Mostra l'ultimo chilometraggio rilevato (con formattazione con separatore di migliaia) e sotto, in etichetta discreta, il mese di riferimento se presente (es. `AGOSTO`).
-      - Rimossi i dettagli espandibili a fisarmonica e la colonna media giorni per mantenere la consultazione rapida e immediata.
+      - Tabella a 5 colonne pulita ed essenziale: *Mezzo (Sigla e Targa, con eventuale badge Alea)*, *Modello*, *Ultimi Km Rilevati*, *Giorni in Officina* e *N° Ricoveri*.
+      - **Ultimi Km Rilevati**: Colonna posizionata subito dopo *Modello*, mostra il chilometraggio rilevato con separatore di migliaia e il mese di riferimento sotto (es. `AGOSTO`).
+      - Rimossi i dettagli espandibili a fisarmonica, la colonna media giorni, la colonna *Sede Attuale* e la colonna *Stato Attuale*.
     - **Filtri e Ricerca**:
-      - Ricerca istantanea testuale (per Sigla, Targa, Officina, Sede).
-      - Filtro dinamico per Anno (Tutti gli anni, 2026, 2025, ecc.) che ricalcola istantaneamente le metriche.
+      - Ricerca istantanea testuale (per Sigla, Targa, Officina).
+      - Filtro dinamico per Anno (solo anni specifici disponibili, senza opzione "Tutti gli anni"). Al primo caricamento viene selezionato automaticamente l'anno più recente con dati.
       - Selettore "Mostra solo con ricoveri" per escludere i mezzi senza passaggi in officina.
     - **Esportazione Excel (CSV con BOM UTF-8)**:
-      - *Esporta Riepilogo Excel*: Scarica il foglio aggregato con Sigla, Targa, Modello, Sede, Stato Attuale, Totale Giorni, Numero Ricoveri, Ultimi Km e Mese Riferimento Km.
+      - *Esporta Riepilogo Excel*: Scarica il foglio aggregato con Sigla, Targa, Modello, Ultimi Km Rilevati, Mese Riferimento Km, Totale Giorni, Numero Ricoveri.
 
 11. **Correzione Eliminazione Richieste di Lavaggio dalla Tabella Riparazioni (v3.2.7)**:
     - Risolto il bug per cui le richieste di lavaggio esterno (tipologia `Autolavaggio`) non potevano essere eliminate dalla scheda **Riparazioni** della Gestione Database né dallo storico del singolo mezzo.

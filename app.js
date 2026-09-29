@@ -1,4 +1,4 @@
-const APP_VERSION = "3.2.7";
+const APP_VERSION = "3.2.8";
 let isAdmin = false;
 let cachedVehicles = null;
 let cachedLocations = null;
@@ -2692,8 +2692,8 @@ window.exportCurrentTableToCSV = async function () {
             const italianHeaders = ['Sigla', 'Targa', 'Modello', 'Data Richiesta', 'Tipologia', 'Descrizione', 'Driver / Richiedente', 'Dipartimento', 'Telefono', 'Ubicazione', 'Email'];
             csvRows.push(italianHeaders.join(';'));
         } else if (type === 'report_officina') {
-            headers = ['sigla', 'plate', 'model', 'station', 'status', 'total_days', 'count', 'mileage', 'mileage_month'];
-            const italianHeaders = ['Mezzo (Sigla)', 'Targa', 'Modello', 'Sede', 'Stato Attuale', 'Totale Giorni in Officina', 'Numero Ricoveri', 'Ultimi Km Rilevati', 'Mese Riferimento Km'];
+            headers = ['sigla', 'plate', 'model', 'mileage', 'mileage_month', 'total_days', 'count'];
+            const italianHeaders = ['Mezzo (Sigla)', 'Targa', 'Modello', 'Ultimi Km Rilevati', 'Mese Riferimento Km', 'Totale Giorni in Officina', 'Numero Ricoveri'];
             csvRows.push(italianHeaders.join(';'));
         } else {
             headers = Object.keys(data[0]);
@@ -3478,7 +3478,12 @@ window.switchDataTable = async function (type) {
                 if (dOut) yearsSet.add(dOut.getFullYear());
             });
             const availableYears = Array.from(yearsSet).sort((a, b) => b - a);
-            const selectedYear = window.currentWorkshopReportYear || 'all';
+            // Default: anno più recente disponibile (non "tutti gli anni")
+            const defaultYear = availableYears.length > 0 ? String(availableYears[0]) : String(new Date().getFullYear());
+            if (!window.currentWorkshopReportYear || window.currentWorkshopReportYear === 'all') {
+                window.currentWorkshopReportYear = defaultYear;
+            }
+            const selectedYear = window.currentWorkshopReportYear;
 
             // Mappatura per veicolo
             const vMap = new Map();
@@ -3677,7 +3682,6 @@ window.switchDataTable = async function (type) {
                         <div style="display: flex; align-items: center; gap: 0.4rem; font-size: 0.85rem; font-weight: 600; color: #475569;">
                             <i class="fa-solid fa-calendar"></i> Anno:
                             <select id="workshop-year-select" onchange="window.filterWorkshopByYear(this.value)" style="padding: 0.4rem 0.8rem; border-radius: 0.375rem; border: 1px solid var(--border-color); background: white; font-weight: 600; outline: none; cursor: pointer;">
-                                <option value="all" ${selectedYear === 'all' ? 'selected' : ''}>Tutti gli anni</option>
                                 ${availableYears.map(yr => `<option value="${yr}" ${selectedYear === String(yr) ? 'selected' : ''}>${yr}</option>`).join('')}
                             </select>
                         </div>
@@ -3695,15 +3699,13 @@ window.switchDataTable = async function (type) {
                             <tr>
                                 <th class="col-shrink">Mezzo</th>
                                 <th class="col-shrink">Modello</th>
-                                <th class="col-shrink">Sede Attuale</th>
-                                <th class="col-shrink">Stato Attuale</th>
+                                <th class="col-shrink" style="text-align: right;">Ultimi Km Rilevati</th>
                                 <th class="col-shrink" style="text-align: center;">Giorni in Officina</th>
                                 <th class="col-shrink" style="text-align: center;">N° Ricoveri</th>
-                                <th class="col-shrink" style="text-align: right;">Ultimi Km Rilevati</th>
                             </tr>
                         </thead>
                         <tbody>
-                            ${reportRows.length === 0 ? '<tr><td colspan="7" style="text-align:center; padding: 2rem; color: var(--text-secondary);">Nessun dato trovato per i criteri selezionati.</td></tr>' : ''}
+                            ${reportRows.length === 0 ? '<tr><td colspan="5" style="text-align:center; padding: 2rem; color: var(--text-secondary);">Nessun dato trovato per i criteri selezionati.</td></tr>' : ''}
                             ${reportRows.map(row => {
                                 let badgeClass = 'badge-days-zero';
                                 if (row.hasOngoing) badgeClass = 'badge-days-ongoing';
@@ -3721,24 +3723,16 @@ window.switchDataTable = async function (type) {
                                 const monthText = row.mileage_month ? `<div style="font-size: 0.75rem; color: #64748b; font-weight: 500;">${row.mileage_month}</div>` : '';
 
                                 return `
-                                    <tr ${trStyle} id="w-row-${row.id}" data-search="${(row.sigla + ' ' + row.plate + ' ' + row.model + ' ' + row.station + ' ' + (row.lastStay ? row.lastStay.workshop : '')).toLowerCase()}">
+                                    <tr ${trStyle} id="w-row-${row.id}" data-search="${(row.sigla + ' ' + row.plate + ' ' + row.model + ' ' + (row.lastStay ? row.lastStay.workshop : '')).toLowerCase()}">
                                         <td class="col-shrink text-bold text-primary">
                                             <span style="font-size: 1rem;">${row.sigla}</span>
                                             ${row.is_alea ? '<span style="background: #fef3c7; color: #92400e; font-size: 0.7rem; font-weight: 700; padding: 0.15rem 0.4rem; border-radius: 4px; margin-left: 0.35rem; vertical-align: middle;">Alea</span>' : ''}
                                             <div style="font-size: 0.75rem; color: #64748b; font-weight: 500;">${row.plate}</div>
                                         </td>
                                         <td class="col-shrink" style="font-size: 0.85rem;">${row.model}</td>
-                                        <td class="col-shrink" style="font-size: 0.85rem; font-weight: 600; color: #334155;">${row.station}</td>
-                                        <td class="col-shrink">
-                                            ${row.hasOngoing ? `
-                                                <span style="background: #fee2e2; color: #dc2626; border: 1px solid #fecaca; padding: 0.25rem 0.6rem; border-radius: 9999px; font-size: 0.75rem; font-weight: 700; display: inline-flex; align-items: center; gap: 0.3rem;">
-                                                    <i class="fa-solid fa-triangle-exclamation"></i> In Officina (${currentWorkshop})
-                                                </span>
-                                            ` : `
-                                                <span style="background: #f0fdf4; color: #16a34a; border: 1px solid #bbf7d0; padding: 0.25rem 0.6rem; border-radius: 9999px; font-size: 0.75rem; font-weight: 600; display: inline-flex; align-items: center; gap: 0.3rem;">
-                                                    <i class="fa-solid fa-check"></i> ${row.status === 'available' ? 'Disponibile' : 'Operativa'}
-                                                </span>
-                                            `}
+                                        <td class="col-shrink" style="text-align: right; white-space: nowrap;">
+                                            <div style="font-weight: 700; color: var(--primary-color); font-size: 0.95rem;">${kmText}</div>
+                                            ${monthText}
                                         </td>
                                         <td class="col-shrink" style="text-align: center;">
                                             <span class="badge-days ${badgeClass}">
@@ -3748,10 +3742,6 @@ window.switchDataTable = async function (type) {
                                         </td>
                                         <td class="col-shrink" style="text-align: center; font-weight: 700; font-size: 0.9rem; color: #1e293b;">
                                             ${row.count}
-                                        </td>
-                                        <td class="col-shrink" style="text-align: right; white-space: nowrap;">
-                                            <div style="font-weight: 700; color: var(--primary-color); font-size: 0.95rem;">${kmText}</div>
-                                            ${monthText}
                                         </td>
                                     </tr>
                                 `;
