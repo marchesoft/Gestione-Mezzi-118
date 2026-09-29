@@ -1,16 +1,16 @@
-# Regole e Contesto del Progetto (v3.2.4)
+# Regole e Contesto del Progetto (v3.2.5)
 
-Questo file definisce le linee guida e lo stato di salvataggio del progetto per garantire la coerenza con la versione **3.2.4**.
+Questo file definisce le linee guida e lo stato di salvataggio del progetto per garantire la coerenza con la versione **3.2.5**.
 
-## Stato di Riferimento (v3.2.4)
+## Stato di Riferimento (v3.2.5)
 
 1. **Gestione Versioni**:
-   - La versione attuale di riferimento è **3.2.4**.
-   - Qualsiasi modifica futura richiede l'avanzamento della versione (es. `3.2.5` o successive) in `app.js` (`const APP_VERSION = "X.Y.Z";`) e in `index.html` (header).
+   - La versione attuale di riferimento è **3.2.5**.
+   - Qualsiasi modifica futura richiede l'avanzamento della versione (es. `3.2.6` o successive) in `app.js` (`const APP_VERSION = "X.Y.Z";`) e in `index.html` (header).
 
 2. **Bypass della Cache (Cache-Busting)**:
    - I file `app.js` e `style.css` sono importati in `index.html` con il parametro di versione `?v=X.Y.Z` per forzare il caricamento immediato degli aggiornamenti sui dispositivi client (specialmente mobili).
-   - Esempio: `<link rel="stylesheet" href="style.css?v=3.2.4">` e `<script src="app.js?v=3.2.4"></script>`.
+   - Esempio: `<link rel="stylesheet" href="style.css?v=3.2.5">` e `<script src="app.js?v=3.2.5"></script>`.
    - Ad ogni cambio di codice, aggiornare questa stringa con la nuova versione dell'applicazione.
 
 3. **Integrazione Git e GitHub**:
@@ -62,3 +62,19 @@ Questo file definisce le linee guida e lo stato di salvataggio del progetto per 
      Sul modulo finale Word salvato viene stampata **esclusivamente l'opzione selezionata**.
    - **Interfaccia Pulita**: eliminata la dicitura informativa e qualsiasi avviso popup sul mancato salvataggio nello storico, garantendo un'esperienza rapida e diretta.
    - **Regola di Non-Persistenza**: Questo modulo serve esclusivamente come stampato compilabile da scaricare e **NON viene salvato nello storico delle richieste del veicolo né su Firestore**.
+
+10. **Report Tempo di Permanenza in Officina per Mezzo (v3.2.5)**:
+    - Accessibile direttamente dalla finestra **Gestione Database** tramite:
+      1. Il pulsante tab dedicato **Report Officina** (`switchDataTable('report_officina')`) nella barra superiore delle sezioni.
+      2. Il pulsante in evidenza **Report Tempi Officina** all'interno della scheda *Interventi*.
+    - **Metriche e KPI Flotta**: Schede riassuntive che mostrano i *Giorni Totali Fermo Flotta*, i *Ricoveri Complessivi*, la *Media Giorni per Ricovero* e i *Mezzi Attualmente in Officina*.
+    - **Analisi per Singola Ambulanza**:
+      - Tabella aggregata per mezzo con: Sigla, Targa, eventuale Badge Alea, Modello, Sede Attuale, Stato Attuale (Operativa / In Officina con segnalazione visiva), Totale Giorni di permanenza (con badge cromatico per gravità), Numero Ricoveri, Media Giorni per Ricovero e Dati Ultimo Ricovero.
+      - **Dettaglio Espandibile (Accordion)**: Cliccando su ciascuna riga o sul pulsante "Dettagli", si espande la tabella completa dei singoli ricoveri dell'ambulanza con: Data Entrata, Data Uscita, Durata esatta (o indicatore di ricovero in corso calcolato fino ad oggi), Officina, KM di ingresso, Descrizione lavori eseguiti e pulsante modifica per amministratori.
+    - **Filtri e Ricerca**:
+      - Ricerca istantanea testuale (per Sigla, Targa, Officina, Sede).
+      - Filtro dinamico per Anno (Tutti gli anni, 2026, 2025, ecc.) che ricalcola istantaneamente le metriche.
+      - Selettore "Mostra solo con ricoveri" per escludere i mezzi senza passaggi in officina.
+    - **Doppia Esportazione Excel (CSV con BOM UTF-8)**:
+      - *Esporta Riepilogo Excel*: Scarica il foglio aggregato con i totali e le medie di ciascuna ambulanza.
+      - *Esporta Dettaglio Singoli Ricoveri*: Scarica il registro completo di ogni singola sosta in officina con causale e officina.

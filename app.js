@@ -1,4 +1,4 @@
-const APP_VERSION = "3.2.4";
+const APP_VERSION = "3.2.5";
 let isAdmin = false;
 let cachedVehicles = null;
 let cachedLocations = null;
@@ -126,6 +126,56 @@ function formatDate(dateStr) {
     } catch (e) {}
     return String(dateStr);
 }
+
+// Helper to parse date strings (both DD/MM/YYYY and YYYY-MM-DD) into Date objects
+window.parseInterventionDate = function (dStr) {
+    if (!dStr) return null;
+    if (dStr instanceof Date) return isNaN(dStr.getTime()) ? null : dStr;
+    const str = dStr.toString().trim();
+    if (str.includes('/')) {
+        const parts = str.split('/');
+        if (parts.length === 3) {
+            const day = parseInt(parts[0], 10);
+            const month = parseInt(parts[1], 10) - 1;
+            const year = parseInt(parts[2], 10);
+            const d = new Date(year, month, day);
+            return isNaN(d.getTime()) ? null : d;
+        }
+    }
+    if (str.includes('-')) {
+        const clean = str.split('T')[0].trim();
+        const parts = clean.split('-');
+        if (parts.length === 3) {
+            const year = parseInt(parts[0], 10);
+            const month = parseInt(parts[1], 10) - 1;
+            const day = parseInt(parts[2], 10);
+            const d = new Date(year, month, day);
+            return isNaN(d.getTime()) ? null : d;
+        }
+    }
+    const d = new Date(str);
+    return isNaN(d.getTime()) ? null : d;
+};
+
+// Helper to calculate days spent in workshop (both concluded and ongoing)
+window.calculateStayDays = function (dateInStr, dateOutStr) {
+    const dIn = window.parseInterventionDate(dateInStr);
+    if (!dIn) return { days: 0, isOngoing: false };
+
+    const dOut = window.parseInterventionDate(dateOutStr);
+    if (dOut) {
+        const diffMs = dOut.getTime() - dIn.getTime();
+        // If entered and exited on the same day: counts as 1 day
+        const days = Math.max(1, Math.round(diffMs / (1000 * 60 * 60 * 24)));
+        return { days, isOngoing: false };
+    } else {
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const diffMs = today.getTime() - dIn.getTime();
+        const days = Math.max(1, Math.round(diffMs / (1000 * 60 * 60 * 24)));
+        return { days, isOngoing: true };
+    }
+};
 
 // Helper for robust alpha-numerical sorting by sigla
 function sortVehiclesBySigla(vehicles) {
@@ -2489,7 +2539,9 @@ window.exportCurrentTableToCSV = async function () {
             'interventions': 'Interventi',
             'cambiomezzo': 'Cambi_Mezzi',
             'contacts': 'Rubrica',
-            'controlli': 'Controlli_Mensili'
+            'controlli': 'Controlli_Mensili',
+            'riparazioni': 'Riparazioni_Word',
+            'report_officina': 'Report_Permanenza_Officina'
         };
         const friendlyName = tableNames[type] || type;
         const now = new Date();
@@ -2557,6 +2609,100 @@ window.exportCurrentTableToCSV = async function () {
                 };
                 return parseD(b.date) - parseD(a.date);
             });
+        } else if (type === 'report_officina') {
+            const vehicles = await store.getVehicles();
+            const interventions = await store.getInterventions();
+            data = [];
+
+            const vMap = new Map();
+            vehicles.forEach(v => {
+                vMap.set(v.id, {
+                    id: v.id,
+                    sigla: v.sigla || '-',
+                    plate: v.plate || '-',
+                    model: v.model || '-',
+                    station: v.station || '-',
+                    status: v.status || 'unknown',
+                    interventions: []
+                });
+            });
+
+            interventions.forEach(i => {
+                let v = null;
+                if (i.vehicle_id && vMap.has(i.vehicle_id)) {
+                    v = vMap.get(i.vehicle_id);
+                } else if (i.sigla) {
+                    for (const item of vMap.values()) {
+                        if (item.sigla === i.sigla) {
+                            v = item;
+                            break;
+                        }
+                    }
+                }
+                if (v) {
+                    v.interventions.push(i);
+                }
+            });
+
+            const selectedYear = window.currentWorkshopReportYear || 'all';
+
+            for (const v of vMap.values()) {
+                let filtered = v.interventions;
+                if (selectedYear !== 'all') {
+                    const yr = parseInt(selectedYear, 10);
+                    filtered = filtered.filter(item => {
+                        const dIn = window.parseInterventionDate(item.date);
+                        const dOut = window.parseInterventionDate(item.date_out);
+                        const itemYear = dIn ? dIn.getFullYear() : (dOut ? dOut.getFullYear() : null);
+                        return itemYear === yr;
+                    });
+                }
+
+                if (filtered.length === 0 && v.status !== 'maintenance') continue;
+
+                let totalDays = 0;
+                let lastDateIn = '';
+                let lastDateOut = '';
+                let lastWorkshop = '';
+                let hasOngoing = (v.status === 'maintenance');
+
+                filtered.sort((a, b) => {
+                    const dA = window.parseInterventionDate(a.date);
+                    const dB = window.parseInterventionDate(b.date);
+                    return (dB ? dB.getTime() : 0) - (dA ? dA.getTime() : 0);
+                });
+
+                filtered.forEach((item, idx) => {
+                    const stay = window.calculateStayDays(item.date, item.date_out);
+                    totalDays += stay.days;
+                    if (stay.isOngoing) hasOngoing = true;
+                    if (idx === 0) {
+                        lastDateIn = item.date ? formatDate(item.date) : '';
+                        lastDateOut = item.date_out ? formatDate(item.date_out) : (stay.isOngoing ? 'In corso' : '');
+                        lastWorkshop = item.workshop || '';
+                    }
+                });
+
+                const count = filtered.length;
+                const avg = count > 0 ? (totalDays / count).toFixed(1) : '0';
+                const statusLabel = hasOngoing ? 'In Officina' : (v.status === 'available' ? 'Disponibile' : 'Operativa');
+
+                data.push({
+                    sigla: v.sigla,
+                    plate: v.plate,
+                    model: v.model,
+                    station: v.station,
+                    status: statusLabel,
+                    total_days: totalDays,
+                    count: count,
+                    avg_days: avg,
+                    last_date_in: lastDateIn,
+                    last_date_out: lastDateOut,
+                    last_workshop: lastWorkshop
+                });
+            }
+
+            data.sort((a, b) => b.total_days - a.total_days);
         }
 
         if (!data || data.length === 0) {
@@ -2595,6 +2741,10 @@ window.exportCurrentTableToCSV = async function () {
         } else if (type === 'riparazioni') {
             headers = ['sigla', 'plate', 'model', 'date', 'types', 'description', 'driver', 'dept', 'phone', 'station', 'email'];
             const italianHeaders = ['Sigla', 'Targa', 'Modello', 'Data Richiesta', 'Tipologia', 'Descrizione', 'Driver / Richiedente', 'Dipartimento', 'Telefono', 'Ubicazione', 'Email'];
+            csvRows.push(italianHeaders.join(';'));
+        } else if (type === 'report_officina') {
+            headers = ['sigla', 'plate', 'model', 'station', 'status', 'total_days', 'count', 'avg_days', 'last_date_in', 'last_date_out', 'last_workshop'];
+            const italianHeaders = ['Mezzo (Sigla)', 'Targa', 'Modello', 'Sede', 'Stato Attuale', 'Totale Giorni in Officina', 'Numero Ricoveri', 'Media Giorni per Ricovero', 'Data Ultimo Ingresso', 'Data Ultima Uscita', 'Ultima Officina'];
             csvRows.push(italianHeaders.join(';'));
         } else {
             headers = Object.keys(data[0]);
@@ -2639,6 +2789,112 @@ window.exportCurrentTableToCSV = async function () {
         alert("Errore durante l'esportazione dei dati.");
     }
 }
+
+// Alias per compatibilità con eventuali richiami da pulsanti Excel
+window.exportCurrentTableToExcel = function (type) {
+    if (type) window.lastDataManagerTab = type;
+    exportCurrentTableToCSV();
+};
+
+// Esportazione granulare riga per riga di tutti i singoli ricoveri in officina
+window.exportDetailedWorkshopReportToCSV = async function () {
+    try {
+        const vehicles = await store.getVehicles();
+        const interventions = await store.getInterventions();
+
+        const vMap = new Map();
+        vehicles.forEach(v => {
+            vMap.set(v.id, v);
+        });
+
+        const rows = [];
+        const selectedYear = window.currentWorkshopReportYear || 'all';
+
+        interventions.forEach(i => {
+            const v = (i.vehicle_id && vMap.get(i.vehicle_id)) || null;
+            const sigla = v ? (v.sigla || '-') : (i.sigla || '-');
+            const plate = v ? (v.plate || '-') : '-';
+            const model = v ? (v.model || '-') : '-';
+            const station = v ? (v.station || '-') : '-';
+
+            const dIn = window.parseInterventionDate(i.date);
+            const dOut = window.parseInterventionDate(i.date_out);
+            const itemYear = dIn ? dIn.getFullYear() : (dOut ? dOut.getFullYear() : null);
+
+            if (selectedYear !== 'all') {
+                const yr = parseInt(selectedYear, 10);
+                if (itemYear !== yr) return;
+            }
+
+            const stay = window.calculateStayDays(i.date, i.date_out);
+            const statusStr = stay.isOngoing ? 'In corso (ricoverata)' : 'Concluso';
+
+            rows.push({
+                sigla,
+                plate,
+                model,
+                station,
+                date: i.date || '',
+                date_out: i.date_out || '',
+                days: stay.days,
+                status: statusStr,
+                workshop: i.workshop || '-',
+                km: i.km || '',
+                description: (i.description || '').replace(/\n/g, ' ')
+            });
+        });
+
+        if (rows.length === 0) {
+            alert("Nessun ricovero in officina da esportare per i filtri selezionati.");
+            return;
+        }
+
+        rows.sort((a, b) => {
+            const dA = window.parseInterventionDate(a.date);
+            const dB = window.parseInterventionDate(b.date);
+            return (dB ? dB.getTime() : 0) - (dA ? dA.getTime() : 0);
+        });
+
+        const headers = ['sigla', 'plate', 'model', 'station', 'date', 'date_out', 'days', 'status', 'workshop', 'km', 'description'];
+        const italianHeaders = ['Mezzo (Sigla)', 'Targa', 'Modello', 'Sede', 'Data Entrata', 'Data Uscita', 'Giorni Sosta', 'Stato Ricovero', 'Officina', 'Km Ingresso', 'Descrizione / Causale'];
+
+        const csvRows = [italianHeaders.join(';')];
+        for (const row of rows) {
+            const values = headers.map(h => {
+                let val = row[h];
+                if (val === null || val === undefined) return '';
+                if (h === 'date' || h === 'date_out') val = formatDate(val);
+                let escaped = ('' + val).replace(/;/g, ',').replace(/\n/g, ' ');
+                return `"${escaped}"`;
+            });
+            csvRows.push(values.join(';'));
+        }
+
+        const BOM = '\uFEFF';
+        const csvString = BOM + csvRows.join('\n');
+        const now = new Date();
+        const dateStr = `${String(now.getDate()).padStart(2, '0')}-${String(now.getMonth() + 1).padStart(2, '0')}-${now.getFullYear()}`;
+        const yearSuffix = selectedYear !== 'all' ? `_${selectedYear}` : '';
+        const filename = `Dettaglio_Ricoveri_Officina${yearSuffix}_${dateStr}.csv`;
+
+        const blob = new Blob([csvString], { type: 'text/csv;charset=utf-8;' });
+        const link = document.createElement("a");
+        if (navigator.msSaveBlob) {
+            navigator.msSaveBlob(blob, filename);
+        } else {
+            const url = URL.createObjectURL(blob);
+            link.setAttribute("href", url);
+            link.setAttribute("download", filename);
+            link.style.visibility = 'hidden';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+    } catch (e) {
+        console.error("Export detailed workshop error:", e);
+        alert("Errore durante l'esportazione del dettaglio officina.");
+    }
+};
 
 window.importDataTableFromCSV = function () {
     const type = window.lastDataManagerTab || 'vehicles';
@@ -2940,23 +3196,26 @@ window.switchDataTable = async function (type) {
         } else if (type === 'interventions') {
             data = await store.getInterventions();
             html = `
-                <div style="margin-bottom: 1rem; background: #f8fafc; padding: 1rem; border-radius: 0.75rem; border: 1px solid var(--border-color); display: flex; gap: 1rem; align-items: center;">
-                    <div style="flex-grow: 1; position: relative;">
+                <div style="margin-bottom: 1rem; background: #f8fafc; padding: 1rem; border-radius: 0.75rem; border: 1px solid var(--border-color); display: flex; gap: 1rem; align-items: center; justify-content: space-between; flex-wrap: wrap;">
+                    <div style="flex-grow: 1; position: relative; min-width: 220px;">
                         <i class="fa-solid fa-search" style="position: absolute; left: 1rem; top: 50%; transform: translateY(-50%); color: var(--text-secondary);"></i>
                         <input type="text" id="intervention-search" placeholder="Filtra per Mezzo (Sigla)..." 
                                oninput="window.filterInterventionTable(this.value)"
                                style="width: 100%; padding: 0.5rem 1rem 0.5rem 2.5rem; border-radius: 0.5rem; border: 1px solid var(--border-color); outline: none;">
                     </div>
-                    ${isAdmin ? `
-                    <div style="display: flex; gap: 0.5rem; align-items: center;">
+                    <div style="display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;">
+                        <button class="btn btn-export" onclick="switchDataTable('report_officina')" style="white-space: nowrap; background: linear-gradient(135deg, #7c3aed, #6d28d9); color: white; display: flex; align-items: center; gap: 0.4rem;">
+                            <i class="fa-solid fa-clock-rotate-left"></i> Report Tempi Officina
+                        </button>
+                        ${isAdmin ? `
                         <button class="btn btn-export" onclick="exportCurrentTableToCSV()" style="white-space: nowrap;">
                             <i class="fa-solid fa-file-excel"></i> Esporta Excel
                         </button>
                         <button class="btn btn-export" onclick="importDataTableFromCSV()" style="white-space: nowrap; background-color: #065f46;">
                             <i class="fa-solid fa-file-import"></i> Importa Excel
                         </button>
+                        ` : ''}
                     </div>
-                    ` : ''}
                 </div>
                 <div style="overflow-x: auto;">
                     <table class="mgmt-table" id="interventions-table">
@@ -3260,6 +3519,371 @@ window.switchDataTable = async function (type) {
                         </tbody>
                     </table>
                 </div>`;
+        } else if (type === 'report_officina') {
+            const vehicles = await store.getVehicles();
+            const interventions = await store.getInterventions();
+
+            // Raccoglie tutti gli anni disponibili negli interventi
+            const yearsSet = new Set();
+            interventions.forEach(i => {
+                const dIn = window.parseInterventionDate(i.date);
+                if (dIn) yearsSet.add(dIn.getFullYear());
+                const dOut = window.parseInterventionDate(i.date_out);
+                if (dOut) yearsSet.add(dOut.getFullYear());
+            });
+            const availableYears = Array.from(yearsSet).sort((a, b) => b - a);
+            const selectedYear = window.currentWorkshopReportYear || 'all';
+
+            // Mappatura per veicolo
+            const vMap = new Map();
+            vehicles.forEach(v => {
+                vMap.set(v.id, {
+                    id: v.id,
+                    sigla: v.sigla || '-',
+                    plate: v.plate || '-',
+                    model: v.model || '-',
+                    station: v.station || '-',
+                    status: v.status || 'unknown',
+                    is_alea: !!v.is_alea,
+                    interventions: []
+                });
+            });
+
+            interventions.forEach(i => {
+                let v = null;
+                if (i.vehicle_id && vMap.has(i.vehicle_id)) {
+                    v = vMap.get(i.vehicle_id);
+                } else if (i.sigla) {
+                    for (const item of vMap.values()) {
+                        if (item.sigla === i.sigla) {
+                            v = item;
+                            break;
+                        }
+                    }
+                }
+
+                if (!v) {
+                    const fakeId = i.vehicle_id || ('unknown_' + (i.sigla || 'N/A'));
+                    v = {
+                        id: fakeId,
+                        sigla: i.sigla || 'N/A',
+                        plate: '-',
+                        model: '-',
+                        station: '-',
+                        status: 'unknown',
+                        is_alea: false,
+                        interventions: []
+                    };
+                    vMap.set(fakeId, v);
+                }
+
+                const dIn = window.parseInterventionDate(i.date);
+                const dOut = window.parseInterventionDate(i.date_out);
+                const itemYear = dIn ? dIn.getFullYear() : (dOut ? dOut.getFullYear() : null);
+
+                // Filtro anno se impostato
+                if (selectedYear !== 'all') {
+                    const yr = parseInt(selectedYear, 10);
+                    if (itemYear !== yr) return;
+                }
+
+                const stay = window.calculateStayDays(i.date, i.date_out);
+
+                v.interventions.push({
+                    id: i.id,
+                    date: i.date,
+                    date_out: i.date_out,
+                    dIn,
+                    dOut,
+                    days: stay.days,
+                    isOngoing: stay.isOngoing,
+                    workshop: i.workshop || '-',
+                    km: i.km || null,
+                    description: i.description || '-'
+                });
+            });
+
+            // Calcolo metriche per singolo veicolo
+            const reportRows = [];
+            let fleetTotalDays = 0;
+            let fleetTotalStays = 0;
+            let fleetVehiclesInShop = 0;
+
+            for (const v of vMap.values()) {
+                // Ordina dal ricovero più recente
+                v.interventions.sort((a, b) => {
+                    const timeA = a.dIn ? a.dIn.getTime() : 0;
+                    const timeB = b.dIn ? b.dIn.getTime() : 0;
+                    return timeB - timeA;
+                });
+
+                const count = v.interventions.length;
+                let totalDays = 0;
+                let hasOngoing = false;
+
+                v.interventions.forEach(item => {
+                    totalDays += item.days;
+                    if (item.isOngoing) hasOngoing = true;
+                });
+
+                if (v.status === 'maintenance') {
+                    hasOngoing = true;
+                }
+
+                if (hasOngoing) {
+                    fleetVehiclesInShop++;
+                }
+
+                fleetTotalDays += totalDays;
+                fleetTotalStays += count;
+
+                const avgDays = count > 0 ? (totalDays / count).toFixed(1) : '0';
+                const lastStay = count > 0 ? v.interventions[0] : null;
+
+                reportRows.push({
+                    ...v,
+                    totalDays,
+                    count,
+                    avgDays,
+                    hasOngoing,
+                    lastStay
+                });
+            }
+
+            // Ordinamento predefinito: prima i mezzi con più giorni di fermo, poi per sigla
+            reportRows.sort((a, b) => {
+                if (b.totalDays !== a.totalDays) return b.totalDays - a.totalDays;
+                if (b.count !== a.count) return b.count - a.count;
+                return (a.sigla || '').localeCompare(b.sigla || '');
+            });
+
+            const fleetAvgDays = fleetTotalStays > 0 ? (fleetTotalDays / fleetTotalStays).toFixed(1) : '0';
+            const vehiclesWithStays = reportRows.filter(r => r.count > 0 || r.hasOngoing).length;
+
+            html = `
+                <div style="margin-bottom: 1.25rem; background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%); color: white; padding: 1.25rem 1.5rem; border-radius: 0.75rem; display: flex; justify-content: space-between; align-items: center; gap: 1rem; flex-wrap: wrap; box-shadow: 0 4px 6px -1px rgba(79, 70, 229, 0.2);">
+                    <div>
+                        <h3 style="margin: 0; font-size: 1.2rem; font-weight: 700; display: flex; align-items: center; gap: 0.6rem;">
+                            <i class="fa-solid fa-clock-rotate-left"></i> Report Tempo di Permanenza in Officina
+                        </h3>
+                        <div style="font-size: 0.85rem; opacity: 0.9; margin-top: 0.35rem;">
+                            Monitoraggio dettagliato dei giorni di fermo macchina e storico ricoveri per singola ambulanza
+                        </div>
+                    </div>
+                    <div style="display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;">
+                        <button class="btn btn-export" onclick="exportCurrentTableToCSV()" style="background: rgba(255,255,255,0.2); color: white; border: 1px solid rgba(255,255,255,0.4); display: flex; align-items: center; gap: 0.4rem; white-space: nowrap; backdrop-filter: blur(4px);">
+                            <i class="fa-solid fa-file-excel"></i> Esporta Riepilogo Excel
+                        </button>
+                        <button class="btn btn-export" onclick="window.exportDetailedWorkshopReportToCSV()" style="background: white; color: #6d28d9; border: none; font-weight: 600; display: flex; align-items: center; gap: 0.4rem; white-space: nowrap; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+                            <i class="fa-solid fa-list-check"></i> Esporta Dettaglio Singoli Ricoveri
+                        </button>
+                    </div>
+                </div>
+
+                <!-- KPI Cards Grid -->
+                <div class="workshop-kpi-grid">
+                    <div class="workshop-kpi-card">
+                        <div class="workshop-kpi-icon" style="background: #eef2ff; color: #4f46e5;">
+                            <i class="fa-solid fa-stopwatch"></i>
+                        </div>
+                        <div>
+                            <div class="workshop-kpi-val">${fleetTotalDays} <span style="font-size: 0.9rem; font-weight: 500; color: #64748b;">giorni</span></div>
+                            <div class="workshop-kpi-lbl">Totale Giorni Fermo Flotta</div>
+                        </div>
+                    </div>
+                    <div class="workshop-kpi-card">
+                        <div class="workshop-kpi-icon" style="background: #ecfdf5; color: #059669;">
+                            <i class="fa-solid fa-truck-medical"></i>
+                        </div>
+                        <div>
+                            <div class="workshop-kpi-val">${fleetTotalStays} <span style="font-size: 0.9rem; font-weight: 500; color: #64748b;">ricoveri</span></div>
+                            <div class="workshop-kpi-lbl">Ricoveri Complessivi (${vehiclesWithStays} mezzi)</div>
+                        </div>
+                    </div>
+                    <div class="workshop-kpi-card">
+                        <div class="workshop-kpi-icon" style="background: #fdf4ff; color: #c026d3;">
+                            <i class="fa-solid fa-chart-pie"></i>
+                        </div>
+                        <div>
+                            <div class="workshop-kpi-val">${fleetAvgDays} <span style="font-size: 0.9rem; font-weight: 500; color: #64748b;">gg/ricovero</span></div>
+                            <div class="workshop-kpi-lbl">Media Giorni per Ricovero</div>
+                        </div>
+                    </div>
+                    <div class="workshop-kpi-card" style="${fleetVehiclesInShop > 0 ? 'border: 1px solid #fecaca; background: #fff5f5;' : ''}">
+                        <div class="workshop-kpi-icon" style="background: ${fleetVehiclesInShop > 0 ? '#fee2e2' : '#f8fafc'}; color: ${fleetVehiclesInShop > 0 ? '#dc2626' : '#64748b'};">
+                            <i class="fa-solid ${fleetVehiclesInShop > 0 ? 'fa-triangle-exclamation' : 'fa-check'}"></i>
+                        </div>
+                        <div>
+                            <div class="workshop-kpi-val" style="color: ${fleetVehiclesInShop > 0 ? '#dc2626' : 'var(--text-primary)'};">${fleetVehiclesInShop} <span style="font-size: 0.9rem; font-weight: 500; color: #64748b;">mezzi</span></div>
+                            <div class="workshop-kpi-lbl">${fleetVehiclesInShop > 0 ? 'Attualmente in Officina' : 'Nessun Mezzo in Officina'}</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Filters & Search Toolbar -->
+                <div style="margin-bottom: 1rem; background: #f8fafc; padding: 0.75rem 1rem; border-radius: 0.75rem; border: 1px solid var(--border-color); display: flex; gap: 1rem; align-items: center; justify-content: space-between; flex-wrap: wrap;">
+                    <div style="flex-grow: 1; position: relative; min-width: 240px;">
+                        <i class="fa-solid fa-search" style="position: absolute; left: 1rem; top: 50%; transform: translateY(-50%); color: var(--text-secondary);"></i>
+                        <input type="text" id="workshop-report-search" placeholder="Cerca mezzo (Sigla, Targa, Officina, Sede)..." 
+                               oninput="window.filterWorkshopReport(this.value)"
+                               style="width: 100%; padding: 0.5rem 1rem 0.5rem 2.5rem; border-radius: 0.5rem; border: 1px solid var(--border-color); outline: none; font-size: 0.9rem;">
+                    </div>
+                    <div style="display: flex; gap: 0.75rem; align-items: center; flex-wrap: wrap;">
+                        <div style="display: flex; align-items: center; gap: 0.4rem; font-size: 0.85rem; font-weight: 600; color: #475569;">
+                            <i class="fa-solid fa-calendar"></i> Anno:
+                            <select id="workshop-year-select" onchange="window.filterWorkshopByYear(this.value)" style="padding: 0.4rem 0.8rem; border-radius: 0.375rem; border: 1px solid var(--border-color); background: white; font-weight: 600; outline: none; cursor: pointer;">
+                                <option value="all" ${selectedYear === 'all' ? 'selected' : ''}>Tutti gli anni</option>
+                                ${availableYears.map(yr => `<option value="${yr}" ${selectedYear === String(yr) ? 'selected' : ''}>${yr}</option>`).join('')}
+                            </select>
+                        </div>
+                        <label style="display: flex; align-items: center; gap: 0.4rem; font-size: 0.85rem; font-weight: 500; color: #475569; cursor: pointer; user-select: none;">
+                            <input type="checkbox" id="workshop-only-active" onchange="window.toggleOnlyActiveWorkshop(this.checked)" checked style="cursor: pointer;">
+                            Mostra solo con ricoveri
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Main Report Table -->
+                <div style="overflow-x: auto;">
+                    <table class="mgmt-table" id="workshop-report-table">
+                        <thead>
+                            <tr>
+                                <th class="col-shrink">Mezzo</th>
+                                <th class="col-shrink">Modello</th>
+                                <th class="col-shrink">Sede Attuale</th>
+                                <th class="col-shrink">Stato Attuale</th>
+                                <th class="col-shrink" style="text-align: center;">Giorni in Officina</th>
+                                <th class="col-shrink" style="text-align: center;">N° Ricoveri</th>
+                                <th class="col-shrink" style="text-align: center;">Media Giorni</th>
+                                <th class="col-expand">Ultimo Ricovero</th>
+                                <th class="col-actions" style="text-align: center;">Dettagli</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${reportRows.length === 0 ? '<tr><td colspan="9" style="text-align:center; padding: 2rem; color: var(--text-secondary);">Nessun dato trovato per i criteri selezionati.</td></tr>' : ''}
+                            ${reportRows.map(row => {
+                                let badgeClass = 'badge-days-zero';
+                                if (row.hasOngoing) badgeClass = 'badge-days-ongoing';
+                                else if (row.totalDays > 10) badgeClass = 'badge-days-high';
+                                else if (row.totalDays >= 4) badgeClass = 'badge-days-med';
+                                else if (row.totalDays > 0) badgeClass = 'badge-days-low';
+
+                                const isOnlyZero = row.count === 0 && !row.hasOngoing;
+                                const trStyle = isOnlyZero ? 'style="display: none;" class="workshop-row-zero"' : 'class="workshop-row"';
+
+                                let lastStayText = '-';
+                                if (row.lastStay) {
+                                    const inStr = formatDate(row.lastStay.date);
+                                    const outStr = row.lastStay.date_out ? formatDate(row.lastStay.date_out) : '<span style="color:#dc2626; font-weight:700;"><i class="fa-solid fa-spinner fa-spin"></i> In corso</span>';
+                                    lastStayText = `<strong>${inStr} &rarr; ${outStr}</strong> (${row.lastStay.workshop || 'Officina non spec.'})`;
+                                }
+
+                                return `
+                                    <tr ${trStyle} id="w-row-${row.id}" data-search="${(row.sigla + ' ' + row.plate + ' ' + row.model + ' ' + row.station + ' ' + (row.lastStay ? row.lastStay.workshop : '')).toLowerCase()}">
+                                        <td class="col-shrink text-bold text-primary">
+                                            <span style="font-size: 1rem;">${row.sigla}</span>
+                                            ${row.is_alea ? '<span style="background: #fef3c7; color: #92400e; font-size: 0.7rem; font-weight: 700; padding: 0.15rem 0.4rem; border-radius: 4px; margin-left: 0.35rem; vertical-align: middle;">Alea</span>' : ''}
+                                            <div style="font-size: 0.75rem; color: #64748b; font-weight: 500;">${row.plate}</div>
+                                        </td>
+                                        <td class="col-shrink" style="font-size: 0.85rem;">${row.model}</td>
+                                        <td class="col-shrink" style="font-size: 0.85rem; font-weight: 600; color: #334155;">${row.station}</td>
+                                        <td class="col-shrink">
+                                            ${row.hasOngoing ? `
+                                                <span style="background: #fee2e2; color: #dc2626; border: 1px solid #fecaca; padding: 0.25rem 0.6rem; border-radius: 9999px; font-size: 0.75rem; font-weight: 700; display: inline-flex; align-items: center; gap: 0.3rem;">
+                                                    <i class="fa-solid fa-triangle-exclamation"></i> In Officina
+                                                </span>
+                                            ` : `
+                                                <span style="background: #f0fdf4; color: #16a34a; border: 1px solid #bbf7d0; padding: 0.25rem 0.6rem; border-radius: 9999px; font-size: 0.75rem; font-weight: 600; display: inline-flex; align-items: center; gap: 0.3rem;">
+                                                    <i class="fa-solid fa-check"></i> ${row.status === 'available' ? 'Disponibile' : 'Operativa'}
+                                                </span>
+                                            `}
+                                        </td>
+                                        <td class="col-shrink" style="text-align: center;">
+                                            <span class="badge-days ${badgeClass}">
+                                                ${row.totalDays} ${row.totalDays === 1 ? 'giorno' : 'giorni'}
+                                                ${row.hasOngoing ? ' <i class="fa-solid fa-spinner fa-spin" style="margin-left: 3px;" title="Ricovero in corso"></i>' : ''}
+                                            </span>
+                                        </td>
+                                        <td class="col-shrink" style="text-align: center; font-weight: 700; font-size: 0.9rem; color: #1e293b;">
+                                            ${row.count}
+                                        </td>
+                                        <td class="col-shrink" style="text-align: center; font-size: 0.85rem; font-weight: 600; color: #475569;">
+                                            ${row.avgDays} gg
+                                        </td>
+                                        <td class="col-expand" style="font-size: 0.85rem; color: #334155;">
+                                            ${lastStayText}
+                                        </td>
+                                        <td class="col-actions" style="text-align: center;">
+                                            ${row.count > 0 ? `
+                                                <button class="btn-workshop-details" onclick="window.toggleWorkshopRow('${row.id}')" title="Visualizza tutti i ricoveri di ${row.sigla}">
+                                                    <span>Dettagli (${row.count})</span>
+                                                    <i class="fa-solid fa-chevron-down" id="chevron-${row.id}"></i>
+                                                </button>
+                                            ` : '<span style="color: #94a3b8; font-size: 0.8rem;">-</span>'}
+                                        </td>
+                                    </tr>
+
+                                    <!-- Accordion Sub-Row with Detailed Stays -->
+                                    ${row.count > 0 ? `
+                                        <tr id="w-detail-${row.id}" class="workshop-detail-row" style="display: none;">
+                                            <td colspan="9" style="padding: 0; border-bottom: 2px solid #cbd5e1;">
+                                                <div class="workshop-detail-content">
+                                                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem;">
+                                                        <div style="font-weight: 700; font-size: 0.9rem; color: #4338ca; display: flex; align-items: center; gap: 0.4rem;">
+                                                            <i class="fa-solid fa-wrench"></i> Storico Singoli Ricoveri per ${row.sigla} (${row.plate})
+                                                        </div>
+                                                        <div style="font-size: 0.8rem; color: #64748b;">
+                                                            Totale permanenza: <strong>${row.totalDays} giorni</strong> su <strong>${row.count}</strong> interventi
+                                                        </div>
+                                                    </div>
+                                                    <div style="overflow-x: auto; background: white; border-radius: 0.5rem; border: 1px solid #e2e8f0;">
+                                                        <table style="width: 100%; border-collapse: collapse; font-size: 0.82rem;">
+                                                            <thead>
+                                                                <tr style="background: #f1f5f9; border-bottom: 1px solid #cbd5e1;">
+                                                                    <th style="padding: 0.5rem 0.75rem; text-align: left; color: #475569; font-weight: 700;">Data Entrata</th>
+                                                                    <th style="padding: 0.5rem 0.75rem; text-align: left; color: #475569; font-weight: 700;">Data Uscita</th>
+                                                                    <th style="padding: 0.5rem 0.75rem; text-align: center; color: #475569; font-weight: 700;">Permanenza</th>
+                                                                    <th style="padding: 0.5rem 0.75rem; text-align: left; color: #475569; font-weight: 700;">Officina</th>
+                                                                    <th style="padding: 0.5rem 0.75rem; text-align: left; color: #475569; font-weight: 700;">KM Ingresso</th>
+                                                                    <th style="padding: 0.5rem 0.75rem; text-align: left; color: #475569; font-weight: 700;">Descrizione / Lavori Eseguiti</th>
+                                                                    ${isAdmin ? '<th style="padding: 0.5rem 0.75rem; text-align: right; color: #475569; font-weight: 700;">Azioni</th>' : ''}
+                                                                </tr>
+                                                            </thead>
+                                                            <tbody>
+                                                                ${row.interventions.map((stay, idx) => `
+                                                                    <tr style="border-bottom: 1px solid #f1f5f9; ${stay.isOngoing ? 'background: #fffbeb;' : ''}">
+                                                                        <td style="padding: 0.5rem 0.75rem; font-weight: 600; white-space: nowrap; color: #0f172a;">${formatDate(stay.date)}</td>
+                                                                        <td style="padding: 0.5rem 0.75rem; font-weight: 600; white-space: nowrap; color: #0f172a;">${stay.date_out ? formatDate(stay.date_out) : '<span style="color:#dc2626; font-weight:700;"><i class="fa-solid fa-spinner fa-spin"></i> In corso</span>'}</td>
+                                                                        <td style="padding: 0.5rem 0.75rem; text-align: center;">
+                                                                            <span class="badge-days ${stay.isOngoing ? 'badge-days-ongoing' : (stay.days > 7 ? 'badge-days-high' : 'badge-days-low')}" style="font-size: 0.75rem; padding: 0.15rem 0.5rem;">
+                                                                                ${stay.days} ${stay.days === 1 ? 'giorno' : 'giorni'}
+                                                                            </span>
+                                                                        </td>
+                                                                        <td style="padding: 0.5rem 0.75rem; font-weight: 600; color: #334155;">${stay.workshop}</td>
+                                                                        <td style="padding: 0.5rem 0.75rem; color: var(--primary-color); font-weight: 600;">${stay.km ? parseInt(stay.km).toLocaleString() + ' km' : '-'}</td>
+                                                                        <td style="padding: 0.5rem 0.75rem; color: #334155; line-height: 1.3;">${stay.description}</td>
+                                                                        ${isAdmin ? `
+                                                                            <td style="padding: 0.5rem 0.75rem; text-align: right; white-space: nowrap;">
+                                                                                <button onclick="editInterventionHandler('${stay.id}')" style="cursor: pointer; background: none; border: none; color: var(--primary-color); font-size: 0.95rem; margin-right: 0.5rem;" title="Modifica intervento">
+                                                                                    <i class="fa-solid fa-pen"></i>
+                                                                                </button>
+                                                                            </td>
+                                                                        ` : ''}
+                                                                    </tr>
+                                                                `).join('')}
+                                                            </tbody>
+                                                        </table>
+                                                    </div>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    ` : ''}
+                                `;
+                            }).join('')}
+                        </tbody>
+                    </table>
+                </div>
+            `;
         }
     } catch (e) {
         html = `<p style="color:red;">Errore caricamento dati: ${e.message}</p>`;
@@ -3267,6 +3891,70 @@ window.switchDataTable = async function (type) {
 
     container.innerHTML = html;
 }
+
+window.toggleWorkshopRow = function (vehicleId) {
+    const detailRow = document.getElementById(`w-detail-${vehicleId}`);
+    const chevron = document.getElementById(`chevron-${vehicleId}`);
+    if (!detailRow) return;
+
+    if (detailRow.style.display === 'none' || !detailRow.style.display) {
+        detailRow.style.display = 'table-row';
+        if (chevron) {
+            chevron.classList.remove('fa-chevron-down');
+            chevron.classList.add('fa-chevron-up');
+        }
+    } else {
+        detailRow.style.display = 'none';
+        if (chevron) {
+            chevron.classList.remove('fa-chevron-up');
+            chevron.classList.add('fa-chevron-down');
+        }
+    }
+};
+
+window.filterWorkshopReport = function (query) {
+    const table = document.getElementById('workshop-report-table');
+    if (!table) return;
+    const q = (query || '').toLowerCase().trim();
+    const rows = table.querySelectorAll('tbody tr.workshop-row, tbody tr.workshop-row-zero');
+    const isOnlyActiveChecked = document.getElementById('workshop-only-active') ? document.getElementById('workshop-only-active').checked : true;
+
+    rows.forEach(row => {
+        const searchData = row.getAttribute('data-search') || '';
+        const isZero = row.classList.contains('workshop-row-zero');
+        const matchesQuery = !q || searchData.includes(q);
+
+        if (matchesQuery) {
+            if (isZero && isOnlyActiveChecked && !q) {
+                row.style.display = 'none';
+            } else {
+                row.style.display = '';
+            }
+        } else {
+            row.style.display = 'none';
+            const id = row.id.replace('w-row-', '');
+            const detailRow = document.getElementById(`w-detail-${id}`);
+            if (detailRow) detailRow.style.display = 'none';
+        }
+    });
+};
+
+window.filterWorkshopByYear = function (year) {
+    window.currentWorkshopReportYear = year;
+    switchDataTable('report_officina');
+};
+
+window.toggleOnlyActiveWorkshop = function (onlyActive) {
+    const zeroRows = document.querySelectorAll('.workshop-row-zero');
+    const searchVal = (document.getElementById('workshop-report-search') ? document.getElementById('workshop-report-search').value : '').trim();
+    zeroRows.forEach(row => {
+        if (!onlyActive || searchVal !== '') {
+            row.style.display = '';
+        } else {
+            row.style.display = 'none';
+        }
+    });
+};
 
 window.filterInterventionTable = function (query) {
     const table = document.querySelector('.data-mgmt-content table');
