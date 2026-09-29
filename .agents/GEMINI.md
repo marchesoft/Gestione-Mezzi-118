@@ -1,16 +1,16 @@
-# Regole e Contesto del Progetto (v3.2.1)
+# Regole e Contesto del Progetto (v3.2.2)
 
-Questo file definisce le linee guida e lo stato di salvataggio del progetto per garantire la coerenza con la versione **3.2.1**.
+Questo file definisce le linee guida e lo stato di salvataggio del progetto per garantire la coerenza con la versione **3.2.2**.
 
-## Stato di Riferimento (v3.2.1)
+## Stato di Riferimento (v3.2.2)
 
 1. **Gestione Versioni**:
-   - La versione attuale di riferimento è **3.2.1**.
-   - Qualsiasi modifica futura richiede l'avanzamento della versione (es. `3.2.2` o successive) in `app.js` (`const APP_VERSION = "X.Y.Z";`) e in `index.html` (header).
+   - La versione attuale di riferimento è **3.2.2**.
+   - Qualsiasi modifica futura richiede l'avanzamento della versione (es. `3.2.3` o successive) in `app.js` (`const APP_VERSION = "X.Y.Z";`) e in `index.html` (header).
 
 2. **Bypass della Cache (Cache-Busting)**:
    - I file `app.js` e `style.css` sono importati in `index.html` con il parametro di versione `?v=X.Y.Z` per forzare il caricamento immediato degli aggiornamenti sui dispositivi client (specialmente mobili).
-   - Esempio: `<link rel="stylesheet" href="style.css?v=3.2.1">` e `<script src="app.js?v=3.2.1"></script>`.
+   - Esempio: `<link rel="stylesheet" href="style.css?v=3.2.2">` e `<script src="app.js?v=3.2.2"></script>`.
    - Ad ogni cambio di codice, aggiornare questa stringa con la nuova versione dell'applicazione.
 
 3. **Integrazione Git e GitHub**:
@@ -52,8 +52,8 @@ Questo file definisce le linee guida e lo stato di salvataggio del progetto per 
    - Registrata ed inserita nello storico richieste di riparazione dell'ambulanza Alea **ECHO 22 (targa FF 837 RS)** la richiesta di modulo lavaggio esterno per ricovero veicolo presso officina **CAVAGION** con data **29/01/2026**.
    - La richiesta è visibile sia nello storico richieste del singolo mezzo che nella tabella globale "Riparazioni" del database, ed è scaricabile in formato Word con il modello dedicato Alea.
 
-9. **Modulo Lavaggio Esterno - Solo Stampato da Compilare (v3.2.1)**:
-   - Nella scheda dettagli veicolo (`openVehicleModal`) è presente un pulsante dedicato **Modulo Lavaggio** (`.btn-wash-request`, colore verde smeraldo `#059669`, hover `#047857`), cromaticamente distinto dal pulsante verde "Richiesta Riparazione" (`#16a34a`).
+9. **Modulo Lavaggio Esterno - Solo Stampato da Compilare (v3.2.2)**:
+   - Nella scheda dettagli veicolo (`openVehicleModal`) è presente un pulsante dedicato **Modulo Lavaggio** (`.btn-wash-request`, colore verde acqua / teal `#0d9488`, hover `#0f766e`), cromaticamente distinto dal pulsante verde prato "Richiesta Riparazione" (`#16a34a`).
    - Apre una finestra modale dedicata (`#wash-modal`) per compilare e scaricare direttamente lo stampato Word per il ricovero/lavaggio esterno (officina predefinita `CAVAGION`, intervento predefinito `LAVAGGIO ESTERNO`, chilometri facoltativi, driver e contatti).
    - Genera il file Word (`.docx`) basato sul modello ufficiale Parts & Services (Alea) conforme al layout cartaceo.
    - **Regola di Non-Persistenza**: Come richiesto esplicitamente, questo modulo serve esclusivamente come stampato compilabile da scaricare e **NON viene salvato nello storico delle richieste del veicolo né su Firestore**.

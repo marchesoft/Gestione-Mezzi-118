@@ -25,7 +25,7 @@
     <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <!-- App Styles -->
-    <link rel="stylesheet" href="style.css?v=3.2.1">
+    <link rel="stylesheet" href="style.css?v=3.2.2">
 </head>
 
 <body>
@@ -53,7 +53,7 @@
                     <div class="section-header" style="margin-bottom: 0;">
                         <h3 style="margin: 0; white-space: nowrap;">VEICOLI IN GESTIONE <span id="app-version-display"
                                 style="font-size: 0.8rem; font-weight: 400; opacity: 0.8; margin-left: 0.5rem; vertical-align: middle; text-transform: none;">v
-                                3.2.1</span></h3>
+                                3.2.2</span></h3>
                     </div>
                     <div class="action-buttons">
 
@@ -878,17 +878,17 @@
     <!-- Modal Modulo Lavaggio Esterno (Stampato Word Parts & Services) -->
     <div id="wash-modal" class="modal hidden" style="z-index: 2550;">
         <div class="modal-content" style="max-width: 720px; height: auto; max-height: 90vh; display: flex; flex-direction: column;">
-            <div class="modal-header-mgmt" style="background: #ecfdf5; border-bottom: 2px solid #a7f3d0; display: flex; justify-content: space-between; align-items: center; padding: 1rem 1.5rem;">
+            <div class="modal-header-mgmt" style="background: #f0fdfa; border-bottom: 2px solid #99f6e4; display: flex; justify-content: space-between; align-items: center; padding: 1rem 1.5rem;">
                 <div style="display: flex; align-items: center; gap: 0.75rem;">
-                    <div style="background: #059669; color: white; width: 40px; height: 40px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 1.25rem;">
+                    <div style="background: #0d9488; color: white; width: 40px; height: 40px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 1.25rem;">
                         <i class="fa-solid fa-shower"></i>
                     </div>
                     <div>
                         <div style="display: flex; align-items: center; gap: 0.6rem;">
-                            <h2 class="modal-title-mgmt" style="font-size: 1.25rem; color: #065f46; margin: 0; font-weight: 800;">Modulo Lavaggio Esterno</h2>
-                            <span style="font-size: 0.72rem; padding: 0.2rem 0.55rem; border-radius: 9999px; background: #d1fae5; color: #065f46; font-weight: 700; text-transform: uppercase; letter-spacing: 0.03em;">Solo Stampato</span>
+                            <h2 class="modal-title-mgmt" style="font-size: 1.25rem; color: #115e59; margin: 0; font-weight: 800;">Modulo Lavaggio Esterno</h2>
+                            <span style="font-size: 0.72rem; padding: 0.2rem 0.55rem; border-radius: 9999px; background: #ccfbf1; color: #0f766e; font-weight: 700; text-transform: uppercase; letter-spacing: 0.03em;">Solo Stampato</span>
                         </div>
-                        <span style="font-size: 0.85rem; color: #047857;">Compila i dettagli e scarica lo stampato Word (.docx)</span>
+                        <span style="font-size: 0.85rem; color: #0f766e;">Compila i dettagli e scarica lo stampato Word (.docx)</span>
                     </div>
                 </div>
                 <button class="close-modal" onclick="closeWashModal()" style="font-size: 1.8rem; background: none; border: none; cursor: pointer; color: #64748b;">&times;</button>
@@ -896,14 +896,14 @@
 
             <div class="modal-body" style="padding: 1.25rem 1.5rem; overflow-y: auto; display: flex; flex-direction: column; gap: 1.25rem;">
                 <!-- Avviso informativo: Nessun salvataggio nello storico -->
-                <div style="background: #f0fdf4; border: 1.5px solid #86efac; border-radius: 0.65rem; padding: 0.75rem 1rem; display: flex; align-items: center; gap: 0.75rem; font-size: 0.85rem; color: #166534;">
-                    <i class="fa-solid fa-print" style="font-size: 1.2rem; color: #059669; flex-shrink: 0;"></i>
+                <div style="background: #f0fdfa; border: 1.5px solid #99f6e4; border-radius: 0.65rem; padding: 0.75rem 1rem; display: flex; align-items: center; gap: 0.75rem; font-size: 0.85rem; color: #115e59;">
+                    <i class="fa-solid fa-print" style="font-size: 1.2rem; color: #0d9488; flex-shrink: 0;"></i>
                     <span><strong>Stampato da compilare:</strong> questo modulo genera lo stampato Word per l'officina/lavaggio. Come richiesto, <strong>non viene memorizzato nello storico</strong>.</span>
                 </div>
 
                 <!-- Dati del Veicolo e Ricovero -->
                 <div>
-                    <h3 style="font-size: 0.85rem; text-transform: uppercase; color: #065f46; font-weight: 700; margin-bottom: 0.75rem; letter-spacing: 0.05em; display: flex; align-items: center; gap: 0.5rem;">
+                    <h3 style="font-size: 0.85rem; text-transform: uppercase; color: #0f766e; font-weight: 700; margin-bottom: 0.75rem; letter-spacing: 0.05em; display: flex; align-items: center; gap: 0.5rem;">
                         <i class="fa-solid fa-truck-medical"></i> Dati del Mezzo e Officina
                     </h3>
                     <div class="form-grid-2" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 0.75rem;">
@@ -928,7 +928,7 @@
 
                 <!-- Intervento Richiesto -->
                 <div>
-                    <h3 style="font-size: 0.85rem; text-transform: uppercase; color: #065f46; font-weight: 700; margin-bottom: 0.5rem; letter-spacing: 0.05em; display: flex; align-items: center; gap: 0.5rem;">
+                    <h3 style="font-size: 0.85rem; text-transform: uppercase; color: #0f766e; font-weight: 700; margin-bottom: 0.5rem; letter-spacing: 0.05em; display: flex; align-items: center; gap: 0.5rem;">
                         <i class="fa-solid fa-align-left"></i> Interventi da Svolgere
                     </h3>
                     <textarea id="wash-description" rows="2" style="width: 100%; padding: 0.75rem; border: 1px solid var(--border-color); border-radius: 0.5rem; font-family: inherit; font-size: 0.95rem; resize: vertical; min-height: 60px; color: #000; font-weight: 600;">LAVAGGIO ESTERNO</textarea>
@@ -936,7 +936,7 @@
 
                 <!-- Dati Richiedente -->
                 <div>
-                    <h3 style="font-size: 0.85rem; text-transform: uppercase; color: #065f46; font-weight: 700; margin-bottom: 0.75rem; letter-spacing: 0.05em; display: flex; align-items: center; gap: 0.5rem;">
+                    <h3 style="font-size: 0.85rem; text-transform: uppercase; color: #0f766e; font-weight: 700; margin-bottom: 0.75rem; letter-spacing: 0.05em; display: flex; align-items: center; gap: 0.5rem;">
                         <i class="fa-solid fa-user-check"></i> Richiedente e Contatti
                     </h3>
                     <div class="form-grid-2" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 0.75rem;">
@@ -971,7 +971,7 @@
                 <button type="button" class="btn" onclick="closeWashModal()" style="padding: 0.6rem 1.25rem; font-size: 0.95rem;">
                     Annulla
                 </button>
-                <button type="button" class="btn btn-wash-request" onclick="generateAndDownloadWashDocx()" style="background: #059669; color: white; padding: 0.6rem 1.5rem; font-size: 0.95rem; display: flex; align-items: center; gap: 0.5rem; border: none; border-radius: 0.375rem; cursor: pointer; font-weight: 600;">
+                <button type="button" class="btn btn-wash-request" onclick="generateAndDownloadWashDocx()" style="background: #0d9488; color: white; padding: 0.6rem 1.5rem; font-size: 0.95rem; display: flex; align-items: center; gap: 0.5rem; border: none; border-radius: 0.375rem; cursor: pointer; font-weight: 600;">
                     <i class="fa-solid fa-download"></i> Scarica Modulo Word (.docx)
                 </button>
             </div>
@@ -1017,7 +1017,7 @@
     <script src="firebase-config.js"></script>
 
     <script src="store.js?v=2.0"></script>
-    <script src="app.js?v=3.2.1"></script>
+    <script src="app.js?v=3.2.2"></script>
 </body>
 
 </html>

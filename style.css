@@ -155,13 +155,13 @@ input[type="date"] {
 }
 
 .btn-wash-request {
-    background-color: #059669 !important;
+    background-color: #0d9488 !important; /* Verde acqua / Teal */
     color: white !important;
     transition: background-color 0.2s;
 }
 
 .btn-wash-request:hover {
-    background-color: #047857 !important;
+    background-color: #0f766e !important;
 }
 
 /* Dashboard */
