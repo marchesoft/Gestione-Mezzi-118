@@ -1,4 +1,4 @@
-const APP_VERSION = "3.2.9";
+const APP_VERSION = "3.3.1";
 let isAdmin = false;
 let cachedVehicles = null;
 let cachedLocations = null;
@@ -3627,12 +3627,8 @@ window.switchDataTable = async function (type) {
                 });
             }
 
-            // Ordinamento predefinito: prima i mezzi con più giorni di fermo, poi per sigla
-            reportRows.sort((a, b) => {
-                if (b.totalDays !== a.totalDays) return b.totalDays - a.totalDays;
-                if (b.count !== a.count) return b.count - a.count;
-                return (a.sigla || '').localeCompare(b.sigla || '');
-            });
+            // Ordinamento per sigla crescente (A → Z)
+            reportRows.sort((a, b) => (a.sigla || '').localeCompare(b.sigla || '', 'it', { numeric: true }));
 
             const vehiclesWithStays = reportRows.filter(r => r.count > 0 || r.hasOngoing).length;
 
@@ -4664,10 +4660,13 @@ window.downloadSavedRepairDocx = async function (vehicleId, reqIdOrIndex, fallba
             filename += ".docx";
         }
 
+        const isWash = req.is_wash || (req.types && req.types.includes('Autolavaggio'));
         const isAlea = req.is_alea !== undefined ? !!req.is_alea : window.isAleaVehicle(vehicle);
-        const blob = isAlea
-            ? await window.createAleaRepairDocxBlob(req)
-            : await window.createRepairDocxBlob(req);
+        const blob = isWash
+            ? await window.createWashDocxBlob(req)
+            : (isAlea
+                ? await window.createAleaRepairDocxBlob(req)
+                : await window.createRepairDocxBlob(req));
         const url = URL.createObjectURL(blob);
         const a = document.createElement("a");
         a.href = url;
@@ -4852,6 +4851,188 @@ window.closeVehicleRepairHistoryModal = function () {
 // MODULO LAVAGGIO ESTERNO (STAMPATO WORD PARTS & SERVICES)
 // NOTA: Non viene salvato nello storico richieste, serve unicamente come stampato da compilare
 // ==========================================
+window.createWashDocxBlob = async function (data) {
+    if (!window.JSZip) {
+        throw new Error("Libreria JSZip non caricata. Ricarica la pagina.");
+    }
+    if (!window.WASH_TEMPLATE_BASE64) {
+        throw new Error("Template Word per Modulo Lavaggio non trovato. Ricarica la pagina.");
+    }
+
+    // 1. Carica il template base64 Modulo Lavaggio
+    const zip = await JSZip.loadAsync(window.WASH_TEMPLATE_BASE64, { base64: true });
+
+    // 2. Leggi word/document.xml
+    const docXmlStr = await zip.file("word/document.xml").async("string");
+    const parser = new DOMParser();
+    const xmlDoc = parser.parseFromString(docXmlStr, "application/xml");
+
+    const nsW = "http://schemas.openxmlformats.org/wordprocessingml/2006/main";
+    const paragraphs = xmlDoc.getElementsByTagNameNS ? xmlDoc.getElementsByTagNameNS(nsW, "p") : xmlDoc.getElementsByTagName("w:p");
+
+    // 3. Popola Veicolo: cerca sdt o paragraph contenente 'Veicolo'
+    const sdtElements = xmlDoc.getElementsByTagNameNS ? xmlDoc.getElementsByTagNameNS(nsW, "sdt") : xmlDoc.getElementsByTagName("w:sdt");
+    let vehicleReplaced = false;
+    for (let i = 0; i < sdtElements.length; i++) {
+        const sdt = sdtElements[i];
+        const sdtContent = sdt.getElementsByTagNameNS ? sdt.getElementsByTagNameNS(nsW, "sdtContent") : sdt.getElementsByTagName("w:sdtContent");
+        if (sdtContent.length > 0) {
+            const wtNodes = sdtContent[0].getElementsByTagNameNS ? sdtContent[0].getElementsByTagNameNS(nsW, "t") : sdtContent[0].getElementsByTagName("w:t");
+            if (wtNodes.length > 0) {
+                wtNodes[0].textContent = (data.targa || 'AMBULANZA').trim();
+                for (let j = 1; j < wtNodes.length; j++) {
+                    wtNodes[j].textContent = '';
+                }
+                vehicleReplaced = true;
+                break;
+            }
+        }
+    }
+    if (!vehicleReplaced && paragraphs.length > 13) {
+        const p13 = paragraphs[13];
+        const tNodes = p13.getElementsByTagNameNS ? p13.getElementsByTagNameNS(nsW, "t") : p13.getElementsByTagName("w:t");
+        if (tNodes.length > 0) {
+            tNodes[tNodes.length - 1].textContent = (data.targa || 'AMBULANZA').trim();
+        }
+    }
+
+    // 4. Popola Km e Officina
+    for (let i = 0; i < paragraphs.length; i++) {
+        const p = paragraphs[i];
+        const tNodes = p.getElementsByTagNameNS ? p.getElementsByTagNameNS(nsW, "t") : p.getElementsByTagName("w:t");
+        let pText = "";
+        for (let j = 0; j < tNodes.length; j++) pText += tNodes[j].textContent;
+        if (pText.includes("ricoverato") || pText.includes("l'officina") || pText.includes("Km:")) {
+            for (let j = 0; j < tNodes.length; j++) {
+                if (tNodes[j].textContent.includes("CAVAGION") || (j > 0 && tNodes[j - 1].textContent.includes("l'officina"))) {
+                    tNodes[j].textContent = " " + (data.station || 'CAVAGION').trim() + " ";
+                }
+            }
+            if (data.km) {
+                for (let j = 0; j < tNodes.length; j++) {
+                    if (tNodes[j].textContent.includes("Km:")) {
+                        if (j + 1 < tNodes.length) {
+                            tNodes[j + 1].textContent = "  " + data.km + "  ";
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    // 5. Popola Intervento (LAVAGGIO ESTERNO oppure LAVAGGIO ESTERNO E INTERNO PIÙ SANIFICAZIONE)
+    const washDesc = (data.description || 'LAVAGGIO ESTERNO').trim();
+    for (let i = 0; i < paragraphs.length; i++) {
+        const p = paragraphs[i];
+        const tNodes = p.getElementsByTagNameNS ? p.getElementsByTagNameNS(nsW, "t") : p.getElementsByTagName("w:t");
+        let pText = "";
+        for (let j = 0; j < tNodes.length; j++) pText += tNodes[j].textContent;
+        if (pText.includes("interventi:") || pText.includes("LAVAGGIO")) {
+            for (let j = 0; j < tNodes.length; j++) {
+                if (tNodes[j].textContent.includes("LAVAGGIO ESTERNO") || tNodes[j].textContent.includes("LAVAGGIO")) {
+                    tNodes[j].textContent = washDesc;
+                    for (let k = j + 1; k < tNodes.length; k++) {
+                        if (tNodes[k].textContent.trim().startsWith("ESTERNO") || tNodes[k].textContent.trim().startsWith("SANIFICAZIONE")) {
+                            tNodes[k].textContent = "";
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    // 6. Popola Driver / Nome Cognome (P[24] e P[34])
+    if (data.driver) {
+        if (paragraphs.length > 24) {
+            const p24 = paragraphs[24];
+            const tNodes24 = p24.getElementsByTagNameNS ? p24.getElementsByTagNameNS(nsW, "t") : p24.getElementsByTagName("w:t");
+            if (tNodes24.length > 0) {
+                tNodes24[0].textContent = "        " + data.driver;
+                for (let j = 1; j < tNodes24.length; j++) tNodes24[j].textContent = "";
+            }
+        }
+        if (paragraphs.length > 34) {
+            const p34 = paragraphs[34];
+            const tNodes34 = p34.getElementsByTagNameNS ? p34.getElementsByTagNameNS(nsW, "t") : p34.getElementsByTagName("w:t");
+            if (tNodes34.length > 0) {
+                tNodes34[0].textContent = "        " + data.driver;
+                for (let j = 1; j < tNodes34.length; j++) tNodes34[j].textContent = "";
+            }
+        }
+    }
+
+    // 7. Popola Indirizzo Email (P[25] e P[35])
+    if (data.email) {
+        for (let i = 0; i < paragraphs.length; i++) {
+            const p = paragraphs[i];
+            const tNodes = p.getElementsByTagNameNS ? p.getElementsByTagNameNS(nsW, "t") : p.getElementsByTagName("w:t");
+            for (let j = 0; j < tNodes.length; j++) {
+                if (tNodes[j].textContent.includes("logistica118fe@ausl.fe.it") || tNodes[j].textContent.includes("@")) {
+                    tNodes[j].textContent = data.email.trim();
+                }
+            }
+        }
+    }
+
+    // 8. Popola Nr. Cellulare (P[27] e P[37])
+    if (data.phone) {
+        for (let i = 0; i < paragraphs.length; i++) {
+            const p = paragraphs[i];
+            const tNodes = p.getElementsByTagNameNS ? p.getElementsByTagNameNS(nsW, "t") : p.getElementsByTagName("w:t");
+            for (let j = 0; j < tNodes.length; j++) {
+                if (tNodes[j].textContent.includes("3209229345")) {
+                    tNodes[j].textContent = tNodes[j].textContent.replace("3209229345", data.phone.trim());
+                }
+            }
+        }
+    }
+
+    // 9. Popola Data (P[29] e P[39])
+    if (data.date) {
+        let dateVal = data.date;
+        if (dateVal.includes('-')) {
+            const p = dateVal.split('-');
+            if (p.length === 3) dateVal = `${p[2]}/${p[1]}/${p[0]}`;
+        }
+        const parts = dateVal.split('/');
+        const day = (parts[0] || '29').padStart(2, '0');
+        const month = (parts[1] || '01').padStart(2, '0');
+        const year = (parts[2] || '2026');
+        const yy = year.length === 4 ? year.slice(-2) : year;
+
+        for (let i = 0; i < paragraphs.length; i++) {
+            const p = paragraphs[i];
+            const tNodes = p.getElementsByTagNameNS ? p.getElementsByTagNameNS(nsW, "t") : p.getElementsByTagName("w:t");
+            let pText = "";
+            for (let j = 0; j < tNodes.length; j++) pText += tNodes[j].textContent;
+            if (pText.includes("data:") && pText.includes("Firma")) {
+                for (let j = 0; j < tNodes.length; j++) {
+                    if (tNodes[j].textContent === "2" && j + 1 < tNodes.length && tNodes[j + 1].textContent === "9") {
+                        tNodes[j].textContent = day[0] || '';
+                        tNodes[j + 1].textContent = day[1] || '';
+                    } else if (tNodes[j].textContent === "01") {
+                        tNodes[j].textContent = month;
+                    } else if (tNodes[j].textContent === "26") {
+                        tNodes[j].textContent = yy;
+                    }
+                }
+            }
+        }
+    }
+
+    // 10. Serializza l'XML aggiornato
+    const serializer = new XMLSerializer();
+    const updatedXmlStr = serializer.serializeToString(xmlDoc);
+    zip.file("word/document.xml", updatedXmlStr);
+
+    // 11. Genera il blob del file .docx
+    return await zip.generateAsync({
+        type: "blob",
+        mimeType: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        compression: "DEFLATE"
+    });
+};
+
 window.openWashModal = async function (vehicleId) {
     try {
         if (!cachedVehicles) {
@@ -4963,8 +5144,8 @@ window.generateAndDownloadWashDocx = async function () {
             is_alea: true
         };
 
-        // Genera Blob dal template Word Parts & Services (Alea)
-        const blob = await window.createAleaRepairDocxBlob(washData);
+        // Genera Blob dal template Word Parts & Services (Modulo Lavaggio)
+        const blob = await window.createWashDocxBlob(washData);
         const url = URL.createObjectURL(blob);
         const a = document.createElement("a");
         a.href = url;

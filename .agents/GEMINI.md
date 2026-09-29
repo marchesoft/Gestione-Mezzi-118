@@ -1,16 +1,16 @@
-# Regole e Contesto del Progetto (v3.2.8)
+# Regole e Contesto del Progetto (v3.3.1)
 
-Questo file definisce le linee guida e lo stato di salvataggio del progetto per garantire la coerenza con la versione **3.2.8**.
+Questo file definisce le linee guida e lo stato di salvataggio del progetto per garantire la coerenza con la versione **3.3.1**.
 
-## Stato di Riferimento (v3.2.8)
+## Stato di Riferimento (v3.3.1)
 
 1. **Gestione Versioni**:
-   - La versione attuale di riferimento è **3.2.8**.
-   - Qualsiasi modifica futura richiede l'avanzamento della versione (es. `3.2.9` o successive) in `app.js` (`const APP_VERSION = "X.Y.Z";`) e in `index.html` (header).
+   - La versione attuale di riferimento è **3.3.1**.
+   - Qualsiasi modifica futura richiede l'avanzamento della versione (es. `3.3.2` o successive) in `app.js` (`const APP_VERSION = "X.Y.Z";`) e in `index.html` (header).
 
 2. **Bypass della Cache (Cache-Busting)**:
    - I file `app.js` e `style.css` sono importati in `index.html` con il parametro di versione `?v=X.Y.Z` per forzare il caricamento immediato degli aggiornamenti sui dispositivi client (specialmente mobili).
-   - Esempio: `<link rel="stylesheet" href="style.css?v=3.2.8">` e `<script src="app.js?v=3.2.8"></script>`.
+   - Esempio: `<link rel="stylesheet" href="style.css?v=3.3.1">` e `<script src="app.js?v=3.3.1"></script>`.
    - Ad ogni cambio di codice, aggiornare questa stringa con la nuova versione dell'applicazione.
 
 3. **Integrazione Git e GitHub**:
@@ -52,15 +52,16 @@ Questo file definisce le linee guida e lo stato di salvataggio del progetto per 
    - Registrata ed inserita nello storico richieste di riparazione dell'ambulanza Alea **ECHO 22 (targa FF 837 RS)** la richiesta di modulo lavaggio esterno per ricovero veicolo presso officina **CAVAGION** con data **29/01/2026**.
    - La richiesta è visibile sia nello storico richieste del singolo mezzo che nella tabella globale "Riparazioni" del database, ed è scaricabile in formato Word con il modello dedicato Alea.
 
-9. **Modulo Lavaggio Esterno - Solo Stampato da Compilare (v3.2.4)**:
+9. **Modulo Lavaggio Esterno - Stampato Ufficiale Parts & Services (v3.3.1)**:
    - Nella scheda dettagli veicolo (`openVehicleModal`) è presente un pulsante dedicato **Modulo Lavaggio** (`.btn-wash-request`, colore azzurrino acqua / cyan `#06b6d4`, hover `#0891b2`), cromaticamente distinto dal pulsante verde prato "Richiesta Riparazione" (`#16a34a`) e dall'azzurro "Storico Richieste" (`#0284c7`).
    - Apre una finestra modale dedicata (`#wash-modal`) per compilare e scaricare direttamente lo stampato Word per il ricovero/lavaggio esterno.
-   - **Selezione Officina**: menu a tendina con scelta tra **IP VIA CANAPA** (predefinita) e **CAVAGION**.
-   - **Tipologia di Intervento Esclusiva**: selezione rapida tramite opzioni radio tra:
-     1. `LAVAGGIO ESTERNO` (predefinita)
-     2. `LAVAGGIO ESTERNO E INTERNO PIÙ SANIFICAZIONE`
-     Sul modulo finale Word salvato viene stampata **esclusivamente l'opzione selezionata**.
-   - **Interfaccia Pulita**: eliminata la dicitura informativa e qualsiasi avviso popup sul mancato salvataggio nello storico, garantendo un'esperienza rapida e diretta.
+   - **Modello Word Ufficiale Modulo Lavaggio**: Il file generato adotta lo stampato ufficiale dedicato Parts & Services (*Ricovero Veicolo per manutenzione - consegna/Ritiro*), incorporato client-side in `wash_template_base64.js` e generato tramite `window.createWashDocxBlob`.
+   - **Campi Precompilati Dinamici**:
+     - *Veicolo*: popola il campo veicolo (es. `AMBULANZA FF 837 RS ECHO 22`).
+     - *Km e Officina*: compila i Km e l'officina selezionata (*IP VIA CANAPA* o *CAVAGION*).
+     - *Tipologia di Intervento Esclusiva*: stampa esclusivamente la scelta effettuata tra `LAVAGGIO ESTERNO` (predefinita) e `LAVAGGIO ESTERNO E INTERNO PIÙ SANIFICAZIONE`.
+     - *Dati Richiedente / Consegna e Ritiro*: compila automaticamente Nome, Cognome, Email istituzionale (`logistica118fe@ausl.fe.it`), Cellulare (`3209229345`) e Data formattata per entrambe le sezioni di consegna e ritiro.
+   - **Nome del File Scaricato**: `modulo lavaggio <SIGLA> <TARGA>.docx`.
    - **Regola di Non-Persistenza**: Questo modulo serve esclusivamente come stampato compilabile da scaricare e **NON viene salvato nello storico delle richieste del veicolo né su Firestore**.
 
 10. **Report Tempo di Permanenza in Officina per Mezzo (v3.2.8)**:
