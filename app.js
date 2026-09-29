@@ -1,4 +1,4 @@
-const APP_VERSION = "3.1.0";
+const APP_VERSION = "3.1.1";
 let isAdmin = false;
 let cachedVehicles = null;
 let cachedLocations = null;
@@ -3239,8 +3239,9 @@ window.openRepairRequestModal = async function (vehicleId) {
         // Descrizione: precarica eventuali problematiche note del mezzo o lascia vuoto
         document.getElementById('repair-description').value = vehicle.notes || '';
 
-        // Nome file predefinito corrispondente al nome del mezzo (sigla, modello o targa)
-        const defaultFileName = vehicle.sigla || vehicle.model || vehicle.plate || 'Richiesta_Riparazione';
+        // Nome file predefinito: "richiesta riparazione " + sigla del mezzo (o modello/targa)
+        const siglaMezzo = vehicle.sigla || vehicle.model || vehicle.plate || '';
+        const defaultFileName = siglaMezzo ? `richiesta riparazione ${siglaMezzo}` : 'richiesta riparazione';
         document.getElementById('repair-filename').value = defaultFileName;
 
         // Salva ID veicolo per la richiesta corrente
@@ -3457,7 +3458,7 @@ window.generateAndDownloadRepairDocx = async function () {
 
         const descRaw = document.getElementById('repair-description').value.trim();
 
-        let filename = (document.getElementById('repair-filename').value || 'Richiesta_Riparazione').trim();
+        let filename = (document.getElementById('repair-filename').value || 'richiesta riparazione').trim();
         filename = filename.replace(/[\\/:*?"<>|]/g, "_");
         if (!filename.toLowerCase().endsWith(".docx")) {
             filename += ".docx";
@@ -3540,8 +3541,9 @@ window.downloadSavedRepairDocx = async function (vehicleId, reqIndex) {
             req.station = (vehicle.station || 'FERRARA').toUpperCase();
         }
 
-        const blob = await window.createRepairDocxBlob(req);
-        let filename = (req.filename || vehicle.sigla || vehicle.model || vehicle.plate || 'Richiesta_Riparazione').trim();
+        const siglaMezzo = vehicle.sigla || vehicle.model || vehicle.plate || '';
+        const fallbackName = siglaMezzo ? `richiesta riparazione ${siglaMezzo}` : 'richiesta riparazione';
+        let filename = (req.filename || fallbackName).trim();
         filename = filename.replace(/[\\/:*?"<>|]/g, "_");
         if (!filename.toLowerCase().endsWith(".docx")) {
             filename += ".docx";
