@@ -1,4 +1,4 @@
-const APP_VERSION = "3.1.2";
+const APP_VERSION = "3.1.3";
 let isAdmin = false;
 let cachedVehicles = null;
 let cachedLocations = null;
@@ -3213,18 +3213,14 @@ window.openRepairRequestModal = async function (vehicleId) {
         // Salva ID veicolo per la richiesta corrente
         window.currentRepairVehicleId = vehicle.id;
 
-        // 1. Popola menu a discesa Veicoli (ordinati per sigla/targa)
-        const vehicleSelect = document.getElementById('repair-vehicle-select');
-        if (vehicleSelect) {
-            const sortedVehicles = [...cachedVehicles].sort((a, b) => (a.sigla || a.plate || '').localeCompare(b.sigla || b.plate || ''));
-            vehicleSelect.innerHTML = sortedVehicles.map(v => {
-                const parts = [];
-                if (v.sigla) parts.push(v.sigla);
-                if (v.plate) parts.push(v.plate);
-                if (v.model) parts.push(`(${v.model})`);
-                const label = parts.length > 0 ? parts.join(' - ') : (v.type || v.id);
-                return `<option value="${v.id}" ${v.id === vehicle.id ? 'selected' : ''}>${label}</option>`;
-            }).join('');
+        // 1. Mostra solo il mezzo della card corrente
+        const vehicleDisplay = document.getElementById('repair-vehicle-display');
+        if (vehicleDisplay) {
+            const parts = [];
+            if (vehicle.sigla) parts.push(vehicle.sigla);
+            if (vehicle.plate) parts.push(vehicle.plate);
+            if (vehicle.model) parts.push(`(${vehicle.model})`);
+            vehicleDisplay.value = parts.length > 0 ? parts.join(' - ') : (vehicle.type || vehicle.id);
         }
 
         // 2. Popola menu a discesa Ubicazioni (ordinate alfabeticamente)
@@ -3272,37 +3268,6 @@ window.openRepairRequestModal = async function (vehicleId) {
         }
     } catch (err) {
         console.error("Errore nell'apertura del modulo richiesta riparazione:", err);
-    }
-};
-
-window.onRepairVehicleChange = async function (vehicleId) {
-    try {
-        if (!vehicleId) return;
-        window.currentRepairVehicleId = vehicleId;
-        const vehicle = (cachedVehicles && cachedVehicles.find(v => v.id === vehicleId)) || await store.getVehicleById(vehicleId);
-        if (!vehicle) return;
-
-        // Aggiorna ubicazione nel dropdown se presente
-        const stationSelect = document.getElementById('repair-station');
-        if (stationSelect && vehicle.station) {
-            const found = Array.from(stationSelect.options).find(opt => opt.value.toUpperCase() === vehicle.station.toUpperCase());
-            if (found) {
-                stationSelect.value = found.value;
-            }
-        }
-
-        // Aggiorna nome file predefinito
-        const siglaMezzo = vehicle.sigla || vehicle.model || vehicle.plate || '';
-        const defaultFileName = siglaMezzo ? `richiesta riparazione ${siglaMezzo}` : 'richiesta riparazione';
-        document.getElementById('repair-filename').value = defaultFileName;
-
-        // Se la descrizione è vuota, precarica le note del nuovo mezzo
-        const descElem = document.getElementById('repair-description');
-        if (descElem && (!descElem.value || descElem.value.trim() === '')) {
-            descElem.value = vehicle.notes || '';
-        }
-    } catch (err) {
-        console.error("Errore durante il cambio del veicolo nel modulo riparazione:", err);
     }
 };
 
@@ -3474,10 +3439,9 @@ window.createRepairDocxBlob = async function (data) {
 
 window.generateAndDownloadRepairDocx = async function () {
     try {
-        // Veicolo selezionato
-        const vehicleSelect = document.getElementById('repair-vehicle-select');
-        const selectedVehicleId = vehicleSelect ? vehicleSelect.value : window.currentRepairVehicleId;
-        const vehicle = (cachedVehicles && cachedVehicles.find(v => v.id === selectedVehicleId)) || (selectedVehicleId ? await store.getVehicleById(selectedVehicleId) : null);
+        // Veicolo della card corrente
+        const vehicleId = window.currentRepairVehicleId || currentOpenedVehicleId;
+        const vehicle = (cachedVehicles && cachedVehicles.find(v => v.id === vehicleId)) || (vehicleId ? await store.getVehicleById(vehicleId) : null);
 
         let targa = '';
         if (vehicle) {
@@ -3488,8 +3452,9 @@ window.generateAndDownloadRepairDocx = async function () {
             if (plateStr) targa += plateStr + '  ';
             if (siglaStr) targa += siglaStr;
             targa = targa.trim();
-        } else if (vehicleSelect && vehicleSelect.selectedOptions && vehicleSelect.selectedOptions[0]) {
-            targa = vehicleSelect.selectedOptions[0].textContent.trim();
+        } else {
+            const displayElem = document.getElementById('repair-vehicle-display');
+            if (displayElem) targa = displayElem.value.trim();
         }
 
         // Valori campi informativi
@@ -3571,7 +3536,6 @@ window.generateAndDownloadRepairDocx = async function () {
         URL.revokeObjectURL(url);
 
         // Salva la richiesta nello storico del veicolo su Firestore
-        const vehicleId = selectedVehicleId || window.currentRepairVehicleId || currentOpenedVehicleId;
         if (vehicleId) {
             const targetVehicle = (cachedVehicles && cachedVehicles.find(v => v.id === vehicleId)) || await store.getVehicleById(vehicleId);
             if (targetVehicle) {
