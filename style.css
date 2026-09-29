@@ -477,7 +477,7 @@ input[type="date"] {
 
 /* Card con overlay attivo: l'overlay lascia spazio in basso per le note */
 .vehicle-card.has-alert .appointment-alert-overlay {
-    height: calc(100% - 2.2rem);
+    height: calc(100% - 2.8rem);
     border-radius: var(--radius-lg) var(--radius-lg) 0 0;
 }
 
@@ -492,6 +492,8 @@ input[type="date"] {
     border-radius: 0 0 var(--radius-lg) var(--radius-lg);
     font-size: 0.75rem;
     padding: 0.3rem 0.5rem;
+    max-height: 2.8rem;
+    overflow-y: auto;
 }
 
 /* Badge Scadenze */

@@ -1,4 +1,4 @@
-const APP_VERSION = "3.0.6";
+const APP_VERSION = "3.0.7";
 let isAdmin = false;
 let cachedVehicles = null;
 let cachedLocations = null;
@@ -12,8 +12,27 @@ const upper = (str) => (str || '').toString().toUpperCase().trim();
 // Helper to format date strings from YYYY-MM-DD to DD/MM/YYYY
 function formatDate(dateStr) {
     if (!dateStr) return '';
-    const [year, month, day] = dateStr.split('-');
-    return `${day}/${month}/${year}`;
+    if (typeof dateStr === 'string' && /^\d{2}\/\d{2}\/\d{4}$/.test(dateStr)) {
+        return dateStr;
+    }
+    if (typeof dateStr === 'string' && dateStr.includes('-')) {
+        const clean = dateStr.split('T')[0].trim();
+        const parts = clean.split('-');
+        if (parts.length === 3) {
+            const [year, month, day] = parts;
+            return `${day.padStart(2, '0')}/${month.padStart(2, '0')}/${year}`;
+        }
+    }
+    try {
+        const d = new Date(dateStr);
+        if (!isNaN(d.getTime())) {
+            const day = String(d.getDate()).padStart(2, '0');
+            const month = String(d.getMonth() + 1).padStart(2, '0');
+            const year = d.getFullYear();
+            return `${day}/${month}/${year}`;
+        }
+    } catch (e) {}
+    return String(dateStr);
 }
 
 // Helper for robust alpha-numerical sorting by sigla
@@ -431,9 +450,8 @@ async function renderVehicleGrid(vehicles) {
             const apptText = `APPUNTAMENTO: ${formatDate(vehicle.appointment_date)}${locText}`;
             noteContent = pureNotes ? `${apptText}\n---\n${pureNotes}` : apptText;
         }
-        // Con overlay attivo: mostriamo solo le note pure (non il testo appuntamento)
-        // posizionate sopra l'overlay tramite CSS (.has-alert .mobile-notes)
-        const mobileNotesContent = showOverlay ? pureNotes : noteContent;
+        // Note ed eventuale appuntamento sempre visibili nell'etichetta gialla
+        const mobileNotesContent = noteContent;
 
         // --- Badge scadenze ---
         function expiryBadge(label, dateStr) {
@@ -1974,6 +1992,9 @@ window.saveVehicleAppointment = async function (id, date, location) {
             vehicle.appointment_date = date || null;
             vehicle.appointment_location = vehicle.appointment_date ? (upper(location) || null) : null;
             vehicle.alert_ack_date = null; // Reset ack for new appointment
+            if (window.dismissedAlerts) {
+                window.dismissedAlerts.delete(id);
+            }
             await store.updateVehicle(vehicle);
             alert("Appuntamento aggiornato.");
             // Refresh detail modal and dashboard
