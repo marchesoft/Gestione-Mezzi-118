@@ -1,16 +1,16 @@
-# Regole e Contesto del Progetto (v3.1.4)
+# Regole e Contesto del Progetto (v3.1.5)
 
-Questo file definisce le linee guida e lo stato di salvataggio del progetto per garantire la coerenza con la versione **3.1.4**.
+Questo file definisce le linee guida e lo stato di salvataggio del progetto per garantire la coerenza con la versione **3.1.5**.
 
-## Stato di Riferimento (v3.1.4)
+## Stato di Riferimento (v3.1.5)
 
 1. **Gestione Versioni**:
-   - La versione attuale di riferimento è **3.1.4**.
-   - Qualsiasi modifica futura richiede l'avanzamento della versione (es. `3.1.5` o successive) in `app.js` (`const APP_VERSION = "X.Y.Z";`) e in `index.html` (header).
+   - La versione attuale di riferimento è **3.1.5**.
+   - Qualsiasi modifica futura richiede l'avanzamento della versione (es. `3.1.6` o successive) in `app.js` (`const APP_VERSION = "X.Y.Z";`) e in `index.html` (header).
 
 2. **Bypass della Cache (Cache-Busting)**:
    - I file `app.js` e `style.css` sono importati in `index.html` con il parametro di versione `?v=X.Y.Z` per forzare il caricamento immediato degli aggiornamenti sui dispositivi client (specialmente mobili).
-   - Esempio: `<link rel="stylesheet" href="style.css?v=3.1.4">` e `<script src="app.js?v=3.1.4"></script>`.
+   - Esempio: `<link rel="stylesheet" href="style.css?v=3.1.5">` e `<script src="app.js?v=3.1.5"></script>`.
    - Ad ogni cambio di codice, aggiornare questa stringa con la nuova versione dell'applicazione.
 
 3. **Integrazione Git e GitHub**:
@@ -18,7 +18,7 @@ Questo file definisce le linee guida e lo stato di salvataggio del progetto per 
 
 4. **Architettura Dati Firestore**:
    - I **Controlli Mensili** (`monthly_checks`) sono persistiti come array di oggetti (`{ date: 'YYYY-MM-DD', notes: '...', executor: '...', location: '...' }`) direttamente all'interno dei documenti dei veicoli della collection `vehicles`.
-   - Le **Richieste di Riparazione** (`repair_requests`) sono persistite come array di oggetti (`{ id: '...', date: 'DD/MM/YYYY', created_at: '...', driver: '...', dept: '...', phone: '...', targa: '...', station: '...', email: '...', checks: [...], types: [...], description: '...', filename: '...' }`) direttamente all'interno dei documenti dei veicoli della collection `vehicles`.
+   - Le **Richieste di Riparazione** (`repair_requests`) sono persistite come array di oggetti (`{ id: '...', is_alea: true/false, date: 'DD/MM/YYYY', created_at: '...', driver: '...', dept: '...', phone: '...', targa: '...', station: '...', email: '...', checks: [...], types: [...], description: '...', filename: '...' }`) direttamente all'interno dei documenti dei veicoli della collection `vehicles`.
    - Le note **Da Fare** (`todo_notes`) sono persistite come array di stringhe nello stesso documento.
    - Le **Note Interne** (`db_notes`) sono persistite nei documenti `vehicles` e gestibili dalla tabella DB senza apparire sulle card della dashboard.
    - La data di presa visione avviso (`alert_ack_date`) è salvata sul documento veicolo per sincronizzare la presa visione degli alert appuntamento.
@@ -46,3 +46,10 @@ Questo file definisce le linee guida e lo stato di salvataggio del progetto per 
    - Il documento Word (`.docx`) generato e scaricato sul PC è identico al template ufficiale `All.1_Richiesta di Riparazione.docx`, preservando tabelle, loghi, caratteri e formattazione, e viene salvato con il prefisso predefinito e il nome del mezzo (es. `richiesta riparazione <SIGLA_MEZZO>.docx`).
    - La generazione avviene interamente client-side tramite `JSZip` e il template incorporato in `repair_template_base64.js`.
    - **Storico Flotta nel Database**: Nella schermata "Gestione Database" è presente la scheda **Riparazioni** che elenca tutte le richieste dell'intera flotta con ricerca, download Word ed esportazione completa in formato Excel/CSV.
+
+8. **Modello Word Dedicato per Mezzi Alea (v3.1.5)**:
+   - Per tutti i mezzi appartenenti alla flotta **Alea** (rilevati automaticamente tramite funzione `isAleaVehicle` basata su sigla, targa, modello o note, es. ECHO 20, ECHO 21, ECHO 22, ECHO 26 o dicitura ALEA/ALIA/ALÈA), viene utilizzato esclusivamente il modulo dedicato ufficiale Alea (`template_alea.docx` / `alea_template_base64.js`).
+   - Per tutti gli altri mezzi non Alea continua ad essere utilizzato il modello standard 118 (`repair_template_base64.js`).
+   - Nel modulo di richiesta è presente un badge visivo (`#repair-template-badge`) che indica chiaramente il modello attivo (*Modello Alea* in ambra vs *Standard 118* in blu) e una casella di spunta per eventuale commutazione manuale.
+   - Il documento Word Alea compila fedelmente il modello di mezzo (con prefisso `AMBULANZA ALEA`), officina autorizzata (predefinita Ferroni o personalizzata), le 5 righe di descrizione dettagliata lavori (righe 10-14), il richiedente (driver), il telefono e la data con selettore giorno nativo.
+   - Lo storico richieste del mezzo e la tabella flotta del database mostrano un badge distintivo "Alea" per le richieste generate con tale modello e permettono di riscaricare sempre il documento originale corretto.

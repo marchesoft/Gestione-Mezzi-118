@@ -1,4 +1,4 @@
-const APP_VERSION = "3.1.4";
+const APP_VERSION = "3.1.5";
 let isAdmin = false;
 let cachedVehicles = null;
 let cachedLocations = null;
@@ -3124,7 +3124,10 @@ window.switchDataTable = async function (type) {
                             ${data.length === 0 ? '<tr><td colspan="7" style="text-align:center; padding: 2rem; color: var(--text-secondary);">Nessuna richiesta di riparazione registrata.</td></tr>' : ''}
                             ${data.map(item => `
                                 <tr>
-                                    <td class="col-shrink text-bold text-primary">${item.sigla}</td>
+                                    <td class="col-shrink text-bold text-primary">
+                                        ${item.sigla}
+                                        ${item.is_alea ? '<span style="background: #fef3c7; color: #92400e; font-size: 0.7rem; font-weight: 700; padding: 0.15rem 0.4rem; border-radius: 4px; margin-left: 0.35rem; vertical-align: middle;">Alea</span>' : ''}
+                                    </td>
                                     <td class="col-shrink">${item.plate}</td>
                                     <td class="col-shrink" style="white-space: nowrap; font-weight: 600;">${item.date || '-'}</td>
                                     <td class="col-shrink">${(item.types && item.types.length > 0) ? item.types.map(t => `<span style="background: #dbeafe; color: #1e40af; font-size: 0.75rem; font-weight: 600; padding: 0.2rem 0.5rem; border-radius: 4px; display: inline-block; margin: 0.1rem;">${t}</span>`).join('') : '-'}</td>
@@ -3198,6 +3201,54 @@ window.saveAndCloseOperationalNotes = async function () {
 // MODULO E DOWNLOAD RICHIESTA RIPARAZIONE (WORD .DOCX)
 // ==========================================
 
+window.isAleaVehicle = function (vehicle) {
+    if (!vehicle) return false;
+    if (vehicle.is_alea === true || vehicle.is_alea === 'true') return true;
+
+    const checkStr = [
+        vehicle.sigla || '',
+        vehicle.model || '',
+        vehicle.plate || '',
+        vehicle.notes || '',
+        vehicle.db_notes || '',
+        vehicle.type || ''
+    ].join(' ').toUpperCase();
+
+    if (checkStr.includes('ALEA') || checkStr.includes('ALIA') || checkStr.includes('ALÈA')) {
+        return true;
+    }
+
+    const aleaSigle = ['ECHO 20', 'ECHO 21', 'ECHO 22', 'ECHO 26', 'ECHO20', 'ECHO21', 'ECHO22', 'ECHO26', 'E20', 'E21', 'E22', 'E26'];
+    const aleaPlates = ['HA514AY', 'HA 514 AY', 'HA550AY', 'HA 550 AY', 'FF837RS', 'FF 837 RS', 'FV414RW', 'FV 414 RW'];
+
+    const siglaUpper = (vehicle.sigla || '').toUpperCase().trim();
+    if (aleaSigle.some(s => siglaUpper === s || siglaUpper.includes(s))) {
+        return true;
+    }
+
+    const plateUpper = (vehicle.plate || '').toUpperCase().replace(/\s+/g, '');
+    if (aleaPlates.some(p => plateUpper === p.replace(/\s+/g, ''))) {
+        return true;
+    }
+
+    return false;
+};
+
+window.toggleRepairTemplate = function (isAlea) {
+    const badge = document.getElementById('repair-template-badge');
+    if (badge) {
+        if (isAlea) {
+            badge.textContent = 'Modello Alea';
+            badge.style.background = '#fef3c7';
+            badge.style.color = '#92400e';
+        } else {
+            badge.textContent = 'Standard 118';
+            badge.style.background = '#dbeafe';
+            badge.style.color = '#1e40af';
+        }
+    }
+};
+
 window.openRepairRequestModal = async function (vehicleId) {
     try {
         if (!cachedVehicles || !cachedLocations) {
@@ -3227,6 +3278,14 @@ window.openRepairRequestModal = async function (vehicleId) {
             if (vehicle.model) parts.push(`(${vehicle.model})`);
             vehicleDisplay.value = parts.length > 0 ? parts.join(' - ') : (vehicle.type || vehicle.id);
         }
+
+        // Rilevamento automatico Mezzo Alea e aggiornamento interfaccia / badge
+        const isAlea = window.isAleaVehicle(vehicle);
+        const aleaChk = document.getElementById('repair-is-alea');
+        if (aleaChk) {
+            aleaChk.checked = isAlea;
+        }
+        window.toggleRepairTemplate(isAlea);
 
         // 2. Popola menu a discesa Ubicazioni (ordinate alfabeticamente)
         const stationSelect = document.getElementById('repair-station');
@@ -3442,6 +3501,182 @@ window.createRepairDocxBlob = async function (data) {
     });
 };
 
+window.createAleaRepairDocxBlob = async function (data) {
+    if (!window.JSZip) {
+        throw new Error("Libreria JSZip non caricata. Ricarica la pagina.");
+    }
+    if (!window.ALEA_TEMPLATE_BASE64) {
+        throw new Error("Template Word per mezzi Alea non trovato. Ricarica la pagina.");
+    }
+
+    // 1. Carica il template base64 Alea
+    const zip = await JSZip.loadAsync(window.ALEA_TEMPLATE_BASE64, { base64: true });
+
+    // 2. Leggi word/document.xml
+    const docXmlStr = await zip.file("word/document.xml").async("string");
+    const parser = new DOMParser();
+    const xmlDoc = parser.parseFromString(docXmlStr, "application/xml");
+
+    const nsW = "http://schemas.openxmlformats.org/wordprocessingml/2006/main";
+    const tables = xmlDoc.getElementsByTagNameNS ? xmlDoc.getElementsByTagNameNS(nsW, "tbl") : xmlDoc.getElementsByTagName("w:tbl");
+
+    if (tables.length < 1) {
+        throw new Error("Struttura del documento Word Alea non valida (nessuna tabella trovata).");
+    }
+
+    const tbl = tables[0];
+    const rows = tbl.getElementsByTagNameNS ? tbl.getElementsByTagNameNS(nsW, "tr") : tbl.getElementsByTagName("w:tr");
+
+    // 3. Popola Row 3 (Targa e Modello Veicolo)
+    let aleaVehicleStr = (data.targa || '').trim();
+    if (aleaVehicleStr) {
+        if (!aleaVehicleStr.toUpperCase().includes('ALEA') && !aleaVehicleStr.toUpperCase().includes('ALIA')) {
+            if (aleaVehicleStr.toUpperCase().startsWith('AMBULANZA')) {
+                aleaVehicleStr = aleaVehicleStr.replace(/^AMBULANZA\s*/i, 'AMBULANZA ALEA ');
+            } else {
+                aleaVehicleStr = 'AMBULANZA ALEA ' + aleaVehicleStr;
+            }
+        }
+    } else {
+        aleaVehicleStr = 'AMBULANZA ALEA';
+    }
+
+    if (rows.length > 3) {
+        const r3 = rows[3];
+        const sdts3 = r3.getElementsByTagNameNS ? r3.getElementsByTagNameNS(nsW, "sdt") : r3.getElementsByTagName("w:sdt");
+        if (sdts3.length > 0) {
+            const sdtContent = sdts3[0].getElementsByTagNameNS ? sdts3[0].getElementsByTagNameNS(nsW, "sdtContent") : sdts3[0].getElementsByTagName("w:sdtContent");
+            if (sdtContent.length > 0) {
+                const wtNodes = sdtContent[0].getElementsByTagNameNS ? sdtContent[0].getElementsByTagNameNS(nsW, "t") : sdtContent[0].getElementsByTagName("w:t");
+                if (wtNodes.length > 0) {
+                    wtNodes[0].textContent = aleaVehicleStr;
+                }
+            }
+        }
+    }
+
+    // 4. Popola Row 5 (Ditta / Officina se specificata)
+    if (rows.length > 5 && data.station) {
+        const r5 = rows[5];
+        const cells5 = r5.getElementsByTagNameNS ? r5.getElementsByTagNameNS(nsW, "tc") : r5.getElementsByTagName("w:tc");
+        if (cells5.length >= 2) {
+            const wtNodes5 = cells5[1].getElementsByTagNameNS ? cells5[1].getElementsByTagNameNS(nsW, "t") : cells5[1].getElementsByTagName("w:t");
+            if (wtNodes5.length >= 2) {
+                wtNodes5[1].textContent = data.station;
+            } else if (wtNodes5.length === 1) {
+                wtNodes5[0].textContent = 'Ditta      ' + data.station;
+            }
+        }
+    }
+
+    // 5. Popola Righe 10 - 14 (Descrizione lavori / guasto, 5 righe)
+    const descRaw = data.description || '';
+    const descLines = formatDescriptionLines(descRaw, 5, 65);
+    for (let rIdx = 10; rIdx <= 14 && rIdx < rows.length; rIdx++) {
+        const row = rows[rIdx];
+        const cells = row.getElementsByTagNameNS ? row.getElementsByTagNameNS(nsW, "tc") : row.getElementsByTagName("w:tc");
+        if (cells.length > 0) {
+            const tc = cells[0];
+            const pNodes = tc.getElementsByTagNameNS ? tc.getElementsByTagNameNS(nsW, "p") : tc.getElementsByTagName("w:p");
+            if (pNodes.length > 0) {
+                const p = pNodes[0];
+                const existingRuns = Array.from(p.getElementsByTagNameNS ? p.getElementsByTagNameNS(nsW, "r") : p.getElementsByTagName("w:r"));
+                existingRuns.forEach(r => r.parentNode.removeChild(r));
+
+                const lineIdx = rIdx - 10;
+                if (lineIdx < descLines.length && descLines[lineIdx] !== '') {
+                    const rElem = xmlDoc.createElementNS(nsW, "w:r");
+                    const rPrElem = xmlDoc.createElementNS(nsW, "w:rPr");
+
+                    const rFonts = xmlDoc.createElementNS(nsW, "w:rFonts");
+                    rFonts.setAttributeNS(nsW, "w:ascii", "Arial");
+                    rFonts.setAttributeNS(nsW, "w:hAnsi", "Arial");
+                    const szElem = xmlDoc.createElementNS(nsW, "w:sz");
+                    szElem.setAttributeNS(nsW, "w:val", "22");
+                    const szCsElem = xmlDoc.createElementNS(nsW, "w:szCs");
+                    szCsElem.setAttributeNS(nsW, "w:val", "22");
+
+                    rPrElem.appendChild(rFonts);
+                    rPrElem.appendChild(szElem);
+                    rPrElem.appendChild(szCsElem);
+                    rElem.appendChild(rPrElem);
+
+                    const tElem = xmlDoc.createElementNS(nsW, "w:t");
+                    tElem.setAttribute("xml:space", "preserve");
+                    tElem.textContent = descLines[lineIdx];
+                    rElem.appendChild(tElem);
+
+                    p.appendChild(rElem);
+                }
+            }
+        }
+    }
+
+    // 6. Popola Row 16 (Richiedente, Data, Telefono)
+    if (rows.length > 16) {
+        const r16 = rows[16];
+        const pNodes = r16.getElementsByTagNameNS ? r16.getElementsByTagNameNS(nsW, "p") : r16.getElementsByTagName("w:p");
+
+        // Para 0: Telefono
+        if (pNodes.length > 0 && data.phone) {
+            const wt0 = pNodes[0].getElementsByTagNameNS ? pNodes[0].getElementsByTagNameNS(nsW, "t") : pNodes[0].getElementsByTagName("w:t");
+            if (wt0.length > 0) {
+                const lastWt = wt0[wt0.length - 1];
+                if (lastWt.textContent.trim().startsWith('Tel')) {
+                    lastWt.textContent = 'Tel ' + data.phone;
+                }
+            }
+        }
+
+        // Para 3: Nome richiedente
+        if (pNodes.length > 3 && data.driver) {
+            const sdts3 = pNodes[3].getElementsByTagNameNS ? pNodes[3].getElementsByTagNameNS(nsW, "sdt") : pNodes[3].getElementsByTagName("w:sdt");
+            if (sdts3.length > 0) {
+                const sdtContent = sdts3[0].getElementsByTagNameNS ? sdts3[0].getElementsByTagNameNS(nsW, "sdtContent") : sdts3[0].getElementsByTagName("w:sdtContent");
+                if (sdtContent.length > 0) {
+                    const wtNodes = sdtContent[0].getElementsByTagNameNS ? sdtContent[0].getElementsByTagNameNS(nsW, "t") : sdtContent[0].getElementsByTagName("w:t");
+                    if (wtNodes.length > 0) {
+                        wtNodes[0].textContent = data.driver;
+                    }
+                }
+            }
+        }
+
+        // Para 5: Data richiesta
+        if (pNodes.length > 5 && data.date) {
+            const sdts5 = pNodes[5].getElementsByTagNameNS ? pNodes[5].getElementsByTagNameNS(nsW, "sdt") : pNodes[5].getElementsByTagName("w:sdt");
+            if (sdts5.length > 0) {
+                const sdtContent = sdts5[0].getElementsByTagNameNS ? sdts5[0].getElementsByTagNameNS(nsW, "sdtContent") : sdts5[0].getElementsByTagName("w:sdtContent");
+                if (sdtContent.length > 0) {
+                    const wtNodes = sdtContent[0].getElementsByTagNameNS ? sdtContent[0].getElementsByTagNameNS(nsW, "t") : sdtContent[0].getElementsByTagName("w:t");
+                    if (wtNodes.length > 0) {
+                        wtNodes[0].textContent = data.date;
+                    }
+                }
+                const datePr = sdts5[0].getElementsByTagNameNS ? sdts5[0].getElementsByTagNameNS(nsW, "date") : sdts5[0].getElementsByTagName("w:date");
+                if (datePr.length > 0) {
+                    const parts = data.date.split('/');
+                    if (parts.length === 3) {
+                        datePr[0].setAttributeNS(nsW, "w:fullDate", `${parts[2]}-${parts[1]}-${parts[0]}T00:00:00Z`);
+                    }
+                }
+            }
+        }
+    }
+
+    // 7. Serializza l'XML aggiornato
+    const serializer = new XMLSerializer();
+    const updatedXmlStr = serializer.serializeToString(xmlDoc);
+    zip.file("word/document.xml", updatedXmlStr);
+
+    // 8. Genera il blob del file .docx
+    return await zip.generateAsync({
+        type: "blob",
+        mimeType: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        compression: "DEFLATE"
+    });
+};
+
 window.generateAndDownloadRepairDocx = async function () {
     try {
         // Veicolo della card corrente
@@ -3513,8 +3748,12 @@ window.generateAndDownloadRepairDocx = async function () {
             filename += ".docx";
         }
 
+        const isAleaChk = document.getElementById('repair-is-alea');
+        const isAlea = isAleaChk ? isAleaChk.checked : window.isAleaVehicle(vehicle);
+
         const reqData = {
             id: 'req_' + Date.now(),
+            is_alea: isAlea,
             date: dateVal,
             created_at: new Date().toISOString(),
             driver: driver,
@@ -3529,8 +3768,10 @@ window.generateAndDownloadRepairDocx = async function () {
             filename: filename
         };
 
-        // Genera Blob e scarica
-        const blob = await window.createRepairDocxBlob(reqData);
+        // Genera Blob e scarica in base al modello (Alea o Standard 118)
+        const blob = isAlea
+            ? await window.createAleaRepairDocxBlob(reqData)
+            : await window.createRepairDocxBlob(reqData);
         const url = URL.createObjectURL(blob);
         const a = document.createElement("a");
         a.href = url;
@@ -3602,7 +3843,10 @@ window.downloadSavedRepairDocx = async function (vehicleId, reqIndex) {
             filename += ".docx";
         }
 
-        const blob = await window.createRepairDocxBlob(req);
+        const isAlea = req.is_alea !== undefined ? !!req.is_alea : window.isAleaVehicle(vehicle);
+        const blob = isAlea
+            ? await window.createAleaRepairDocxBlob(req)
+            : await window.createRepairDocxBlob(req);
         const url = URL.createObjectURL(blob);
         const a = document.createElement("a");
         a.href = url;
@@ -3708,6 +3952,7 @@ window.openVehicleRepairHistoryModal = async function (vehicleId) {
                                 <tr style="border-bottom: 1px solid var(--border-color);">
                                     <td style="padding: 0.85rem 1rem; font-weight: 700; white-space: nowrap; color: #0f172a; font-size: 0.9rem;">
                                         <i class="fa-solid fa-calendar-day" style="color: #64748b; margin-right: 0.3rem;"></i>${req.date || '-'}
+                                        ${(req.is_alea || (window.isAleaVehicle && window.isAleaVehicle(vehicle))) ? '<span style="background: #fef3c7; color: #92400e; font-size: 0.7rem; font-weight: 700; padding: 0.15rem 0.45rem; border-radius: 4px; margin-left: 0.4rem; vertical-align: middle;">Alea</span>' : ''}
                                     </td>
                                     <td style="padding: 0.85rem 1rem;">
                                         ${(req.types && req.types.length > 0) ? req.types.map(t => `<span style="background: #dbeafe; color: #1e40af; font-size: 0.75rem; font-weight: 600; padding: 0.2rem 0.5rem; border-radius: 4px; display: inline-block; margin: 0.1rem;">${t}</span>`).join('') : '<span style="color: var(--text-secondary); font-size: 0.8rem;">Non specificata</span>'}

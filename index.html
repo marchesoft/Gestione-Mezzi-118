@@ -25,7 +25,7 @@
     <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <!-- App Styles -->
-    <link rel="stylesheet" href="style.css?v=3.1.4">
+    <link rel="stylesheet" href="style.css?v=3.1.5">
 </head>
 
 <body>
@@ -53,7 +53,7 @@
                     <div class="section-header" style="margin-bottom: 0;">
                         <h3 style="margin: 0; white-space: nowrap;">VEICOLI IN GESTIONE <span id="app-version-display"
                                 style="font-size: 0.8rem; font-weight: 400; opacity: 0.8; margin-left: 0.5rem; vertical-align: middle; text-transform: none;">v
-                                3.1.4</span></h3>
+                                3.1.5</span></h3>
                     </div>
                     <div class="action-buttons">
 
@@ -735,7 +735,10 @@
                         <i class="fa-solid fa-file-word"></i>
                     </div>
                     <div>
-                        <h2 class="modal-title-mgmt" style="font-size: 1.25rem; color: #1e3a8a; margin: 0;">Richiesta di Riparazione</h2>
+                        <div style="display: flex; align-items: center; gap: 0.6rem;">
+                            <h2 class="modal-title-mgmt" style="font-size: 1.25rem; color: #1e3a8a; margin: 0;">Richiesta di Riparazione</h2>
+                            <span id="repair-template-badge" style="font-size: 0.72rem; padding: 0.2rem 0.55rem; border-radius: 9999px; background: #dbeafe; color: #1e40af; font-weight: 700; text-transform: uppercase; letter-spacing: 0.03em;">Standard 118</span>
+                        </div>
                         <span style="font-size: 0.85rem; color: #475569;">Compila i dettagli e scarica il documento Word (.docx)</span>
                     </div>
                 </div>
@@ -752,6 +755,10 @@
                         <div>
                             <label style="font-size: 0.75rem; font-weight: 700; color: #334155; margin-bottom: 0.25rem; display: block;">TARGA E SIGLA VEICOLO</label>
                             <input type="text" id="repair-vehicle-display" class="form-input" readonly style="width: 100%; padding: 0.5rem 0.75rem; border: 1px solid var(--border-color); border-radius: 0.375rem; background-color: #f1f5f9; color: #0f172a; font-weight: 700; cursor: default;">
+                            <label style="display: inline-flex; align-items: center; gap: 0.45rem; font-size: 0.78rem; font-weight: 700; color: #b45309; cursor: pointer; margin-top: 0.4rem;">
+                                <input type="checkbox" id="repair-is-alea" onchange="window.toggleRepairTemplate(this.checked)" style="width: 16px; height: 16px; cursor: pointer;">
+                                <i class="fa-solid fa-file-contract" style="font-size: 0.85rem;"></i> Mezzo Alea (utilizza modello Word dedicato Alea)
+                            </label>
                         </div>
                         <div>
                             <label style="font-size: 0.75rem; font-weight: 700; color: #334155; margin-bottom: 0.25rem; display: block;">UBICAZIONE VEICOLO</label>
@@ -883,11 +890,12 @@
     <!-- Word Document Generation Libraries -->
     <script src="jszip.min.js"></script>
     <script src="repair_template_base64.js"></script>
+    <script src="alea_template_base64.js"></script>
 
     <script src="firebase-config.js"></script>
 
     <script src="store.js?v=2.0"></script>
-    <script src="app.js?v=3.1.4"></script>
+    <script src="app.js?v=3.1.5"></script>
 </body>
 
 </html>
