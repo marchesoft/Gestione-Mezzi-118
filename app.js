@@ -1,4 +1,4 @@
-const APP_VERSION = "3.2.8";
+const APP_VERSION = "3.2.9";
 let isAdmin = false;
 let cachedVehicles = null;
 let cachedLocations = null;
@@ -3467,7 +3467,24 @@ window.switchDataTable = async function (type) {
                 </div>`;
         } else if (type === 'report_officina') {
             const vehicles = await store.getVehicles();
-            const interventions = await store.getInterventions();
+            let interventions = await store.getInterventions();
+
+            // AUTO-CLEANUP: elimina interventi orfani (vehicle_id non corrisponde a nessun veicolo) se admin
+            if (isAdmin) {
+                const vehicleIdSet = new Set(vehicles.map(v => v.id));
+                const orphaned = interventions.filter(i => !i.vehicle_id || !vehicleIdSet.has(i.vehicle_id));
+                if (orphaned.length > 0) {
+                    const confirmMsg = `Trovati ${orphaned.length} interventi orfani (mezzo N/A) non collegati ad alcun veicolo in flotta.\n\nVuoi eliminarli definitivamente da Firestore?`;
+                    if (confirm(confirmMsg)) {
+                        for (const oi of orphaned) {
+                            await store.deleteIntervention(oi.id);
+                        }
+                        // Ricarica gli interventi dopo la pulizia
+                        interventions = await store.getInterventions();
+                        alert(`${orphaned.length} interventi orfani eliminati con successo.`);
+                    }
+                }
+            }
 
             // Raccoglie tutti gli anni disponibili negli interventi
             const yearsSet = new Set();
