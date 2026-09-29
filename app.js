@@ -1,4 +1,4 @@
-const APP_VERSION = "3.0.9";
+const APP_VERSION = "3.1.0";
 let isAdmin = false;
 let cachedVehicles = null;
 let cachedLocations = null;
@@ -1909,6 +1909,61 @@ window.openVehicleModal = async function (id) {
                     </table>
                 ` : '<p style="padding: 2rem; text-align: center; color: var(--text-secondary);">Nessun record di manutenzione trovato.</p>'}
                     </div>
+
+                    <div style="margin-top: 1.5rem;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                            <div style="display: flex; align-items: center; gap: 0.5rem;">
+                                <div style="background: #2563eb; color: white; width: 32px; height: 32px; border-radius: 6px; display: flex; align-items: center; justify-content: center; font-size: 1rem;">
+                                    <i class="fa-solid fa-file-word"></i>
+                                </div>
+                                <h3 style="font-size: 1.1rem; margin: 0; color: black;">Storico Richieste di Riparazione</h3>
+                            </div>
+                            <button class="btn" style="background: #2563eb; color: white; font-size: 0.85rem; padding: 0.4rem 0.8rem; display: flex; align-items: center; gap: 0.4rem; border: none; border-radius: 0.375rem; cursor: pointer;" onclick="openRepairRequestModal('${vehicle.id}')">
+                                <i class="fa-solid fa-plus"></i> Nuova Richiesta
+                            </button>
+                        </div>
+
+                        <div style="background: white; border: 1px solid var(--border-color); border-radius: 1rem; overflow-x: auto;">
+                            ${vehicle.repair_requests && vehicle.repair_requests.length > 0 ? `
+                        <table style="width: 100%; border-collapse: collapse;">
+                            <thead style="background: #eff6ff; border-bottom: 1px solid #bfdbfe;">
+                                <tr>
+                                    <th style="text-align: left; padding: 0.85rem 1rem; font-size: 0.85rem; color: #1e3a8a;">Data</th>
+                                    <th style="text-align: left; padding: 0.85rem 1rem; font-size: 0.85rem; color: #1e3a8a;">Tipologia</th>
+                                    <th style="text-align: left; padding: 0.85rem 1rem; font-size: 0.85rem; color: #1e3a8a;">Descrizione</th>
+                                    <th style="text-align: left; padding: 0.85rem 1rem; font-size: 0.85rem; color: #1e3a8a;">Richiedente / Driver</th>
+                                    <th style="text-align: right; padding: 0.85rem 1rem; font-size: 0.85rem; color: #1e3a8a;">Azioni</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${vehicle.repair_requests.map((req, reqIdx) => `
+                                    <tr style="border-bottom: 1px solid var(--border-color);">
+                                        <td style="padding: 0.85rem 1rem; font-weight: 600; white-space: nowrap; color: #0f172a;">${req.date || '-'}</td>
+                                        <td style="padding: 0.85rem 1rem;">
+                                            ${(req.types && req.types.length > 0) ? req.types.map(t => `<span style="background: #dbeafe; color: #1e40af; font-size: 0.75rem; font-weight: 600; padding: 0.2rem 0.5rem; border-radius: 4px; display: inline-block; margin: 0.1rem;">${t}</span>`).join('') : '<span style="color: var(--text-secondary); font-size: 0.8rem;">Non specificata</span>'}
+                                        </td>
+                                        <td style="padding: 0.85rem 1rem; max-width: 280px; font-size: 0.9rem; color: #334155; white-space: pre-wrap;">${req.description || '-'}</td>
+                                        <td style="padding: 0.85rem 1rem; font-size: 0.85rem; color: #475569;">
+                                            <strong>${req.driver || '-'}</strong>
+                                            ${(req.dept || req.phone) ? `<div style="font-size: 0.75rem; color: #64748b;">${[req.dept, req.phone].filter(Boolean).join(' • ')}</div>` : ''}
+                                        </td>
+                                        <td style="padding: 0.85rem 1rem; text-align: right; white-space: nowrap;">
+                                            <button class="btn" style="background: #2563eb; color: white; padding: 0.3rem 0.6rem; font-size: 0.8rem; margin-right: 0.4rem; border: none; border-radius: 0.3rem; cursor: pointer;" onclick="downloadSavedRepairDocx('${vehicle.id}', ${reqIdx})" title="Scarica di nuovo il file Word">
+                                                <i class="fa-solid fa-download"></i> Word
+                                            </button>
+                                            ${isAdmin ? `
+                                            <button class="btn" style="background: var(--status-to-repair); color: white; padding: 0.3rem 0.6rem; font-size: 0.8rem; border: none; border-radius: 0.3rem; cursor: pointer;" onclick="deleteRepairRequest('${vehicle.id}', ${reqIdx})" title="Elimina richiesta">
+                                                <i class="fa-solid fa-trash"></i>
+                                            </button>
+                                            ` : ''}
+                                        </td>
+                                    </tr>
+                                `).join('')}
+                            </tbody>
+                        </table>
+                    ` : '<p style="padding: 1.5rem; text-align: center; color: var(--text-secondary); font-size: 0.9rem; margin: 0;">Nessuna richiesta di riparazione registrata per questo mezzo.</p>'}
+                        </div>
+                    </div>
                 </div>
                 `;
 
@@ -2350,6 +2405,38 @@ window.exportCurrentTableToCSV = async function () {
                 }
             });
             data.sort((a, b) => new Date(b.date) - new Date(a.date));
+        } else if (type === 'riparazioni') {
+            const vehicles = await store.getVehicles();
+            data = [];
+            vehicles.forEach(v => {
+                if (v.repair_requests && Array.isArray(v.repair_requests)) {
+                    v.repair_requests.forEach(req => {
+                        data.push({
+                            vehicle_id: v.id,
+                            sigla: v.sigla || '-',
+                            plate: v.plate || '-',
+                            model: v.model || '-',
+                            date: req.date || '',
+                            types: (req.types || []).join(', '),
+                            description: req.description || '',
+                            driver: req.driver || '',
+                            dept: req.dept || '',
+                            phone: req.phone || '',
+                            station: req.station || '',
+                            email: req.email || ''
+                        });
+                    });
+                }
+            });
+            data.sort((a, b) => {
+                const parseD = (s) => {
+                    if (!s) return 0;
+                    const parts = s.split('/');
+                    if (parts.length === 3) return new Date(`${parts[2]}-${parts[1]}-${parts[0]}`).getTime();
+                    return new Date(s).getTime() || 0;
+                };
+                return parseD(b.date) - parseD(a.date);
+            });
         }
 
         if (!data || data.length === 0) {
@@ -2384,6 +2471,10 @@ window.exportCurrentTableToCSV = async function () {
         } else if (type === 'controlli') {
             headers = ['vehicle_id', 'sigla', 'plate', 'model', 'date', 'executor', 'location', 'notes'];
             const italianHeaders = ['ID Veicolo', 'Sigla', 'Targa', 'Modello', 'Data Controllo', 'Esecutore', 'Posizione', 'Note'];
+            csvRows.push(italianHeaders.join(';'));
+        } else if (type === 'riparazioni') {
+            headers = ['sigla', 'plate', 'model', 'date', 'types', 'description', 'driver', 'dept', 'phone', 'station', 'email'];
+            const italianHeaders = ['Sigla', 'Targa', 'Modello', 'Data Richiesta', 'Tipologia', 'Descrizione', 'Driver / Richiedente', 'Dipartimento', 'Telefono', 'Ubicazione', 'Email'];
             csvRows.push(italianHeaders.join(';'));
         } else {
             headers = Object.keys(data[0]);
@@ -2972,6 +3063,77 @@ window.switchDataTable = async function (type) {
                         </tbody>
                     </table>
                 </div>`;
+        } else if (type === 'riparazioni') {
+            const vehicles = await store.getVehicles();
+            data = [];
+            vehicles.forEach(v => {
+                if (v.repair_requests && Array.isArray(v.repair_requests)) {
+                    v.repair_requests.forEach((req, idx) => {
+                        data.push({
+                            vehicle_id: v.id,
+                            req_index: idx,
+                            sigla: v.sigla || '-',
+                            plate: v.plate || '-',
+                            model: v.model || '-',
+                            ...req
+                        });
+                    });
+                }
+            });
+            data.sort((a, b) => {
+                const parseD = (s) => {
+                    if (!s) return 0;
+                    const parts = s.split('/');
+                    if (parts.length === 3) return new Date(`${parts[2]}-${parts[1]}-${parts[0]}`).getTime();
+                    return new Date(s).getTime() || 0;
+                };
+                return parseD(b.date) - parseD(a.date);
+            });
+
+            html = `
+                <div style="margin-bottom: 1.5rem; background: #eff6ff; padding: 1rem; border-radius: 0.75rem; border: 1px solid #bfdbfe; display: flex; justify-content: space-between; align-items: center; gap: 1rem;">
+                    <div>
+                        <h4 style="margin: 0; color: #1e3a8a; font-size: 1.1rem; display: flex; align-items: center; gap: 0.5rem;">
+                            <i class="fa-solid fa-file-word" style="color: #2563eb;"></i> Storico Richieste di Riparazione Word (${data.length})
+                        </h4>
+                        <div style="font-size: 0.85rem; color: #475569; margin-top: 0.2rem;">Tutte le richieste di riparazione generate per i mezzi della flotta</div>
+                    </div>
+                    <button class="btn btn-export" onclick="exportCurrentTableToExcel('riparazioni')" style="background: #10b981; color: white; display: flex; align-items: center; gap: 0.5rem; white-space: nowrap;">
+                        <i class="fa-solid fa-file-excel"></i> Esporta Excel
+                    </button>
+                </div>
+                <div style="overflow-x: auto;">
+                    <table class="mgmt-table">
+                        <thead>
+                            <tr>
+                                <th class="col-shrink">Mezzo (Sigla)</th>
+                                <th class="col-shrink">Targa</th>
+                                <th class="col-shrink">Data</th>
+                                <th class="col-shrink">Tipologia</th>
+                                <th class="col-expand">Descrizione</th>
+                                <th class="col-shrink">Richiedente</th>
+                                <th class="col-actions">Azioni</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${data.length === 0 ? '<tr><td colspan="7" style="text-align:center; padding: 2rem; color: var(--text-secondary);">Nessuna richiesta di riparazione registrata.</td></tr>' : ''}
+                            ${data.map(item => `
+                                <tr>
+                                    <td class="col-shrink text-bold text-primary">${item.sigla}</td>
+                                    <td class="col-shrink">${item.plate}</td>
+                                    <td class="col-shrink" style="white-space: nowrap; font-weight: 600;">${item.date || '-'}</td>
+                                    <td class="col-shrink">${(item.types && item.types.length > 0) ? item.types.map(t => `<span style="background: #dbeafe; color: #1e40af; font-size: 0.75rem; font-weight: 600; padding: 0.2rem 0.5rem; border-radius: 4px; display: inline-block; margin: 0.1rem;">${t}</span>`).join('') : '-'}</td>
+                                    <td class="col-expand" style="font-size: 0.85rem; white-space: pre-wrap;">${item.description || '-'}</td>
+                                    <td class="col-shrink" style="font-size: 0.85rem;"><strong>${item.driver || '-'}</strong><div style="font-size: 0.75rem; color: #64748b;">${[item.dept, item.phone].filter(Boolean).join(' • ')}</div></td>
+                                    <td class="col-actions" style="white-space: nowrap;">
+                                        <button onclick="downloadSavedRepairDocx('${item.vehicle_id}', ${item.req_index})" style="cursor:pointer; background:none; border:none; color:#2563eb; margin-right:0.5rem; font-size:1.1rem;" title="Scarica Word (.docx)"><i class="fa-solid fa-download"></i></button>
+                                        ${isAdmin ? `<button onclick="deleteRepairRequest('${item.vehicle_id}', ${item.req_index})" style="cursor:pointer; background:none; border:none; color:var(--status-to-repair); font-size:1.1rem;" title="Elimina"><i class="fa-solid fa-trash"></i></button>` : ''}
+                                    </td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                </div>`;
         }
     } catch (e) {
         html = `<p style="color:red;">Errore caricamento dati: ${e.message}</p>`;
@@ -3081,6 +3243,9 @@ window.openRepairRequestModal = async function (vehicleId) {
         const defaultFileName = vehicle.sigla || vehicle.model || vehicle.plate || 'Richiesta_Riparazione';
         document.getElementById('repair-filename').value = defaultFileName;
 
+        // Salva ID veicolo per la richiesta corrente
+        window.currentRepairVehicleId = vehicleId;
+
         // Mostra modal
         const modal = document.getElementById('repair-request-modal');
         if (modal) {
@@ -3138,32 +3303,127 @@ function formatDescriptionLines(text, maxLines = 8, maxCharsPerLine = 65) {
     return resultLines;
 }
 
+window.createRepairDocxBlob = async function (data) {
+    if (!window.JSZip) {
+        throw new Error("Libreria JSZip non caricata. Ricarica la pagina.");
+    }
+    if (!window.REPAIR_TEMPLATE_BASE64) {
+        throw new Error("Template del documento non trovato. Ricarica la pagina.");
+    }
+
+    // 1. Carica il template base64
+    const zip = await JSZip.loadAsync(window.REPAIR_TEMPLATE_BASE64, { base64: true });
+
+    // 2. Leggi word/document.xml
+    const docXmlStr = await zip.file("word/document.xml").async("string");
+    const parser = new DOMParser();
+    const xmlDoc = parser.parseFromString(docXmlStr, "application/xml");
+
+    const nsW = "http://schemas.openxmlformats.org/wordprocessingml/2006/main";
+    const tables = xmlDoc.getElementsByTagNameNS ? xmlDoc.getElementsByTagNameNS(nsW, "tbl") : xmlDoc.getElementsByTagName("w:tbl");
+
+    if (tables.length < 3) {
+        throw new Error("Struttura del documento Word non valida (meno di 3 tabelle trovate).");
+    }
+
+    // 3. Popola Tabella 0 (Info veicolo e richiedente)
+    const infoValues = [
+        data.driver || '',
+        data.dept || '',
+        data.phone || '',
+        data.targa || '',
+        data.station || '',
+        data.email || '',
+        data.date || ''
+    ];
+    const tbl0 = tables[0];
+    const tbl0Rows = tbl0.getElementsByTagNameNS ? tbl0.getElementsByTagNameNS(nsW, "tr") : tbl0.getElementsByTagName("w:tr");
+
+    for (let i = 0; i < infoValues.length && i < tbl0Rows.length; i++) {
+        const row = tbl0Rows[i];
+        const cells = row.getElementsByTagNameNS ? row.getElementsByTagNameNS(nsW, "tc") : row.getElementsByTagName("w:tc");
+        if (cells.length >= 2) {
+            const tc1 = cells[1];
+            const wtNodes = tc1.getElementsByTagNameNS ? tc1.getElementsByTagNameNS(nsW, "t") : tc1.getElementsByTagName("w:t");
+            if (wtNodes.length > 0) {
+                wtNodes[0].textContent = infoValues[i];
+            }
+        }
+    }
+
+    // 4. Popola Tabella 1 (Caselle di controllo Wingdings)
+    const checks = data.checks || [false, false, false, false, false, false];
+    const tbl1 = tables[1];
+    const tbl1Rows = tbl1.getElementsByTagNameNS ? tbl1.getElementsByTagNameNS(nsW, "tr") : tbl1.getElementsByTagName("w:tr");
+    for (let i = 0; i < checks.length && i < tbl1Rows.length; i++) {
+        const row = tbl1Rows[i];
+        const cells = row.getElementsByTagNameNS ? row.getElementsByTagNameNS(nsW, "tc") : row.getElementsByTagName("w:tc");
+        if (cells.length >= 2) {
+            const tc1 = cells[1];
+            const wtNodes = tc1.getElementsByTagNameNS ? tc1.getElementsByTagNameNS(nsW, "t") : tc1.getElementsByTagName("w:t");
+            if (wtNodes.length > 0) {
+                // \uF0FE = casella selezionata con spunta, \uF0A8 = casella vuota (font Wingdings)
+                wtNodes[0].textContent = checks[i] ? "\uF0FE" : "\uF0A8";
+            }
+        }
+    }
+
+    // 5. Popola Tabella 2 (Descrizione del guasto su righe)
+    const descRaw = data.description || '';
+    const descLines = formatDescriptionLines(descRaw, 8, 65);
+
+    const tbl2 = tables[2];
+    const tbl2Rows = tbl2.getElementsByTagNameNS ? tbl2.getElementsByTagNameNS(nsW, "tr") : tbl2.getElementsByTagName("w:tr");
+    for (let i = 0; i < 8 && i < tbl2Rows.length; i++) {
+        const row = tbl2Rows[i];
+        const cells = row.getElementsByTagNameNS ? row.getElementsByTagNameNS(nsW, "tc") : row.getElementsByTagName("w:tc");
+        if (cells.length >= 2) {
+            const tc1 = cells[1];
+            const pNodes = tc1.getElementsByTagNameNS ? tc1.getElementsByTagNameNS(nsW, "p") : tc1.getElementsByTagName("w:p");
+            if (pNodes.length > 0) {
+                const p = pNodes[0];
+                // Rimuovi eventuali run già presenti
+                const existingRuns = Array.from(p.getElementsByTagNameNS ? p.getElementsByTagNameNS(nsW, "r") : p.getElementsByTagName("w:r"));
+                existingRuns.forEach(r => r.parentNode.removeChild(r));
+
+                // Se abbiamo testo per questa riga, aggiungiamo il run formattato a 12pt
+                if (i < descLines.length && descLines[i] !== '') {
+                    const rElem = xmlDoc.createElementNS(nsW, "w:r");
+                    const rPrElem = xmlDoc.createElementNS(nsW, "w:rPr");
+                    const szElem = xmlDoc.createElementNS(nsW, "w:sz");
+                    szElem.setAttributeNS(nsW, "w:val", "24");
+                    const szCsElem = xmlDoc.createElementNS(nsW, "w:szCs");
+                    szCsElem.setAttributeNS(nsW, "w:val", "24");
+                    rPrElem.appendChild(szElem);
+                    rPrElem.appendChild(szCsElem);
+                    rElem.appendChild(rPrElem);
+
+                    const tElem = xmlDoc.createElementNS(nsW, "w:t");
+                    tElem.setAttribute("xml:space", "preserve");
+                    tElem.textContent = descLines[i];
+                    rElem.appendChild(tElem);
+
+                    p.appendChild(rElem);
+                }
+            }
+        }
+    }
+
+    // 6. Serializza l'XML aggiornato
+    const serializer = new XMLSerializer();
+    const updatedXmlStr = serializer.serializeToString(xmlDoc);
+    zip.file("word/document.xml", updatedXmlStr);
+
+    // 7. Genera il blob del file .docx
+    return await zip.generateAsync({
+        type: "blob",
+        mimeType: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        compression: "DEFLATE"
+    });
+};
+
 window.generateAndDownloadRepairDocx = async function () {
     try {
-        if (!window.JSZip) {
-            alert("Libreria JSZip non caricata. Ricarica la pagina.");
-            return;
-        }
-        if (!window.REPAIR_TEMPLATE_BASE64) {
-            alert("Template del documento non trovato. Ricarica la pagina.");
-            return;
-        }
-
-        // 1. Carica il template base64
-        const zip = await JSZip.loadAsync(window.REPAIR_TEMPLATE_BASE64, { base64: true });
-
-        // 2. Leggi word/document.xml
-        const docXmlStr = await zip.file("word/document.xml").async("string");
-        const parser = new DOMParser();
-        const xmlDoc = parser.parseFromString(docXmlStr, "application/xml");
-
-        const nsW = "http://schemas.openxmlformats.org/wordprocessingml/2006/main";
-        const tables = xmlDoc.getElementsByTagNameNS ? xmlDoc.getElementsByTagNameNS(nsW, "tbl") : xmlDoc.getElementsByTagName("w:tbl");
-
-        if (tables.length < 3) {
-            throw new Error("Struttura del documento Word non valida (meno di 3 tabelle trovate).");
-        }
-
         // Valori campi informativi
         const driver = document.getElementById('repair-driver').value.trim();
         const dept = document.getElementById('repair-dept').value.trim();
@@ -3173,24 +3433,6 @@ window.generateAndDownloadRepairDocx = async function () {
         const email = document.getElementById('repair-email').value.trim();
         const dateVal = document.getElementById('repair-date').value.trim();
 
-        // 3. Popola Tabella 0 (Info veicolo e richiedente)
-        const infoValues = [driver, dept, phone, targa, station, email, dateVal];
-        const tbl0 = tables[0];
-        const tbl0Rows = tbl0.getElementsByTagNameNS ? tbl0.getElementsByTagNameNS(nsW, "tr") : tbl0.getElementsByTagName("w:tr");
-
-        for (let i = 0; i < infoValues.length && i < tbl0Rows.length; i++) {
-            const row = tbl0Rows[i];
-            const cells = row.getElementsByTagNameNS ? row.getElementsByTagNameNS(nsW, "tc") : row.getElementsByTagName("w:tc");
-            if (cells.length >= 2) {
-                const tc1 = cells[1];
-                const wtNodes = tc1.getElementsByTagNameNS ? tc1.getElementsByTagNameNS(nsW, "t") : tc1.getElementsByTagName("w:t");
-                if (wtNodes.length > 0) {
-                    wtNodes[0].textContent = infoValues[i];
-                }
-            }
-        }
-
-        // 4. Popola Tabella 1 (Caselle di controllo Wingdings)
         const checks = [
             document.getElementById('repair-chk-meccanica').checked,
             document.getElementById('repair-chk-gommista').checked,
@@ -3200,82 +3442,45 @@ window.generateAndDownloadRepairDocx = async function () {
             document.getElementById('repair-chk-soccorso').checked
         ];
 
-        const tbl1 = tables[1];
-        const tbl1Rows = tbl1.getElementsByTagNameNS ? tbl1.getElementsByTagNameNS(nsW, "tr") : tbl1.getElementsByTagName("w:tr");
-        for (let i = 0; i < checks.length && i < tbl1Rows.length; i++) {
-            const row = tbl1Rows[i];
-            const cells = row.getElementsByTagNameNS ? row.getElementsByTagNameNS(nsW, "tc") : row.getElementsByTagName("w:tc");
-            if (cells.length >= 2) {
-                const tc1 = cells[1];
-                const wtNodes = tc1.getElementsByTagNameNS ? tc1.getElementsByTagNameNS(nsW, "t") : tc1.getElementsByTagName("w:t");
-                if (wtNodes.length > 0) {
-                    // \uF0FE = casella selezionata con spunta, \uF0A8 = casella vuota (font Wingdings)
-                    wtNodes[0].textContent = checks[i] ? "\uF0FE" : "\uF0A8";
-                }
-            }
-        }
-
-        // 5. Popola Tabella 2 (Descrizione del guasto su righe)
-        const descRaw = document.getElementById('repair-description').value;
-        const descLines = formatDescriptionLines(descRaw, 8, 65);
-
-        const tbl2 = tables[2];
-        const tbl2Rows = tbl2.getElementsByTagNameNS ? tbl2.getElementsByTagNameNS(nsW, "tr") : tbl2.getElementsByTagName("w:tr");
-        for (let i = 0; i < 8 && i < tbl2Rows.length; i++) {
-            const row = tbl2Rows[i];
-            const cells = row.getElementsByTagNameNS ? row.getElementsByTagNameNS(nsW, "tc") : row.getElementsByTagName("w:tc");
-            if (cells.length >= 2) {
-                const tc1 = cells[1];
-                const pNodes = tc1.getElementsByTagNameNS ? tc1.getElementsByTagNameNS(nsW, "p") : tc1.getElementsByTagName("w:p");
-                if (pNodes.length > 0) {
-                    const p = pNodes[0];
-                    // Rimuovi eventuali run già presenti
-                    const existingRuns = Array.from(p.getElementsByTagNameNS ? p.getElementsByTagNameNS(nsW, "r") : p.getElementsByTagName("w:r"));
-                    existingRuns.forEach(r => r.parentNode.removeChild(r));
-
-                    // Se abbiamo testo per questa riga, aggiungiamo il run formattato a 12pt
-                    if (i < descLines.length && descLines[i] !== '') {
-                        const rElem = xmlDoc.createElementNS(nsW, "w:r");
-                        const rPrElem = xmlDoc.createElementNS(nsW, "w:rPr");
-                        const szElem = xmlDoc.createElementNS(nsW, "w:sz");
-                        szElem.setAttributeNS(nsW, "w:val", "24");
-                        const szCsElem = xmlDoc.createElementNS(nsW, "w:szCs");
-                        szCsElem.setAttributeNS(nsW, "w:val", "24");
-                        rPrElem.appendChild(szElem);
-                        rPrElem.appendChild(szCsElem);
-                        rElem.appendChild(rPrElem);
-
-                        const tElem = xmlDoc.createElementNS(nsW, "w:t");
-                        tElem.setAttribute("xml:space", "preserve");
-                        tElem.textContent = descLines[i];
-                        rElem.appendChild(tElem);
-
-                        p.appendChild(rElem);
-                    }
-                }
-            }
-        }
-
-        // 6. Serializza l'XML aggiornato
-        const serializer = new XMLSerializer();
-        const updatedXmlStr = serializer.serializeToString(xmlDoc);
-        zip.file("word/document.xml", updatedXmlStr);
-
-        // 7. Genera il blob del file .docx
-        const blob = await zip.generateAsync({
-            type: "blob",
-            mimeType: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-            compression: "DEFLATE"
+        const typeLabels = [
+            'Meccanica / Elettrauto',
+            'Gommista',
+            'Carrozzeria',
+            'Autolavaggio',
+            'Sinistro',
+            'Soccorso Stradale'
+        ];
+        const selectedTypes = [];
+        checks.forEach((chk, idx) => {
+            if (chk) selectedTypes.push(typeLabels[idx]);
         });
 
-        // 8. Determina il nome file specificato o calcolato
+        const descRaw = document.getElementById('repair-description').value.trim();
+
         let filename = (document.getElementById('repair-filename').value || 'Richiesta_Riparazione').trim();
         filename = filename.replace(/[\\/:*?"<>|]/g, "_");
         if (!filename.toLowerCase().endsWith(".docx")) {
             filename += ".docx";
         }
 
-        // 9. Download automatico nel browser
+        const reqData = {
+            id: 'req_' + Date.now(),
+            date: dateVal,
+            created_at: new Date().toISOString(),
+            driver: driver,
+            dept: dept,
+            phone: phone,
+            targa: targa,
+            station: station,
+            email: email,
+            checks: checks,
+            types: selectedTypes,
+            description: descRaw,
+            filename: filename
+        };
+
+        // Genera Blob e scarica
+        const blob = await window.createRepairDocxBlob(reqData);
         const url = URL.createObjectURL(blob);
         const a = document.createElement("a");
         a.href = url;
@@ -3285,9 +3490,97 @@ window.generateAndDownloadRepairDocx = async function () {
         document.body.removeChild(a);
         URL.revokeObjectURL(url);
 
+        // Salva la richiesta nello storico del veicolo su Firestore
+        const vehicleId = window.currentRepairVehicleId || currentOpenedVehicleId;
+        if (vehicleId) {
+            const vehicle = await store.getVehicleById(vehicleId);
+            if (vehicle) {
+                if (!vehicle.repair_requests) {
+                    vehicle.repair_requests = [];
+                }
+                vehicle.repair_requests.unshift(reqData);
+                await store.updateVehicle(vehicle);
+
+                // Aggiorna la vista dei dettagli del veicolo
+                if (currentOpenedVehicleId === vehicleId) {
+                    await openVehicleModal(vehicleId);
+                }
+                // Se la tabella di gestione è aperta su riparazioni, ricarica
+                if (window.lastDataManagerTab === 'riparazioni') {
+                    switchDataTable('riparazioni');
+                }
+            }
+        }
+
         closeRepairRequestModal();
     } catch (err) {
         console.error("Errore nella generazione del file Word:", err);
         alert("Si è verificato un errore durante la creazione del documento Word: " + err.message);
     }
+};
+
+window.downloadSavedRepairDocx = async function (vehicleId, reqIndex) {
+    try {
+        const vehicle = await store.getVehicleById(vehicleId);
+        if (!vehicle || !vehicle.repair_requests || !vehicle.repair_requests[reqIndex]) {
+            alert("Richiesta non trovata.");
+            return;
+        }
+
+        const req = { ...vehicle.repair_requests[reqIndex] };
+
+        // Assicura campi fondamentali
+        if (!req.targa) {
+            const vehicleTypeStr = (vehicle.type || '').toUpperCase();
+            const plateStr = (vehicle.plate || '').toUpperCase();
+            const siglaStr = (vehicle.sigla || '').toUpperCase();
+            req.targa = `${vehicleTypeStr}  ${plateStr}  ${siglaStr}`.trim();
+        }
+        if (!req.station) {
+            req.station = (vehicle.station || 'FERRARA').toUpperCase();
+        }
+
+        const blob = await window.createRepairDocxBlob(req);
+        let filename = (req.filename || vehicle.sigla || vehicle.model || vehicle.plate || 'Richiesta_Riparazione').trim();
+        filename = filename.replace(/[\\/:*?"<>|]/g, "_");
+        if (!filename.toLowerCase().endsWith(".docx")) {
+            filename += ".docx";
+        }
+
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+    } catch (err) {
+        console.error("Errore nel download del file Word salvato:", err);
+        alert("Si è verificato un errore durante il download del documento Word: " + err.message);
+    }
+};
+
+window.deleteRepairRequest = async function (vehicleId, reqIndex) {
+    setTimeout(async () => {
+        if (!confirm("Sei sicuro di voler eliminare questa richiesta di riparazione dallo storico?")) return;
+        try {
+            const vehicle = await store.getVehicleById(vehicleId);
+            if (vehicle && vehicle.repair_requests && vehicle.repair_requests[reqIndex]) {
+                vehicle.repair_requests.splice(reqIndex, 1);
+                await store.updateVehicle(vehicle);
+                alert("Richiesta eliminata con successo.");
+
+                if (currentOpenedVehicleId === vehicleId) {
+                    await openVehicleModal(vehicleId);
+                }
+                if (window.lastDataManagerTab === 'riparazioni') {
+                    switchDataTable('riparazioni');
+                }
+            }
+        } catch (err) {
+            console.error("Errore nell'eliminazione della richiesta:", err);
+            alert("Errore durante l'eliminazione della richiesta: " + err.message);
+        }
+    }, 50);
 };
