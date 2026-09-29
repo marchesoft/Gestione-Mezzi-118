@@ -1,4 +1,4 @@
-const APP_VERSION = "3.1.3";
+const APP_VERSION = "3.1.4";
 let isAdmin = false;
 let cachedVehicles = null;
 let cachedLocations = null;
@@ -1465,10 +1465,12 @@ function setupEventListeners() {
         const cambioModal = document.getElementById('cambio-mezzo-modal');
         const notesModal = document.getElementById('operational-notes-modal');
         const repairModal = document.getElementById('repair-request-modal');
+        const repairHistoryModal = document.getElementById('vehicle-repair-history-modal');
         if (event.target === cambioModal) cambioModal.classList.add('hidden');
         if (event.target === adminModal) adminModal.classList.add('hidden');
         if (event.target === notesModal) closeOperationalNotesModal();
         if (event.target === repairModal) closeRepairRequestModal();
+        if (event.target === repairHistoryModal) closeVehicleRepairHistoryModal();
     }
 }
 
@@ -1641,6 +1643,9 @@ window.openVehicleModal = async function (id) {
                         <div style="text-align: right; display: flex; gap: 0.5rem; flex-wrap: wrap;">
                             <button class="btn" style="background: #2563eb; color: white; padding: 0.4rem 0.8rem; font-size: 0.85rem; border: none; border-radius: 0.375rem; cursor: pointer; display: flex; align-items: center; gap: 0.4rem;" onclick="openRepairRequestModal('${vehicle.id}')" title="Compila e scarica richiesta riparazione Word">
                                 <i class="fa-solid fa-file-word"></i> Richiesta Riparazione
+                            </button>
+                            <button class="btn" style="background: #0284c7; color: white; padding: 0.4rem 0.8rem; font-size: 0.85rem; border: none; border-radius: 0.375rem; cursor: pointer; display: flex; align-items: center; gap: 0.4rem;" onclick="openVehicleRepairHistoryModal('${vehicle.id}')" title="Visualizza lo storico delle richieste di riparazione">
+                                <i class="fa-solid fa-clock-rotate-left"></i> Storico Richieste ${(vehicle.repair_requests && vehicle.repair_requests.length > 0) ? `<span style="background: rgba(255,255,255,0.25); padding: 0.1rem 0.45rem; border-radius: 9999px; font-size: 0.75rem; font-weight: 700;">${vehicle.repair_requests.length}</span>` : ''}
                             </button>
                             ${isAdmin ? `<button class="btn btn-primary" style="padding: 0.4rem 0.8rem; font-size: 0.85rem;" onclick="openVehicleForm('${vehicle.id}')"><i class="fa-solid fa-pen"></i> Modifica</button>` : ''}
                         </div>
@@ -3549,6 +3554,11 @@ window.generateAndDownloadRepairDocx = async function () {
                 if (currentOpenedVehicleId === vehicleId) {
                     await openVehicleModal(vehicleId);
                 }
+                // Se lo storico modale del veicolo è aperto, ricarica
+                const histModal = document.getElementById('vehicle-repair-history-modal');
+                if (histModal && !histModal.classList.contains('hidden')) {
+                    await openVehicleRepairHistoryModal(vehicleId);
+                }
                 // Se la tabella di gestione è aperta su riparazioni, ricarica
                 if (window.lastDataManagerTab === 'riparazioni') {
                     switchDataTable('riparazioni');
@@ -3617,8 +3627,17 @@ window.deleteRepairRequest = async function (vehicleId, reqIndex) {
                 await store.updateVehicle(vehicle);
                 alert("Richiesta eliminata con successo.");
 
+                if (cachedVehicles) {
+                    const cv = cachedVehicles.find(v => v.id === vehicleId);
+                    if (cv) cv.repair_requests = vehicle.repair_requests;
+                }
+
                 if (currentOpenedVehicleId === vehicleId) {
                     await openVehicleModal(vehicleId);
+                }
+                const histModal = document.getElementById('vehicle-repair-history-modal');
+                if (histModal && !histModal.classList.contains('hidden')) {
+                    await openVehicleRepairHistoryModal(vehicleId);
                 }
                 if (window.lastDataManagerTab === 'riparazioni') {
                     switchDataTable('riparazioni');
@@ -3629,4 +3648,102 @@ window.deleteRepairRequest = async function (vehicleId, reqIndex) {
             alert("Errore durante l'eliminazione della richiesta: " + err.message);
         }
     }, 50);
+};
+
+window.openVehicleRepairHistoryModal = async function (vehicleId) {
+    try {
+        const vehicle = (cachedVehicles && cachedVehicles.find(v => v.id === vehicleId)) || await store.getVehicleById(vehicleId);
+        if (!vehicle) {
+            alert("Dati veicolo non trovati.");
+            return;
+        }
+
+        const modal = document.getElementById('vehicle-repair-history-modal');
+        if (!modal) return;
+
+        const titleElem = document.getElementById('repair-history-modal-title');
+        const subElem = document.getElementById('repair-history-modal-subtitle');
+        const countBadge = document.getElementById('repair-history-count-badge');
+        const newBtn = document.getElementById('repair-history-modal-new-btn');
+        const bodyElem = document.getElementById('vehicle-repair-history-body');
+
+        const vehicleTitle = [vehicle.sigla, vehicle.plate].filter(Boolean).join(' - ') || vehicle.model || 'Mezzo';
+        if (titleElem) titleElem.textContent = `Storico Richieste: ${vehicleTitle}`;
+        if (subElem) subElem.textContent = `${vehicle.model || ''} • Tipo: ${vehicle.type || '-'} • Sede: ${vehicle.station || '-'}`;
+        if (newBtn) {
+            newBtn.onclick = () => openRepairRequestModal(vehicle.id);
+        }
+
+        const requests = vehicle.repair_requests || [];
+        if (countBadge) {
+            countBadge.textContent = `${requests.length} ${requests.length === 1 ? 'richiesta registrata' : 'richieste registrate'}`;
+        }
+
+        if (requests.length === 0) {
+            bodyElem.innerHTML = `
+                <div style="padding: 3rem 1rem; text-align: center; color: var(--text-secondary);">
+                    <i class="fa-solid fa-file-circle-question" style="font-size: 3rem; color: #cbd5e1; margin-bottom: 1rem; display: block;"></i>
+                    <p style="font-size: 1rem; font-weight: 600; color: #475569; margin-bottom: 0.5rem;">Nessuna richiesta di riparazione registrata per questo mezzo.</p>
+                    <p style="font-size: 0.85rem; color: #94a3b8; margin-bottom: 1.5rem;">Puoi compilare e scaricare una nuova richiesta ufficiale in formato Word con il pulsante in alto a destra.</p>
+                    <button class="btn" style="background: #2563eb; color: white; padding: 0.5rem 1rem; font-size: 0.9rem; border: none; border-radius: 0.375rem; cursor: pointer; display: inline-flex; align-items: center; gap: 0.5rem;" onclick="openRepairRequestModal('${vehicle.id}')">
+                        <i class="fa-solid fa-plus"></i> Compila Richiesta Riparazione
+                    </button>
+                </div>
+            `;
+        } else {
+            bodyElem.innerHTML = `
+                <div style="background: white; border: 1px solid var(--border-color); border-radius: 0.75rem; overflow-x: auto;">
+                    <table style="width: 100%; border-collapse: collapse; min-width: 600px;">
+                        <thead style="background: #f1f5f9; border-bottom: 1px solid var(--border-color);">
+                            <tr>
+                                <th style="text-align: left; padding: 0.75rem 1rem; font-size: 0.8rem; color: #475569; text-transform: uppercase;">Data</th>
+                                <th style="text-align: left; padding: 0.75rem 1rem; font-size: 0.8rem; color: #475569; text-transform: uppercase;">Tipologia</th>
+                                <th style="text-align: left; padding: 0.75rem 1rem; font-size: 0.8rem; color: #475569; text-transform: uppercase;">Descrizione Lavori</th>
+                                <th style="text-align: left; padding: 0.75rem 1rem; font-size: 0.8rem; color: #475569; text-transform: uppercase;">Richiedente / Driver</th>
+                                <th style="text-align: right; padding: 0.75rem 1rem; font-size: 0.8rem; color: #475569; text-transform: uppercase;">Azioni</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${requests.map((req, reqIdx) => `
+                                <tr style="border-bottom: 1px solid var(--border-color);">
+                                    <td style="padding: 0.85rem 1rem; font-weight: 700; white-space: nowrap; color: #0f172a; font-size: 0.9rem;">
+                                        <i class="fa-solid fa-calendar-day" style="color: #64748b; margin-right: 0.3rem;"></i>${req.date || '-'}
+                                    </td>
+                                    <td style="padding: 0.85rem 1rem;">
+                                        ${(req.types && req.types.length > 0) ? req.types.map(t => `<span style="background: #dbeafe; color: #1e40af; font-size: 0.75rem; font-weight: 600; padding: 0.2rem 0.5rem; border-radius: 4px; display: inline-block; margin: 0.1rem;">${t}</span>`).join('') : '<span style="color: var(--text-secondary); font-size: 0.8rem;">Non specificata</span>'}
+                                    </td>
+                                    <td style="padding: 0.85rem 1rem; max-width: 280px; font-size: 0.88rem; color: #334155; white-space: pre-wrap;">${req.description || '-'}</td>
+                                    <td style="padding: 0.85rem 1rem; font-size: 0.85rem; color: #475569;">
+                                        <strong>${req.driver || '-'}</strong>
+                                        ${(req.dept || req.phone) ? `<div style="font-size: 0.75rem; color: #64748b; margin-top: 0.15rem;">${[req.dept, req.phone].filter(Boolean).join(' • ')}</div>` : ''}
+                                    </td>
+                                    <td style="padding: 0.85rem 1rem; text-align: right; white-space: nowrap;">
+                                        <button class="btn" style="background: #2563eb; color: white; padding: 0.35rem 0.7rem; font-size: 0.8rem; margin-right: 0.35rem; border: none; border-radius: 0.3rem; cursor: pointer;" onclick="downloadSavedRepairDocx('${vehicle.id}', ${reqIdx})" title="Riscarica il file Word precompilato">
+                                            <i class="fa-solid fa-download"></i> Word
+                                        </button>
+                                        ${isAdmin ? `
+                                        <button class="btn" style="background: var(--status-to-repair); color: white; padding: 0.35rem 0.65rem; font-size: 0.8rem; border: none; border-radius: 0.3rem; cursor: pointer;" onclick="deleteRepairRequest('${vehicle.id}', ${reqIdx})" title="Elimina richiesta">
+                                            <i class="fa-solid fa-trash"></i>
+                                        </button>
+                                        ` : ''}
+                                    </td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                </div>
+            `;
+        }
+
+        modal.classList.remove('hidden');
+    } catch (err) {
+        console.error("Errore nell'apertura dello storico richieste:", err);
+    }
+};
+
+window.closeVehicleRepairHistoryModal = function () {
+    const modal = document.getElementById('vehicle-repair-history-modal');
+    if (modal) {
+        modal.classList.add('hidden');
+    }
 };
