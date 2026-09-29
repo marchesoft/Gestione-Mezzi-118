@@ -1,4 +1,4 @@
-const APP_VERSION = "3.0.7";
+const APP_VERSION = "3.0.8";
 let isAdmin = false;
 let cachedVehicles = null;
 let cachedLocations = null;
@@ -371,9 +371,9 @@ async function renderVehicleGrid(vehicles) {
         let alertHTML = '';
         const isToday = vehicle.appointment_date === todayStr;
         const isTomorrow = vehicle.appointment_date === tomorrowStr;
-        const tempDismissed = window.dismissedAlerts && window.dismissedAlerts.has(vehicle.id);
+        const alreadyAcked = (vehicle.alert_ack_date === todayStr) || isDismissedToday(vehicle.id);
 
-        const showOverlay = (isToday || isTomorrow) && !tempDismissed;
+        const showOverlay = (isToday || isTomorrow) && !alreadyAcked;
         if (showOverlay) {
             alertHTML = `
                 <div class="appointment-alert-overlay" id="alert-overlay-${vehicle.id}">
@@ -665,17 +665,64 @@ window.addTodoNote = async function (event, id) {
     }
 }
 
-// Set degli overlay chiusi temporaneamente (si resetta al riavvio)
+// Gestione overlay avviso appuntamenti con "Presa Visione" persistente per la giornata
 if (!window.dismissedAlerts) {
     window.dismissedAlerts = new Set();
 }
 
-window.dismissAlert = function (event, vehicleId) {
+function isDismissedToday(vehicleId) {
+    const todayStr = getLocalISODate();
+    if (window.dismissedAlerts && window.dismissedAlerts.has(vehicleId)) {
+        return true;
+    }
+    try {
+        const stored = JSON.parse(localStorage.getItem('app_dismissed_alerts') || '{}');
+        if (stored[vehicleId] === todayStr) {
+            return true;
+        }
+    } catch (e) {}
+    return false;
+}
+
+function setDismissedToday(vehicleId) {
+    const todayStr = getLocalISODate();
+    if (!window.dismissedAlerts) {
+        window.dismissedAlerts = new Set();
+    }
+    window.dismissedAlerts.add(vehicleId);
+    try {
+        const stored = JSON.parse(localStorage.getItem('app_dismissed_alerts') || '{}');
+        const cleaned = {};
+        for (const [id, date] of Object.entries(stored)) {
+            if (date === todayStr) {
+                cleaned[id] = date;
+            }
+        }
+        cleaned[vehicleId] = todayStr;
+        localStorage.setItem('app_dismissed_alerts', JSON.stringify(cleaned));
+    } catch (e) {
+        console.error('Error saving dismissed alert to localStorage:', e);
+    }
+}
+
+function clearDismissedAlert(vehicleId) {
+    if (window.dismissedAlerts) {
+        window.dismissedAlerts.delete(vehicleId);
+    }
+    try {
+        const stored = JSON.parse(localStorage.getItem('app_dismissed_alerts') || '{}');
+        delete stored[vehicleId];
+        localStorage.setItem('app_dismissed_alerts', JSON.stringify(stored));
+    } catch (e) {}
+}
+
+window.dismissAlert = async function (event, vehicleId) {
     if (event) {
         event.stopPropagation();
         event.preventDefault();
     }
-    window.dismissedAlerts.add(vehicleId);
+    setDismissedToday(vehicleId);
+
     const el = document.getElementById('alert-overlay-' + vehicleId);
     if (el) {
         el.style.transition = 'opacity 0.25s ease';
@@ -685,6 +732,23 @@ window.dismissAlert = function (event, vehicleId) {
             const card = document.querySelector(`.vehicle-card[data-id="${vehicleId}"]`);
             if (card) card.classList.remove('has-alert');
         }, 250);
+    }
+
+    // Persisti la presa visione per la giornata anche su DB se l'utente è autorizzato
+    const todayStr = getLocalISODate();
+    if (cachedVehicles) {
+        const v = cachedVehicles.find(item => item.id === vehicleId);
+        if (v) v.alert_ack_date = todayStr;
+    }
+    try {
+        const vehicle = await store.getVehicleById(vehicleId);
+        if (vehicle) {
+            vehicle.alert_ack_date = todayStr;
+            await store.updateVehicle(vehicle);
+        }
+    } catch (err) {
+        // Fallback silenzioso (già registrato in localStorage)
+        console.warn("Persistenza Firestore alert_ack_date non disponibile per questo utente:", err);
     }
 };
 
@@ -1992,9 +2056,7 @@ window.saveVehicleAppointment = async function (id, date, location) {
             vehicle.appointment_date = date || null;
             vehicle.appointment_location = vehicle.appointment_date ? (upper(location) || null) : null;
             vehicle.alert_ack_date = null; // Reset ack for new appointment
-            if (window.dismissedAlerts) {
-                window.dismissedAlerts.delete(id);
-            }
+            clearDismissedAlert(id);
             await store.updateVehicle(vehicle);
             alert("Appuntamento aggiornato.");
             // Refresh detail modal and dashboard
@@ -2169,6 +2231,7 @@ window.acknowledgeAppointmentAlert = async function (event, id) {
 
     try {
         const todayStr = getLocalISODate();
+        setDismissedToday(id);
 
         // 1. Optimistic Update in Cache
         if (cachedVehicles) {
