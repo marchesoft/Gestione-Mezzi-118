@@ -1,4 +1,4 @@
-const APP_VERSION = "3.2.5";
+const APP_VERSION = "3.2.6";
 let isAdmin = false;
 let cachedVehicles = null;
 let cachedLocations = null;
@@ -2677,15 +2677,19 @@ window.exportCurrentTableToCSV = async function () {
                     totalDays += stay.days;
                     if (stay.isOngoing) hasOngoing = true;
                     if (idx === 0) {
-                        lastDateIn = item.date ? formatDate(item.date) : '';
-                        lastDateOut = item.date_out ? formatDate(item.date_out) : (stay.isOngoing ? 'In corso' : '');
                         lastWorkshop = item.workshop || '';
                     }
                 });
 
                 const count = filtered.length;
-                const avg = count > 0 ? (totalDays / count).toFixed(1) : '0';
-                const statusLabel = hasOngoing ? 'In Officina' : (v.status === 'available' ? 'Disponibile' : 'Operativa');
+                const statusLabel = hasOngoing 
+                    ? `In Officina${lastWorkshop ? ' (' + lastWorkshop + ')' : ''}` 
+                    : (v.status === 'available' ? 'Disponibile' : 'Operativa');
+
+                let maxKm = parseInt(v.mileage) || 0;
+                filtered.forEach(item => {
+                    if (item.km && parseInt(item.km) > maxKm) maxKm = parseInt(item.km);
+                });
 
                 data.push({
                     sigla: v.sigla,
@@ -2695,10 +2699,8 @@ window.exportCurrentTableToCSV = async function () {
                     status: statusLabel,
                     total_days: totalDays,
                     count: count,
-                    avg_days: avg,
-                    last_date_in: lastDateIn,
-                    last_date_out: lastDateOut,
-                    last_workshop: lastWorkshop
+                    mileage: maxKm > 0 ? `${maxKm.toLocaleString()} km` : '-',
+                    mileage_month: v.mileage_month || '-'
                 });
             }
 
@@ -2743,8 +2745,8 @@ window.exportCurrentTableToCSV = async function () {
             const italianHeaders = ['Sigla', 'Targa', 'Modello', 'Data Richiesta', 'Tipologia', 'Descrizione', 'Driver / Richiedente', 'Dipartimento', 'Telefono', 'Ubicazione', 'Email'];
             csvRows.push(italianHeaders.join(';'));
         } else if (type === 'report_officina') {
-            headers = ['sigla', 'plate', 'model', 'station', 'status', 'total_days', 'count', 'avg_days', 'last_date_in', 'last_date_out', 'last_workshop'];
-            const italianHeaders = ['Mezzo (Sigla)', 'Targa', 'Modello', 'Sede', 'Stato Attuale', 'Totale Giorni in Officina', 'Numero Ricoveri', 'Media Giorni per Ricovero', 'Data Ultimo Ingresso', 'Data Ultima Uscita', 'Ultima Officina'];
+            headers = ['sigla', 'plate', 'model', 'station', 'status', 'total_days', 'count', 'mileage', 'mileage_month'];
+            const italianHeaders = ['Mezzo (Sigla)', 'Targa', 'Modello', 'Sede', 'Stato Attuale', 'Totale Giorni in Officina', 'Numero Ricoveri', 'Ultimi Km Rilevati', 'Mese Riferimento Km'];
             csvRows.push(italianHeaders.join(';'));
         } else {
             headers = Object.keys(data[0]);
@@ -3545,6 +3547,8 @@ window.switchDataTable = async function (type) {
                     station: v.station || '-',
                     status: v.status || 'unknown',
                     is_alea: !!v.is_alea,
+                    mileage: v.mileage || 0,
+                    mileage_month: v.mileage_month || '',
                     interventions: []
                 });
             });
@@ -3572,6 +3576,8 @@ window.switchDataTable = async function (type) {
                         station: '-',
                         status: 'unknown',
                         is_alea: false,
+                        mileage: i.km || 0,
+                        mileage_month: '',
                         interventions: []
                     };
                     vMap.set(fakeId, v);
@@ -3637,16 +3643,21 @@ window.switchDataTable = async function (type) {
                 fleetTotalDays += totalDays;
                 fleetTotalStays += count;
 
-                const avgDays = count > 0 ? (totalDays / count).toFixed(1) : '0';
                 const lastStay = count > 0 ? v.interventions[0] : null;
+
+                let maxKm = parseInt(v.mileage) || 0;
+                v.interventions.forEach(item => {
+                    if (item.km && parseInt(item.km) > maxKm) maxKm = parseInt(item.km);
+                });
 
                 reportRows.push({
                     ...v,
                     totalDays,
                     count,
-                    avgDays,
                     hasOngoing,
-                    lastStay
+                    lastStay,
+                    mileage: maxKm || v.mileage || 0,
+                    mileage_month: v.mileage_month || ''
                 });
             }
 
@@ -3657,7 +3668,6 @@ window.switchDataTable = async function (type) {
                 return (a.sigla || '').localeCompare(b.sigla || '');
             });
 
-            const fleetAvgDays = fleetTotalStays > 0 ? (fleetTotalDays / fleetTotalStays).toFixed(1) : '0';
             const vehiclesWithStays = reportRows.filter(r => r.count > 0 || r.hasOngoing).length;
 
             html = `
@@ -3698,15 +3708,6 @@ window.switchDataTable = async function (type) {
                         <div>
                             <div class="workshop-kpi-val">${fleetTotalStays} <span style="font-size: 0.9rem; font-weight: 500; color: #64748b;">ricoveri</span></div>
                             <div class="workshop-kpi-lbl">Ricoveri Complessivi (${vehiclesWithStays} mezzi)</div>
-                        </div>
-                    </div>
-                    <div class="workshop-kpi-card">
-                        <div class="workshop-kpi-icon" style="background: #fdf4ff; color: #c026d3;">
-                            <i class="fa-solid fa-chart-pie"></i>
-                        </div>
-                        <div>
-                            <div class="workshop-kpi-val">${fleetAvgDays} <span style="font-size: 0.9rem; font-weight: 500; color: #64748b;">gg/ricovero</span></div>
-                            <div class="workshop-kpi-lbl">Media Giorni per Ricovero</div>
                         </div>
                     </div>
                     <div class="workshop-kpi-card" style="${fleetVehiclesInShop > 0 ? 'border: 1px solid #fecaca; background: #fff5f5;' : ''}">
@@ -3754,13 +3755,11 @@ window.switchDataTable = async function (type) {
                                 <th class="col-shrink">Stato Attuale</th>
                                 <th class="col-shrink" style="text-align: center;">Giorni in Officina</th>
                                 <th class="col-shrink" style="text-align: center;">N° Ricoveri</th>
-                                <th class="col-shrink" style="text-align: center;">Media Giorni</th>
-                                <th class="col-expand">Ultimo Ricovero</th>
-                                <th class="col-actions" style="text-align: center;">Dettagli</th>
+                                <th class="col-shrink" style="text-align: right;">Ultimi Km Rilevati</th>
                             </tr>
                         </thead>
                         <tbody>
-                            ${reportRows.length === 0 ? '<tr><td colspan="9" style="text-align:center; padding: 2rem; color: var(--text-secondary);">Nessun dato trovato per i criteri selezionati.</td></tr>' : ''}
+                            ${reportRows.length === 0 ? '<tr><td colspan="7" style="text-align:center; padding: 2rem; color: var(--text-secondary);">Nessun dato trovato per i criteri selezionati.</td></tr>' : ''}
                             ${reportRows.map(row => {
                                 let badgeClass = 'badge-days-zero';
                                 if (row.hasOngoing) badgeClass = 'badge-days-ongoing';
@@ -3771,12 +3770,11 @@ window.switchDataTable = async function (type) {
                                 const isOnlyZero = row.count === 0 && !row.hasOngoing;
                                 const trStyle = isOnlyZero ? 'style="display: none;" class="workshop-row-zero"' : 'class="workshop-row"';
 
-                                let lastStayText = '-';
-                                if (row.lastStay) {
-                                    const inStr = formatDate(row.lastStay.date);
-                                    const outStr = row.lastStay.date_out ? formatDate(row.lastStay.date_out) : '<span style="color:#dc2626; font-weight:700;"><i class="fa-solid fa-spinner fa-spin"></i> In corso</span>';
-                                    lastStayText = `<strong>${inStr} &rarr; ${outStr}</strong> (${row.lastStay.workshop || 'Officina non spec.'})`;
-                                }
+                                const currentWorkshop = (row.lastStay && row.lastStay.workshop) ? row.lastStay.workshop : 'Officina';
+
+                                const kmVal = parseInt(row.mileage) || 0;
+                                const kmText = kmVal > 0 ? `${kmVal.toLocaleString()} km` : '-';
+                                const monthText = row.mileage_month ? `<div style="font-size: 0.75rem; color: #64748b; font-weight: 500;">${row.mileage_month}</div>` : '';
 
                                 return `
                                     <tr ${trStyle} id="w-row-${row.id}" data-search="${(row.sigla + ' ' + row.plate + ' ' + row.model + ' ' + row.station + ' ' + (row.lastStay ? row.lastStay.workshop : '')).toLowerCase()}">
@@ -3790,7 +3788,7 @@ window.switchDataTable = async function (type) {
                                         <td class="col-shrink">
                                             ${row.hasOngoing ? `
                                                 <span style="background: #fee2e2; color: #dc2626; border: 1px solid #fecaca; padding: 0.25rem 0.6rem; border-radius: 9999px; font-size: 0.75rem; font-weight: 700; display: inline-flex; align-items: center; gap: 0.3rem;">
-                                                    <i class="fa-solid fa-triangle-exclamation"></i> In Officina
+                                                    <i class="fa-solid fa-triangle-exclamation"></i> In Officina (${currentWorkshop})
                                                 </span>
                                             ` : `
                                                 <span style="background: #f0fdf4; color: #16a34a; border: 1px solid #bbf7d0; padding: 0.25rem 0.6rem; border-radius: 9999px; font-size: 0.75rem; font-weight: 600; display: inline-flex; align-items: center; gap: 0.3rem;">
@@ -3807,77 +3805,11 @@ window.switchDataTable = async function (type) {
                                         <td class="col-shrink" style="text-align: center; font-weight: 700; font-size: 0.9rem; color: #1e293b;">
                                             ${row.count}
                                         </td>
-                                        <td class="col-shrink" style="text-align: center; font-size: 0.85rem; font-weight: 600; color: #475569;">
-                                            ${row.avgDays} gg
-                                        </td>
-                                        <td class="col-expand" style="font-size: 0.85rem; color: #334155;">
-                                            ${lastStayText}
-                                        </td>
-                                        <td class="col-actions" style="text-align: center;">
-                                            ${row.count > 0 ? `
-                                                <button class="btn-workshop-details" onclick="window.toggleWorkshopRow('${row.id}')" title="Visualizza tutti i ricoveri di ${row.sigla}">
-                                                    <span>Dettagli (${row.count})</span>
-                                                    <i class="fa-solid fa-chevron-down" id="chevron-${row.id}"></i>
-                                                </button>
-                                            ` : '<span style="color: #94a3b8; font-size: 0.8rem;">-</span>'}
+                                        <td class="col-shrink" style="text-align: right; white-space: nowrap;">
+                                            <div style="font-weight: 700; color: var(--primary-color); font-size: 0.95rem;">${kmText}</div>
+                                            ${monthText}
                                         </td>
                                     </tr>
-
-                                    <!-- Accordion Sub-Row with Detailed Stays -->
-                                    ${row.count > 0 ? `
-                                        <tr id="w-detail-${row.id}" class="workshop-detail-row" style="display: none;">
-                                            <td colspan="9" style="padding: 0; border-bottom: 2px solid #cbd5e1;">
-                                                <div class="workshop-detail-content">
-                                                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem;">
-                                                        <div style="font-weight: 700; font-size: 0.9rem; color: #4338ca; display: flex; align-items: center; gap: 0.4rem;">
-                                                            <i class="fa-solid fa-wrench"></i> Storico Singoli Ricoveri per ${row.sigla} (${row.plate})
-                                                        </div>
-                                                        <div style="font-size: 0.8rem; color: #64748b;">
-                                                            Totale permanenza: <strong>${row.totalDays} giorni</strong> su <strong>${row.count}</strong> interventi
-                                                        </div>
-                                                    </div>
-                                                    <div style="overflow-x: auto; background: white; border-radius: 0.5rem; border: 1px solid #e2e8f0;">
-                                                        <table style="width: 100%; border-collapse: collapse; font-size: 0.82rem;">
-                                                            <thead>
-                                                                <tr style="background: #f1f5f9; border-bottom: 1px solid #cbd5e1;">
-                                                                    <th style="padding: 0.5rem 0.75rem; text-align: left; color: #475569; font-weight: 700;">Data Entrata</th>
-                                                                    <th style="padding: 0.5rem 0.75rem; text-align: left; color: #475569; font-weight: 700;">Data Uscita</th>
-                                                                    <th style="padding: 0.5rem 0.75rem; text-align: center; color: #475569; font-weight: 700;">Permanenza</th>
-                                                                    <th style="padding: 0.5rem 0.75rem; text-align: left; color: #475569; font-weight: 700;">Officina</th>
-                                                                    <th style="padding: 0.5rem 0.75rem; text-align: left; color: #475569; font-weight: 700;">KM Ingresso</th>
-                                                                    <th style="padding: 0.5rem 0.75rem; text-align: left; color: #475569; font-weight: 700;">Descrizione / Lavori Eseguiti</th>
-                                                                    ${isAdmin ? '<th style="padding: 0.5rem 0.75rem; text-align: right; color: #475569; font-weight: 700;">Azioni</th>' : ''}
-                                                                </tr>
-                                                            </thead>
-                                                            <tbody>
-                                                                ${row.interventions.map((stay, idx) => `
-                                                                    <tr style="border-bottom: 1px solid #f1f5f9; ${stay.isOngoing ? 'background: #fffbeb;' : ''}">
-                                                                        <td style="padding: 0.5rem 0.75rem; font-weight: 600; white-space: nowrap; color: #0f172a;">${formatDate(stay.date)}</td>
-                                                                        <td style="padding: 0.5rem 0.75rem; font-weight: 600; white-space: nowrap; color: #0f172a;">${stay.date_out ? formatDate(stay.date_out) : '<span style="color:#dc2626; font-weight:700;"><i class="fa-solid fa-spinner fa-spin"></i> In corso</span>'}</td>
-                                                                        <td style="padding: 0.5rem 0.75rem; text-align: center;">
-                                                                            <span class="badge-days ${stay.isOngoing ? 'badge-days-ongoing' : (stay.days > 7 ? 'badge-days-high' : 'badge-days-low')}" style="font-size: 0.75rem; padding: 0.15rem 0.5rem;">
-                                                                                ${stay.days} ${stay.days === 1 ? 'giorno' : 'giorni'}
-                                                                            </span>
-                                                                        </td>
-                                                                        <td style="padding: 0.5rem 0.75rem; font-weight: 600; color: #334155;">${stay.workshop}</td>
-                                                                        <td style="padding: 0.5rem 0.75rem; color: var(--primary-color); font-weight: 600;">${stay.km ? parseInt(stay.km).toLocaleString() + ' km' : '-'}</td>
-                                                                        <td style="padding: 0.5rem 0.75rem; color: #334155; line-height: 1.3;">${stay.description}</td>
-                                                                        ${isAdmin ? `
-                                                                            <td style="padding: 0.5rem 0.75rem; text-align: right; white-space: nowrap;">
-                                                                                <button onclick="editInterventionHandler('${stay.id}')" style="cursor: pointer; background: none; border: none; color: var(--primary-color); font-size: 0.95rem; margin-right: 0.5rem;" title="Modifica intervento">
-                                                                                    <i class="fa-solid fa-pen"></i>
-                                                                                </button>
-                                                                            </td>
-                                                                        ` : ''}
-                                                                    </tr>
-                                                                `).join('')}
-                                                            </tbody>
-                                                        </table>
-                                                    </div>
-                                                </div>
-                                            </td>
-                                        </tr>
-                                    ` : ''}
                                 `;
                             }).join('')}
                         </tbody>
