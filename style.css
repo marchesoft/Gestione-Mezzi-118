@@ -144,6 +144,16 @@ input[type="date"] {
     background-color: #059669;
 }
 
+.btn-repair-request {
+    background-color: #16a34a !important;
+    color: white !important;
+    transition: background-color 0.2s;
+}
+
+.btn-repair-request:hover {
+    background-color: #15803d !important;
+}
+
 /* Dashboard */
 .view-title {
     font-size: 1.75rem;
