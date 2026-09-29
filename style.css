@@ -984,6 +984,10 @@ body.is-admin #admin-hint-text {
     z-index: 2000;
 }
 
+#repair-request-modal {
+    z-index: 2500;
+}
+
 .modal-content {
     background-color: #FAF8F3;
     width: 90%;

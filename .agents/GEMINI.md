@@ -1,16 +1,16 @@
-# Regole e Contesto del Progetto (v3.0.8)
+# Regole e Contesto del Progetto (v3.0.9)
 
-Questo file definisce le linee guida e lo stato di salvataggio del progetto per garantire la coerenza con la versione **3.0.8**.
+Questo file definisce le linee guida e lo stato di salvataggio del progetto per garantire la coerenza con la versione **3.0.9**.
 
-## Stato di Riferimento (v3.0.8)
+## Stato di Riferimento (v3.0.9)
 
 1. **Gestione Versioni**:
-   - La versione attuale di riferimento è **3.0.8**.
-   - Qualsiasi modifica futura richiede l'avanzamento della versione (es. `3.0.9` o successive) in `app.js` (`const APP_VERSION = "X.Y.Z";`) e in `index.html` (header).
+   - La versione attuale di riferimento è **3.0.9**.
+   - Qualsiasi modifica futura richiede l'avanzamento della versione (es. `3.1.0` o successive) in `app.js` (`const APP_VERSION = "X.Y.Z";`) e in `index.html` (header).
 
 2. **Bypass della Cache (Cache-Busting)**:
    - I file `app.js` e `style.css` sono importati in `index.html` con il parametro di versione `?v=X.Y.Z` per forzare il caricamento immediato degli aggiornamenti sui dispositivi client (specialmente mobili).
-   - Esempio: `<link rel="stylesheet" href="style.css?v=3.0.8">` e `<script src="app.js?v=3.0.8"></script>`.
+   - Esempio: `<link rel="stylesheet" href="style.css?v=3.0.9">` e `<script src="app.js?v=3.0.9"></script>`.
    - Ad ogni cambio di codice, aggiornare questa stringa con la nuova versione dell'applicazione.
 
 3. **Integrazione Git e GitHub**:
@@ -33,3 +33,9 @@ Questo file definisce le linee guida e lo stato di salvataggio del progetto per 
    - **Segna le cose da fare**: Il testo inserito dall'amministratore (nella textarea diviso da invio) viene convertito in array per riga ed inserito in singoli blocchi con bordo grigio ardesia nella cornice griglia.
    - **Pallino Controllo**: L'indicatore di controllo mensile sulla card è giallo fluo (#ffff00) con contorno bianco solido di 2px (classe .monthly-check-dot in style.css), per essere visibile anche sullo sfondo verde dello stato "disponibile" (#008000).
    - **Gestione Database**: Lo storico di tutti i controlli mensili è visibile, modificabile ed eliminabile esclusivamente nella scheda tab "Controlli" del modal "Gestione Database", provvisto di esportazione in formato Excel/CSV. I controlli sono visualizzati raggruppati cronologicamente per mese ed anno con divisori colorati e mostrano le colonne Esecutore e Posizione Attuale.
+
+7. **Richiesta di Riparazione Word (.docx)**:
+   - È presente un pulsante blu **Richiesta Riparazione** nei dettagli di ciascun veicolo (`openVehicleModal`).
+   - Cliccandolo si apre un modal con i dati del veicolo precompilati (targa, ubicazione, data corrente, richiedente/driver, dipartimento, recapiti), le caselle di controllo per tipologia di intervento (Meccanica/Elettrauto, Gommista, Carrozzeria, Lavaggio, Sinistro, Soccorso Stradale) e un'area di testo per descrivere il guasto o i lavori.
+   - Il documento Word (`.docx`) generato e scaricato sul PC è identico al template ufficiale `All.1_Richiesta di Riparazione.docx`, preservando tabelle, loghi, caratteri e formattazione, e viene salvato con il nome del mezzo (es. `<SIGLA_MEZZO>.docx`).
+   - La generazione avviene interamente client-side tramite `JSZip` e il template incorporato in `repair_template_base64.js`.

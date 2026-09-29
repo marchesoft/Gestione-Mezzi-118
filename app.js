@@ -1,4 +1,4 @@
-const APP_VERSION = "3.0.8";
+const APP_VERSION = "3.0.9";
 let isAdmin = false;
 let cachedVehicles = null;
 let cachedLocations = null;
@@ -1464,9 +1464,11 @@ function setupEventListeners() {
         if (event.target === locModal) locModal.classList.add('hidden');
         const cambioModal = document.getElementById('cambio-mezzo-modal');
         const notesModal = document.getElementById('operational-notes-modal');
+        const repairModal = document.getElementById('repair-request-modal');
         if (event.target === cambioModal) cambioModal.classList.add('hidden');
         if (event.target === adminModal) adminModal.classList.add('hidden');
         if (event.target === notesModal) closeOperationalNotesModal();
+        if (event.target === repairModal) closeRepairRequestModal();
     }
 }
 
@@ -1636,9 +1638,12 @@ window.openVehicleModal = async function (id) {
                                 </div>
                             </div>
                         </div>
-                        ${isAdmin ? `<div style="text-align: right; display: flex; gap: 0.5rem; flex-wrap: wrap;">
-                            <button class="btn btn-primary" style="padding: 0.4rem 0.8rem; font-size: 0.85rem;" onclick="openVehicleForm('${vehicle.id}')"><i class="fa-solid fa-pen"></i> Modifica</button>
-                        </div>` : ''}
+                        <div style="text-align: right; display: flex; gap: 0.5rem; flex-wrap: wrap;">
+                            <button class="btn" style="background: #2563eb; color: white; padding: 0.4rem 0.8rem; font-size: 0.85rem; border: none; border-radius: 0.375rem; cursor: pointer; display: flex; align-items: center; gap: 0.4rem;" onclick="openRepairRequestModal('${vehicle.id}')" title="Compila e scarica richiesta riparazione Word">
+                                <i class="fa-solid fa-file-word"></i> Richiesta Riparazione
+                            </button>
+                            ${isAdmin ? `<button class="btn btn-primary" style="padding: 0.4rem 0.8rem; font-size: 0.85rem;" onclick="openVehicleForm('${vehicle.id}')"><i class="fa-solid fa-pen"></i> Modifica</button>` : ''}
+                        </div>
                     </div>
 
                     <div class="form-grid-3" style="margin-bottom: 0.75rem; background: #f8fafc; padding: 0.5rem 1rem; border-radius: 0.75rem;">
@@ -3021,3 +3026,268 @@ window.saveAndCloseOperationalNotes = async function () {
         alert("Errore durante il salvataggio delle note.");
     }
 }
+
+// ==========================================
+// MODULO E DOWNLOAD RICHIESTA RIPARAZIONE (WORD .DOCX)
+// ==========================================
+
+window.openRepairRequestModal = async function (vehicleId) {
+    try {
+        const vehicle = await store.getVehicleById(vehicleId);
+        if (!vehicle) {
+            alert("Dati veicolo non trovati.");
+            return;
+        }
+
+        // Targa e tipo veicolo
+        const vehicleTypeStr = (vehicle.type || '').toUpperCase();
+        const plateStr = (vehicle.plate || '').toUpperCase();
+        const siglaStr = (vehicle.sigla || '').toUpperCase();
+
+        let targaValue = '';
+        if (vehicleTypeStr) targaValue += vehicleTypeStr + '  ';
+        if (plateStr) targaValue += plateStr + '  ';
+        if (siglaStr) targaValue += siglaStr;
+        document.getElementById('repair-targa').value = targaValue.trim();
+
+        // Ubicazione
+        document.getElementById('repair-station').value = (vehicle.station || 'FERRARA').toUpperCase();
+
+        // Data corrente DD/MM/YYYY
+        const now = new Date();
+        const dd = String(now.getDate()).padStart(2, '0');
+        const mm = String(now.getMonth() + 1).padStart(2, '0');
+        const yyyy = now.getFullYear();
+        document.getElementById('repair-date').value = `${dd}/${mm}/${yyyy}`;
+
+        // Contatti e richiedente di default
+        document.getElementById('repair-dept').value = 'LOGISTICA 118';
+        document.getElementById('repair-driver').value = 'MARSILI PAOLO – GAMBERONI FEDERICO – MARCHESINI LUCA';
+        document.getElementById('repair-phone').value = '3209229345';
+        document.getElementById('repair-email').value = 'logistica118fe@ausl.fe.it';
+
+        // Checkbox reset
+        document.getElementById('repair-chk-meccanica').checked = false;
+        document.getElementById('repair-chk-gommista').checked = false;
+        document.getElementById('repair-chk-carrozzeria').checked = false;
+        document.getElementById('repair-chk-lavaggio').checked = false;
+        document.getElementById('repair-chk-sinistro').checked = false;
+        document.getElementById('repair-chk-soccorso').checked = false;
+
+        // Descrizione: precarica eventuali problematiche note del mezzo o lascia vuoto
+        document.getElementById('repair-description').value = vehicle.notes || '';
+
+        // Nome file predefinito corrispondente al nome del mezzo (sigla, modello o targa)
+        const defaultFileName = vehicle.sigla || vehicle.model || vehicle.plate || 'Richiesta_Riparazione';
+        document.getElementById('repair-filename').value = defaultFileName;
+
+        // Mostra modal
+        const modal = document.getElementById('repair-request-modal');
+        if (modal) {
+            modal.classList.remove('hidden');
+        }
+    } catch (err) {
+        console.error("Errore nell'apertura del modulo richiesta riparazione:", err);
+    }
+};
+
+window.closeRepairRequestModal = function () {
+    const modal = document.getElementById('repair-request-modal');
+    if (modal) {
+        modal.classList.add('hidden');
+    }
+};
+
+function formatDescriptionLines(text, maxLines = 8, maxCharsPerLine = 65) {
+    if (!text) return [];
+    const rawParagraphs = text.split('\n');
+    let resultLines = [];
+
+    for (const para of rawParagraphs) {
+        const trimmed = para.trim();
+        if (!trimmed) {
+            resultLines.push('');
+            continue;
+        }
+        if (trimmed.length <= maxCharsPerLine) {
+            resultLines.push(trimmed);
+        } else {
+            // Word wrap
+            const words = trimmed.split(/\s+/);
+            let currentLine = '';
+            for (const w of words) {
+                if ((currentLine + (currentLine ? ' ' : '') + w).length <= maxCharsPerLine) {
+                    currentLine += (currentLine ? ' ' : '') + w;
+                } else {
+                    if (currentLine) resultLines.push(currentLine);
+                    currentLine = w;
+                }
+            }
+            if (currentLine) resultLines.push(currentLine);
+        }
+    }
+
+    if (resultLines.length > maxLines) {
+        // Unisci le righe in eccesso sull'ultima riga disponibile per non perdere testo
+        const head = resultLines.slice(0, maxLines - 1);
+        const tail = resultLines.slice(maxLines - 1).filter(s => s.trim() !== '').join(' ');
+        head.push(tail);
+        resultLines = head;
+    }
+
+    return resultLines;
+}
+
+window.generateAndDownloadRepairDocx = async function () {
+    try {
+        if (!window.JSZip) {
+            alert("Libreria JSZip non caricata. Ricarica la pagina.");
+            return;
+        }
+        if (!window.REPAIR_TEMPLATE_BASE64) {
+            alert("Template del documento non trovato. Ricarica la pagina.");
+            return;
+        }
+
+        // 1. Carica il template base64
+        const zip = await JSZip.loadAsync(window.REPAIR_TEMPLATE_BASE64, { base64: true });
+
+        // 2. Leggi word/document.xml
+        const docXmlStr = await zip.file("word/document.xml").async("string");
+        const parser = new DOMParser();
+        const xmlDoc = parser.parseFromString(docXmlStr, "application/xml");
+
+        const nsW = "http://schemas.openxmlformats.org/wordprocessingml/2006/main";
+        const tables = xmlDoc.getElementsByTagNameNS ? xmlDoc.getElementsByTagNameNS(nsW, "tbl") : xmlDoc.getElementsByTagName("w:tbl");
+
+        if (tables.length < 3) {
+            throw new Error("Struttura del documento Word non valida (meno di 3 tabelle trovate).");
+        }
+
+        // Valori campi informativi
+        const driver = document.getElementById('repair-driver').value.trim();
+        const dept = document.getElementById('repair-dept').value.trim();
+        const phone = document.getElementById('repair-phone').value.trim();
+        const targa = document.getElementById('repair-targa').value.trim();
+        const station = document.getElementById('repair-station').value.trim();
+        const email = document.getElementById('repair-email').value.trim();
+        const dateVal = document.getElementById('repair-date').value.trim();
+
+        // 3. Popola Tabella 0 (Info veicolo e richiedente)
+        const infoValues = [driver, dept, phone, targa, station, email, dateVal];
+        const tbl0 = tables[0];
+        const tbl0Rows = tbl0.getElementsByTagNameNS ? tbl0.getElementsByTagNameNS(nsW, "tr") : tbl0.getElementsByTagName("w:tr");
+
+        for (let i = 0; i < infoValues.length && i < tbl0Rows.length; i++) {
+            const row = tbl0Rows[i];
+            const cells = row.getElementsByTagNameNS ? row.getElementsByTagNameNS(nsW, "tc") : row.getElementsByTagName("w:tc");
+            if (cells.length >= 2) {
+                const tc1 = cells[1];
+                const wtNodes = tc1.getElementsByTagNameNS ? tc1.getElementsByTagNameNS(nsW, "t") : tc1.getElementsByTagName("w:t");
+                if (wtNodes.length > 0) {
+                    wtNodes[0].textContent = infoValues[i];
+                }
+            }
+        }
+
+        // 4. Popola Tabella 1 (Caselle di controllo Wingdings)
+        const checks = [
+            document.getElementById('repair-chk-meccanica').checked,
+            document.getElementById('repair-chk-gommista').checked,
+            document.getElementById('repair-chk-carrozzeria').checked,
+            document.getElementById('repair-chk-lavaggio').checked,
+            document.getElementById('repair-chk-sinistro').checked,
+            document.getElementById('repair-chk-soccorso').checked
+        ];
+
+        const tbl1 = tables[1];
+        const tbl1Rows = tbl1.getElementsByTagNameNS ? tbl1.getElementsByTagNameNS(nsW, "tr") : tbl1.getElementsByTagName("w:tr");
+        for (let i = 0; i < checks.length && i < tbl1Rows.length; i++) {
+            const row = tbl1Rows[i];
+            const cells = row.getElementsByTagNameNS ? row.getElementsByTagNameNS(nsW, "tc") : row.getElementsByTagName("w:tc");
+            if (cells.length >= 2) {
+                const tc1 = cells[1];
+                const wtNodes = tc1.getElementsByTagNameNS ? tc1.getElementsByTagNameNS(nsW, "t") : tc1.getElementsByTagName("w:t");
+                if (wtNodes.length > 0) {
+                    // \uF0FE = casella selezionata con spunta, \uF0A8 = casella vuota (font Wingdings)
+                    wtNodes[0].textContent = checks[i] ? "\uF0FE" : "\uF0A8";
+                }
+            }
+        }
+
+        // 5. Popola Tabella 2 (Descrizione del guasto su righe)
+        const descRaw = document.getElementById('repair-description').value;
+        const descLines = formatDescriptionLines(descRaw, 8, 65);
+
+        const tbl2 = tables[2];
+        const tbl2Rows = tbl2.getElementsByTagNameNS ? tbl2.getElementsByTagNameNS(nsW, "tr") : tbl2.getElementsByTagName("w:tr");
+        for (let i = 0; i < 8 && i < tbl2Rows.length; i++) {
+            const row = tbl2Rows[i];
+            const cells = row.getElementsByTagNameNS ? row.getElementsByTagNameNS(nsW, "tc") : row.getElementsByTagName("w:tc");
+            if (cells.length >= 2) {
+                const tc1 = cells[1];
+                const pNodes = tc1.getElementsByTagNameNS ? tc1.getElementsByTagNameNS(nsW, "p") : tc1.getElementsByTagName("w:p");
+                if (pNodes.length > 0) {
+                    const p = pNodes[0];
+                    // Rimuovi eventuali run già presenti
+                    const existingRuns = Array.from(p.getElementsByTagNameNS ? p.getElementsByTagNameNS(nsW, "r") : p.getElementsByTagName("w:r"));
+                    existingRuns.forEach(r => r.parentNode.removeChild(r));
+
+                    // Se abbiamo testo per questa riga, aggiungiamo il run formattato a 12pt
+                    if (i < descLines.length && descLines[i] !== '') {
+                        const rElem = xmlDoc.createElementNS(nsW, "w:r");
+                        const rPrElem = xmlDoc.createElementNS(nsW, "w:rPr");
+                        const szElem = xmlDoc.createElementNS(nsW, "w:sz");
+                        szElem.setAttributeNS(nsW, "w:val", "24");
+                        const szCsElem = xmlDoc.createElementNS(nsW, "w:szCs");
+                        szCsElem.setAttributeNS(nsW, "w:val", "24");
+                        rPrElem.appendChild(szElem);
+                        rPrElem.appendChild(szCsElem);
+                        rElem.appendChild(rPrElem);
+
+                        const tElem = xmlDoc.createElementNS(nsW, "w:t");
+                        tElem.setAttribute("xml:space", "preserve");
+                        tElem.textContent = descLines[i];
+                        rElem.appendChild(tElem);
+
+                        p.appendChild(rElem);
+                    }
+                }
+            }
+        }
+
+        // 6. Serializza l'XML aggiornato
+        const serializer = new XMLSerializer();
+        const updatedXmlStr = serializer.serializeToString(xmlDoc);
+        zip.file("word/document.xml", updatedXmlStr);
+
+        // 7. Genera il blob del file .docx
+        const blob = await zip.generateAsync({
+            type: "blob",
+            mimeType: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+            compression: "DEFLATE"
+        });
+
+        // 8. Determina il nome file specificato o calcolato
+        let filename = (document.getElementById('repair-filename').value || 'Richiesta_Riparazione').trim();
+        filename = filename.replace(/[\\/:*?"<>|]/g, "_");
+        if (!filename.toLowerCase().endsWith(".docx")) {
+            filename += ".docx";
+        }
+
+        // 9. Download automatico nel browser
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+
+        closeRepairRequestModal();
+    } catch (err) {
+        console.error("Errore nella generazione del file Word:", err);
+        alert("Si è verificato un errore durante la creazione del documento Word: " + err.message);
+    }
+};
