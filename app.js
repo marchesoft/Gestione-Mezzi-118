@@ -1,4 +1,4 @@
-const APP_VERSION = "3.2.0";
+const APP_VERSION = "3.2.1";
 let isAdmin = false;
 let cachedVehicles = null;
 let cachedLocations = null;
@@ -1758,6 +1758,9 @@ window.openVehicleModal = async function (id) {
                         <div style="text-align: right; display: flex; gap: 0.5rem; flex-wrap: wrap;">
                             <button class="btn btn-repair-request" style="background: #16a34a; color: white; padding: 0.4rem 0.8rem; font-size: 0.85rem; border: none; border-radius: 0.375rem; cursor: pointer; display: flex; align-items: center; gap: 0.4rem;" onclick="openRepairRequestModal('${vehicle.id}')" title="Compila e scarica richiesta riparazione Word">
                                 <i class="fa-solid fa-file-word"></i> Richiesta Riparazione
+                            </button>
+                            <button class="btn btn-wash-request" style="background: #059669; color: white; padding: 0.4rem 0.8rem; font-size: 0.85rem; border: none; border-radius: 0.375rem; cursor: pointer; display: flex; align-items: center; gap: 0.4rem;" onclick="openWashModal('${vehicle.id}')" title="Compila e scarica modulo lavaggio Word (stampato)">
+                                <i class="fa-solid fa-shower"></i> Modulo Lavaggio
                             </button>
                             <button class="btn" style="background: #0284c7; color: white; padding: 0.4rem 0.8rem; font-size: 0.85rem; border: none; border-radius: 0.375rem; cursor: pointer; display: flex; align-items: center; gap: 0.4rem;" onclick="openVehicleRepairHistoryModal('${vehicle.id}')" title="Visualizza lo storico delle richieste di riparazione">
                                 <i class="fa-solid fa-clock-rotate-left"></i> Storico Richieste ${(vehicle.repair_requests && vehicle.repair_requests.length > 0) ? `<span style="background: rgba(255,255,255,0.25); padding: 0.1rem 0.45rem; border-radius: 9999px; font-size: 0.75rem; font-weight: 700;">${vehicle.repair_requests.length}</span>` : ''}
@@ -3707,7 +3710,7 @@ window.createAleaRepairDocxBlob = async function (data) {
     // 3. Popola Row 3 (Targa e Modello Veicolo)
     let aleaVehicleStr = (data.targa || '').trim();
     if (aleaVehicleStr) {
-        if (!aleaVehicleStr.toUpperCase().includes('ALEA') && !aleaVehicleStr.toUpperCase().includes('ALIA')) {
+        if (!data.is_wash && !aleaVehicleStr.toUpperCase().includes('ALEA') && !aleaVehicleStr.toUpperCase().includes('ALIA')) {
             if (aleaVehicleStr.toUpperCase().startsWith('AMBULANZA')) {
                 aleaVehicleStr = aleaVehicleStr.replace(/^AMBULANZA\s*/i, 'AMBULANZA ALEA ');
             } else {
@@ -3732,11 +3735,17 @@ window.createAleaRepairDocxBlob = async function (data) {
         }
     }
 
-    // 4. Popola Row 5 (Ditta / Officina se specificata)
-    if (rows.length > 5 && data.station) {
+    // 4. Popola Row 5 (Ditta / Officina e Km se specificata)
+    if (rows.length > 5) {
         const r5 = rows[5];
         const cells5 = r5.getElementsByTagNameNS ? r5.getElementsByTagNameNS(nsW, "tc") : r5.getElementsByTagName("w:tc");
-        if (cells5.length >= 2) {
+        if (cells5.length >= 1 && data.km) {
+            const wtKm = cells5[0].getElementsByTagNameNS ? cells5[0].getElementsByTagNameNS(nsW, "t") : cells5[0].getElementsByTagName("w:t");
+            if (wtKm.length > 0) {
+                wtKm[0].textContent = 'Km:  ' + data.km;
+            }
+        }
+        if (cells5.length >= 2 && data.station) {
             const wtNodes5 = cells5[1].getElementsByTagNameNS ? cells5[1].getElementsByTagNameNS(nsW, "t") : cells5[1].getElementsByTagName("w:t");
             if (wtNodes5.length >= 2) {
                 wtNodes5[1].textContent = data.station;
@@ -3836,6 +3845,28 @@ window.createAleaRepairDocxBlob = async function (data) {
                     if (parts.length === 3) {
                         datePr[0].setAttributeNS(nsW, "w:fullDate", `${parts[2]}-${parts[1]}-${parts[0]}T00:00:00Z`);
                     }
+                }
+            }
+        }
+    }
+
+    // 6b. Aggiorna tutti i controlli data nel documento (es. data consegna e data ritiro)
+    if (data.date) {
+        const allSdts = xmlDoc.getElementsByTagNameNS ? xmlDoc.getElementsByTagNameNS(nsW, "sdt") : xmlDoc.getElementsByTagName("w:sdt");
+        for (let i = 0; i < allSdts.length; i++) {
+            const sdt = allSdts[i];
+            const datePr = sdt.getElementsByTagNameNS ? sdt.getElementsByTagNameNS(nsW, "date") : sdt.getElementsByTagName("w:date");
+            if (datePr.length > 0) {
+                const sdtContent = sdt.getElementsByTagNameNS ? sdt.getElementsByTagNameNS(nsW, "sdtContent") : sdt.getElementsByTagName("w:sdtContent");
+                if (sdtContent.length > 0) {
+                    const wtNodes = sdtContent[0].getElementsByTagNameNS ? sdtContent[0].getElementsByTagNameNS(nsW, "t") : sdtContent[0].getElementsByTagName("w:t");
+                    if (wtNodes.length > 0) {
+                        wtNodes[0].textContent = data.date;
+                    }
+                }
+                const parts = data.date.split('/');
+                if (parts.length === 3) {
+                    datePr[0].setAttributeNS(nsW, "w:fullDate", `${parts[2]}-${parts[1]}-${parts[0]}T00:00:00Z`);
                 }
             }
         }
@@ -4179,5 +4210,135 @@ window.closeVehicleRepairHistoryModal = function () {
     const modal = document.getElementById('vehicle-repair-history-modal');
     if (modal) {
         modal.classList.add('hidden');
+    }
+};
+
+// ==========================================
+// MODULO LAVAGGIO ESTERNO (STAMPATO WORD PARTS & SERVICES)
+// NOTA: Non viene salvato nello storico richieste, serve unicamente come stampato da compilare
+// ==========================================
+window.openWashModal = async function (vehicleId) {
+    try {
+        if (!cachedVehicles) {
+            cachedVehicles = await store.getVehicles();
+        }
+        const vehicle = vehicleId ? (cachedVehicles.find(v => v.id === vehicleId) || await store.getVehicleById(vehicleId)) : cachedVehicles[0];
+        if (!vehicle) {
+            alert("Dati veicolo non trovati.");
+            return;
+        }
+        window.currentWashVehicleId = vehicle.id;
+
+        // Formato veicolo come nello stampato ufficiale: AMBULANZA <TARGA> <SIGLA>
+        const parts = ['AMBULANZA'];
+        if (vehicle.plate) parts.push(vehicle.plate);
+        if (vehicle.sigla) parts.push(vehicle.sigla);
+        const vehicleStr = parts.join(' ');
+
+        const displayElem = document.getElementById('wash-vehicle-display');
+        if (displayElem) displayElem.value = vehicleStr;
+
+        const stationElem = document.getElementById('wash-station');
+        if (stationElem) stationElem.value = 'CAVAGION';
+
+        const kmElem = document.getElementById('wash-km');
+        if (kmElem) kmElem.value = vehicle.km || '';
+
+        const dateElem = document.getElementById('wash-date');
+        if (dateElem) dateElem.value = getLocalISODate();
+
+        const descElem = document.getElementById('wash-description');
+        if (descElem) descElem.value = 'LAVAGGIO ESTERNO';
+
+        const driverElem = document.getElementById('wash-driver');
+        if (driverElem) driverElem.value = 'MARSILI PAOLO – GAMBERONI FEDERICO – MARCHESINI LUCA';
+
+        const phoneElem = document.getElementById('wash-phone');
+        if (phoneElem) phoneElem.value = '3209229345';
+
+        const emailElem = document.getElementById('wash-email');
+        if (emailElem) emailElem.value = 'logistica118fe@ausl.fe.it';
+
+        // Nome file predefinito: "modulo lavaggio <SIGLA> <TARGA>"
+        const fileParts = ['modulo lavaggio'];
+        if (vehicle.sigla) fileParts.push(vehicle.sigla);
+        if (vehicle.plate) fileParts.push(vehicle.plate);
+        const filenameElem = document.getElementById('wash-filename');
+        if (filenameElem) filenameElem.value = fileParts.join(' ');
+
+        const modal = document.getElementById('wash-modal');
+        if (modal) modal.classList.remove('hidden');
+    } catch (err) {
+        console.error("Errore nell'apertura del modulo lavaggio:", err);
+    }
+};
+
+window.closeWashModal = function () {
+    const modal = document.getElementById('wash-modal');
+    if (modal) modal.classList.add('hidden');
+};
+
+window.generateAndDownloadWashDocx = async function () {
+    try {
+        const vehicleId = window.currentWashVehicleId || currentOpenedVehicleId;
+        const vehicle = (cachedVehicles && cachedVehicles.find(v => v.id === vehicleId)) || (vehicleId ? await store.getVehicleById(vehicleId) : null);
+
+        const targa = (document.getElementById('wash-vehicle-display').value || '').trim() || (vehicle ? `AMBULANZA ${vehicle.plate || ''} ${vehicle.sigla || ''}`.trim() : 'AMBULANZA');
+        const station = (document.getElementById('wash-station').value || 'CAVAGION').trim();
+        const km = (document.getElementById('wash-km').value || '').trim();
+        const rawDate = (document.getElementById('wash-date').value || '').trim();
+        let dateVal = rawDate;
+        if (rawDate && rawDate.includes('-')) {
+            const p = rawDate.split('-');
+            if (p.length === 3) dateVal = `${p[2]}/${p[1]}/${p[0]}`;
+        }
+        if (!dateVal) {
+            const now = new Date();
+            dateVal = `${String(now.getDate()).padStart(2, '0')}/${String(now.getMonth() + 1).padStart(2, '0')}/${now.getFullYear()}`;
+        }
+
+        const driver = (document.getElementById('wash-driver').value || '').trim();
+        const phone = (document.getElementById('wash-phone').value || '').trim();
+        const email = (document.getElementById('wash-email').value || '').trim();
+        const description = (document.getElementById('wash-description').value || 'LAVAGGIO ESTERNO').trim();
+
+        let filenameInput = (document.getElementById('wash-filename').value || '').trim();
+        let filename = filenameInput || ('modulo lavaggio ' + (vehicle ? `${vehicle.sigla || ''} ${vehicle.plate || ''}`.trim() : '')).trim();
+        filename = filename.replace(/[\\/:*?"<>|]/g, "_");
+        if (!filename.toLowerCase().endsWith(".docx")) {
+            filename += ".docx";
+        }
+
+        const washData = {
+            targa: targa,
+            station: station,
+            km: km,
+            date: dateVal,
+            driver: driver,
+            phone: phone,
+            email: email,
+            description: description,
+            is_wash: true,
+            is_alea: true
+        };
+
+        // Genera Blob dal template Word Parts & Services (Alea)
+        const blob = await window.createAleaRepairDocxBlob(washData);
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+
+        // Chiudi il modal
+        window.closeWashModal();
+
+        // NOTA FONDAMENTALE: Non viene effettuato alcun salvataggio nello storico veicolo né su Firestore!
+    } catch (err) {
+        console.error("Errore generazione modulo lavaggio:", err);
+        alert("Errore nella generazione dello stampato Word: " + (err.message || err));
     }
 };

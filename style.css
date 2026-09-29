@@ -154,6 +154,16 @@ input[type="date"] {
     background-color: #15803d !important;
 }
 
+.btn-wash-request {
+    background-color: #059669 !important;
+    color: white !important;
+    transition: background-color 0.2s;
+}
+
+.btn-wash-request:hover {
+    background-color: #047857 !important;
+}
+
 /* Dashboard */
 .view-title {
     font-size: 1.75rem;
