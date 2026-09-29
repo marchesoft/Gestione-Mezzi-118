@@ -1,4 +1,4 @@
-const APP_VERSION = "3.2.3";
+const APP_VERSION = "3.2.4";
 let isAdmin = false;
 let cachedVehicles = null;
 let cachedLocations = null;
@@ -1759,7 +1759,7 @@ window.openVehicleModal = async function (id) {
                             <button class="btn btn-repair-request" style="background: #16a34a; color: white; padding: 0.4rem 0.8rem; font-size: 0.85rem; border: none; border-radius: 0.375rem; cursor: pointer; display: flex; align-items: center; gap: 0.4rem;" onclick="openRepairRequestModal('${vehicle.id}')" title="Compila e scarica richiesta riparazione Word">
                                 <i class="fa-solid fa-file-word"></i> Richiesta Riparazione
                             </button>
-                            <button class="btn btn-wash-request" style="background: #0d9488; color: white; padding: 0.4rem 0.8rem; font-size: 0.85rem; border: none; border-radius: 0.375rem; cursor: pointer; display: flex; align-items: center; gap: 0.4rem;" onclick="openWashModal('${vehicle.id}')" title="Compila e scarica modulo lavaggio Word (stampato)">
+                            <button class="btn btn-wash-request" style="background: #06b6d4; color: white; padding: 0.4rem 0.8rem; font-size: 0.85rem; border: none; border-radius: 0.375rem; cursor: pointer; display: flex; align-items: center; gap: 0.4rem;" onclick="openWashModal('${vehicle.id}')" title="Compila e scarica modulo lavaggio Word (stampato)">
                                 <i class="fa-solid fa-shower"></i> Modulo Lavaggio
                             </button>
                             <button class="btn" style="background: #0284c7; color: white; padding: 0.4rem 0.8rem; font-size: 0.85rem; border: none; border-radius: 0.375rem; cursor: pointer; display: flex; align-items: center; gap: 0.4rem;" onclick="openVehicleRepairHistoryModal('${vehicle.id}')" title="Visualizza lo storico delle richieste di riparazione">
@@ -4239,7 +4239,7 @@ window.openWashModal = async function (vehicleId) {
         if (displayElem) displayElem.value = vehicleStr;
 
         const stationElem = document.getElementById('wash-station');
-        if (stationElem) stationElem.value = 'CAVAGION';
+        if (stationElem) stationElem.value = 'IP VIA CANAPA';
 
         const kmElem = document.getElementById('wash-km');
         if (kmElem) kmElem.value = vehicle.km || '';
@@ -4287,7 +4287,7 @@ window.generateAndDownloadWashDocx = async function () {
         const vehicle = (cachedVehicles && cachedVehicles.find(v => v.id === vehicleId)) || (vehicleId ? await store.getVehicleById(vehicleId) : null);
 
         const targa = (document.getElementById('wash-vehicle-display').value || '').trim() || (vehicle ? `AMBULANZA ${vehicle.plate || ''} ${vehicle.sigla || ''}`.trim() : 'AMBULANZA');
-        const station = (document.getElementById('wash-station').value || 'CAVAGION').trim();
+        const station = (document.getElementById('wash-station').value || 'IP VIA CANAPA').trim();
         const km = (document.getElementById('wash-km').value || '').trim();
         const rawDate = (document.getElementById('wash-date').value || '').trim();
         let dateVal = rawDate;
