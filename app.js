@@ -1,4 +1,4 @@
-const APP_VERSION = "3.3.2";
+const APP_VERSION = "3.3.3";
 let isAdmin = false;
 let cachedVehicles = null;
 let cachedLocations = null;
@@ -5006,7 +5006,7 @@ window.openWashModal = async function (vehicleId) {
         if (stationElem) stationElem.value = 'IP VIA CANAPA';
 
         const kmElem = document.getElementById('wash-km');
-        if (kmElem) kmElem.value = vehicle.km || '';
+        if (kmElem) kmElem.value = vehicle.km || vehicle.mileage || '';
 
         const dateElem = document.getElementById('wash-date');
         if (dateElem) dateElem.value = getLocalISODate();
@@ -5026,13 +5026,6 @@ window.openWashModal = async function (vehicleId) {
         const emailElem = document.getElementById('wash-email');
         if (emailElem) emailElem.value = 'logistica118fe@ausl.fe.it';
 
-        // Nome file predefinito: "modulo lavaggio <SIGLA> <TARGA>"
-        const fileParts = ['modulo lavaggio'];
-        if (vehicle.sigla) fileParts.push(vehicle.sigla);
-        if (vehicle.plate) fileParts.push(vehicle.plate);
-        const filenameElem = document.getElementById('wash-filename');
-        if (filenameElem) filenameElem.value = fileParts.join(' ');
-
         const modal = document.getElementById('wash-modal');
         if (modal) modal.classList.remove('hidden');
     } catch (err) {
@@ -5043,6 +5036,294 @@ window.openWashModal = async function (vehicleId) {
 window.closeWashModal = function () {
     const modal = document.getElementById('wash-modal');
     if (modal) modal.classList.add('hidden');
+};
+
+window.printWashModule = async function () {
+    try {
+        const escapeHtml = (str) => {
+            if (!str) return '';
+            return String(str)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#039;');
+        };
+
+        const vehicleId = window.currentWashVehicleId || currentOpenedVehicleId;
+        let vehicle = (cachedVehicles && cachedVehicles.find(v => v.id === vehicleId));
+        if (!vehicle && vehicleId && window.store) {
+            try {
+                vehicle = await store.getVehicleById(vehicleId);
+            } catch (e) {}
+        }
+
+        // Leggi i valori inseriti/modificati nel modale
+        const displayElem = document.getElementById('wash-vehicle-display');
+        const targa = (displayElem && displayElem.value ? displayElem.value.trim() : (vehicle ? `AMBULANZA ${vehicle.plate || ''} ${vehicle.sigla || ''}`.trim() : 'AMBULANZA'));
+
+        const stationElem = document.getElementById('wash-station');
+        const station = (stationElem && stationElem.value ? stationElem.value.trim() : 'IP VIA CANAPA');
+
+        const kmElem = document.getElementById('wash-km');
+        const km = (kmElem && kmElem.value ? kmElem.value.trim() : (vehicle ? (vehicle.km || vehicle.mileage || '') : ''));
+
+        const dateElem = document.getElementById('wash-date');
+        let rawDate = (dateElem && dateElem.value ? dateElem.value.trim() : '');
+        let dateVal = rawDate;
+        if (rawDate && rawDate.includes('-')) {
+            const p = rawDate.split('-');
+            if (p.length === 3) dateVal = `${p[2]}/${p[1]}/${p[0]}`;
+        }
+        if (!dateVal) {
+            const now = new Date();
+            dateVal = `${String(now.getDate()).padStart(2, '0')}/${String(now.getMonth() + 1).padStart(2, '0')}/${now.getFullYear()}`;
+        }
+
+        const driverElem = document.getElementById('wash-driver');
+        const driver = (driverElem && driverElem.value ? driverElem.value.trim() : 'MARSILI PAOLO – GAMBERONI FEDERICO – MARCHESINI LUCA');
+
+        const phoneElem = document.getElementById('wash-phone');
+        const phone = (phoneElem && phoneElem.value ? phoneElem.value.trim() : '3209229345');
+
+        const emailElem = document.getElementById('wash-email');
+        const email = (emailElem && emailElem.value ? emailElem.value.trim() : 'logistica118fe@ausl.fe.it');
+
+        const isCompleto = document.getElementById('wash-type-completo') && document.getElementById('wash-type-completo').checked;
+        const description = isCompleto ? 'LAVAGGIO ESTERNO E INTERNO PIÙ SANIFICAZIONE' : 'LAVAGGIO ESTERNO';
+
+        const dParts = dateVal.split('/');
+        const day = (dParts[0] || '29').padStart(2, '0');
+        const month = (dParts[1] || '01').padStart(2, '0');
+        const yearFull = (dParts[2] || '2026');
+        const yy = yearFull.length === 4 ? yearFull.slice(-2) : yearFull;
+
+        // Estrai il logo dal template docx base64
+        let logoB64 = '';
+        if (window.JSZip && window.WASH_TEMPLATE_BASE64) {
+            try {
+                const zip = await JSZip.loadAsync(window.WASH_TEMPLATE_BASE64, { base64: true });
+                const img = zip.file("word/media/image1.png");
+                if (img) logoB64 = await img.async("base64");
+            } catch (e) {
+                console.warn("Logo extraction error:", e);
+            }
+        }
+        const logoImgTag = logoB64 ? `<img src="data:image/png;base64,${logoB64}" style="height: 70px; object-fit: contain; margin-bottom: 4px;" alt="Logo Parts & Services">` : '';
+
+        const htmlContent = `<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <title>Modulo Lavaggio - ${escapeHtml(targa)}</title>
+    <style>
+        @page {
+            size: A4 portrait;
+            margin: 15mm 20mm 15mm 20mm;
+        }
+        * {
+            box-sizing: border-box;
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+        }
+        body {
+            font-family: Verdana, Geneva, Tahoma, sans-serif;
+            color: #000;
+            margin: 0;
+            padding: 0;
+            background: #fff;
+            font-size: 11pt;
+            line-height: 1.5;
+        }
+        .header-section {
+            margin-bottom: 24px;
+        }
+        .title-ps {
+            font-size: 17pt;
+            font-weight: bold;
+            color: #000;
+            letter-spacing: 0.5px;
+            margin-top: 2px;
+            margin-bottom: 2px;
+        }
+        .slogan-ps {
+            font-size: 10pt;
+            color: #222;
+            margin-bottom: 20px;
+        }
+        .oggetto-line {
+            font-size: 11.5pt;
+            font-weight: bold;
+            margin-bottom: 14px;
+            color: #000;
+        }
+        .spett-line {
+            font-size: 11pt;
+            margin-bottom: 14px;
+            color: #000;
+        }
+        .scrivere-line {
+            font-size: 9.5pt;
+            font-style: italic;
+            color: #444;
+            margin-bottom: 22px;
+        }
+        .statement-p {
+            font-size: 11pt;
+            margin-bottom: 14px;
+            line-height: 1.6;
+        }
+        .val-bold {
+            font-weight: bold;
+        }
+        .signature-block {
+            margin-top: 20px;
+            margin-bottom: 20px;
+        }
+        .sig-header {
+            font-size: 11.5pt;
+            font-weight: bold;
+            margin-bottom: 8px;
+        }
+        .sig-names-label {
+            font-size: 10.5pt;
+            color: #333;
+            margin-bottom: 4px;
+        }
+        .sig-names-val {
+            font-size: 11pt;
+            font-weight: bold;
+            padding-left: 30px;
+            margin-bottom: 8px;
+        }
+        .sig-contact {
+            font-size: 10.5pt;
+            margin-bottom: 6px;
+        }
+        .sig-date-row {
+            font-size: 10.5pt;
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+            margin-top: 8px;
+        }
+        .footer-line {
+            text-align: center;
+            margin-top: 40px;
+            font-size: 8.5pt;
+            color: #333;
+            line-height: 1.4;
+        }
+    </style>
+</head>
+<body>
+    <div class="header-section">
+        ${logoImgTag}
+        <div class="title-ps">PARTS &amp; SERVICES</div>
+        <div class="slogan-ps">Hard for your need</div>
+    </div>
+
+    <div class="oggetto-line">
+        OGGETTO: Ricovero Veicolo per manutenzione - consegna/ Ritiro
+    </div>
+
+    <div class="spett-line">
+        Spett: AZIENDA U.S.L. FERRARA Via Arturo Cassoli, 30 44121- FERRARA
+    </div>
+
+    <div class="scrivere-line">
+        Scrivere in modo chiaro e leggibile
+    </div>
+
+    <div class="statement-p">
+        Si comunica che il Veicolo: &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <span class="val-bold">${escapeHtml(targa)}</span>
+    </div>
+
+    <div class="statement-p">
+        Km: &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; è stato ricoverato presso l'officina: <span class="val-bold">${escapeHtml(station)}</span>
+    </div>
+
+    <div class="statement-p" style="margin-bottom: 24px;">
+        per svolgere i seguenti interventi: &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <span class="val-bold">${escapeHtml(description)}</span>
+    </div>
+
+    <!-- Sezione Consegna -->
+    <div class="signature-block">
+        <div class="sig-header">Consegna il veicolo:</div>
+        <div class="sig-names-label">Nome &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Cognome</div>
+        <div class="sig-names-val">${escapeHtml(driver)}</div>
+        <div class="sig-contact">Indirizzo e-mail: <span class="val-bold">${escapeHtml(email)}</span></div>
+        <div class="sig-contact">Nr. Cell.: <span class="val-bold">${escapeHtml(phone)}</span></div>
+        <div class="sig-date-row">
+            <span>data: …${day}...../…..${month}.../…….${yy}....</span>
+            <span>Firma _________________________________</span>
+        </div>
+    </div>
+
+    <!-- Sezione Ritiro -->
+    <div class="signature-block" style="margin-top: 24px;">
+        <div class="sig-header">Ritira il veicolo:</div>
+        <div class="sig-names-label">Nome &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Cognome</div>
+        <div class="sig-names-val">${escapeHtml(driver)}</div>
+        <div class="sig-contact">Indirizzo e-mail: <span class="val-bold">${escapeHtml(email)}</span></div>
+        <div class="sig-contact">Nr. Cell.: <span class="val-bold">${escapeHtml(phone)}</span></div>
+        <div class="sig-date-row">
+            <span>data: …${day}…../…${month}...../….${yy}…....</span>
+            <span>Firma _________________________________</span>
+        </div>
+    </div>
+
+    <div class="footer-line">
+        PARTS &amp; SERVICES - Via Pollenzo, 28 - 00166 Roma<br>
+        info@parts-services.it - www.parts-services.it - Tel. +39 0692936934
+    </div>
+</body>
+</html>`;
+
+        // Utilizzo di iframe invisibile per avviare la stampa nativa
+        let printFrame = document.getElementById('wash-print-iframe');
+        if (printFrame && printFrame.parentNode) {
+            printFrame.parentNode.removeChild(printFrame);
+        }
+        printFrame = document.createElement('iframe');
+        printFrame.id = 'wash-print-iframe';
+        printFrame.style.position = 'fixed';
+        printFrame.style.top = '-9999px';
+        printFrame.style.left = '-9999px';
+        printFrame.style.width = '1024px';
+        printFrame.style.height = '1024px';
+        printFrame.style.border = '0';
+        printFrame.style.opacity = '0';
+        printFrame.style.pointerEvents = 'none';
+        document.body.appendChild(printFrame);
+
+        const frameDoc = printFrame.contentWindow ? printFrame.contentWindow.document : printFrame.contentDocument;
+        frameDoc.open();
+        frameDoc.write(htmlContent);
+        frameDoc.close();
+
+        setTimeout(() => {
+            try {
+                printFrame.contentWindow.focus();
+                printFrame.contentWindow.print();
+            } catch (err) {
+                console.warn("Stampa via iframe non disponibile, apertura finestra:", err);
+                const win = window.open('', '_blank');
+                if (win) {
+                    win.document.write(htmlContent);
+                    win.document.close();
+                    win.focus();
+                    win.print();
+                }
+            }
+        }, 350);
+
+        // Chiudi il modal lavaggio
+        window.closeWashModal();
+    } catch (err) {
+        console.error("Errore durante la stampa del modulo lavaggio:", err);
+        alert("Errore durante la preparazione per la stampa: " + (err.message || err));
+    }
 };
 
 window.generateAndDownloadWashDocx = async function () {
