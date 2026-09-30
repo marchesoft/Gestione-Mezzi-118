@@ -93,12 +93,7 @@ try {
                 const snapshot = await this.db.collection('locations').get();
                 return snapshot.docs.map(doc => {
                     const data = doc.data();
-                    return { 
-                        id: doc.id,
-                        luogo: data.name, 
-                        colore: data.colore,
-                        km_monthly: (data.km_monthly !== undefined && data.km_monthly !== null && data.km_monthly !== '') ? Number(data.km_monthly) : null
-                    };
+                    return { luogo: data.name, colore: data.colore };
                 });
             } catch (error) {
                 console.error('Error fetching locations:', error);
@@ -106,13 +101,9 @@ try {
             }
         }
 
-        async addLocation(name, colore = '#3b82f6', km_monthly = 0) {
+        async addLocation(name, colore = '#3b82f6') {
             try {
-                const docData = { name, colore };
-                if (km_monthly !== undefined && km_monthly !== null && km_monthly !== '') {
-                    docData.km_monthly = Number(km_monthly) || 0;
-                }
-                await this.db.collection('locations').add(docData);
+                await this.db.collection('locations').add({ name, colore });
             } catch (error) {
                 console.error('Error adding location:', error);
             }
@@ -129,42 +120,14 @@ try {
             }
         }
 
-        async updateLocation(oldName, newName, km_monthly = null) {
+        async updateLocation(oldName, newName) {
             try {
                 const snapshot = await this.db.collection('locations').where('name', '==', oldName).get();
                 const batch = this.db.batch();
-                snapshot.forEach(doc => {
-                    const updateData = { name: newName };
-                    if (km_monthly !== null && km_monthly !== undefined) {
-                        updateData.km_monthly = km_monthly === '' ? 0 : Number(km_monthly);
-                    }
-                    batch.update(doc.ref, updateData);
-                });
+                snapshot.forEach(doc => batch.update(doc.ref, { name: newName }));
                 await batch.commit();
             } catch (error) {
                 console.error('Error updating location:', error);
-            }
-        }
-
-        async saveLocationKm(locationName, km_monthly) {
-            try {
-                const snapshot = await this.db.collection('locations').where('name', '==', locationName).get();
-                if (snapshot.empty) {
-                    await this.db.collection('locations').add({
-                        name: locationName,
-                        colore: '#3b82f6',
-                        km_monthly: Number(km_monthly) || 0
-                    });
-                } else {
-                    const batch = this.db.batch();
-                    snapshot.forEach(doc => {
-                        batch.update(doc.ref, { km_monthly: Number(km_monthly) || 0 });
-                    });
-                    await batch.commit();
-                }
-            } catch (error) {
-                console.error('Error saving location km:', error);
-                throw error;
             }
         }
 

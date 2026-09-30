@@ -1,27 +1,10 @@
-const APP_VERSION = "3.3.9";
+const APP_VERSION = "3.3.2";
 let isAdmin = false;
 let cachedVehicles = null;
 let cachedLocations = null;
 let currentOpenedVehicleId = null;
 let lastRefreshTime = new Date();
 let currentFilter = 'all';
-
-// Tabella di fallback predefinita per Km mensili per sede (se non ancora salvati a DB)
-const DEFAULT_MONTHLY_KM_BY_STATION = {
-    'FERRARA': 3000,
-    'ARGENTA': 5000,
-    'LAGOSANTO': 6000,
-    'DELTA': 6000,
-    'COMACCHIO': 10000,
-    'BONDENO': 10000,
-    'PORTOMAGGIORE': 7000,
-    'CENTO': 6000,
-    'COPPARO': 12000,
-    'CONA': 2000,
-    'CASUMARO': 7000
-};
-window.DEFAULT_MONTHLY_KM_BY_STATION = DEFAULT_MONTHLY_KM_BY_STATION;
-window.MONTHLY_KM_BY_STATION = DEFAULT_MONTHLY_KM_BY_STATION;
 
 // Helper to ensure strings are uppercase
 const upper = (str) => (str || '').toString().toUpperCase().trim();
@@ -35,76 +18,6 @@ window.normalizeVehicleText = function (str) {
         .replace(/[\u0300-\u036f]/g, "")
         .toUpperCase()
         .trim();
-};
-
-// Calcolo Km/mese stimati per sede: legge prima da cachedLocations (DB) e poi fallback
-window.getMonthlyKmForStation = function (station) {
-    if (!station) return 0;
-    const cleanStation = window.normalizeVehicleText(station);
-
-    // 1. Cerca nei luoghi caricati dal database (cachedLocations)
-    if (cachedLocations && Array.isArray(cachedLocations)) {
-        const found = cachedLocations.find(l => {
-            const locName = window.normalizeVehicleText(l.luogo || l.name);
-            return locName === cleanStation || cleanStation.includes(locName) || locName.includes(cleanStation);
-        });
-        if (found && found.km_monthly !== undefined && found.km_monthly !== null && !isNaN(Number(found.km_monthly))) {
-            return Number(found.km_monthly);
-        }
-    }
-
-    // 2. Fallback su costanti predefinite
-    for (const [key, val] of Object.entries(DEFAULT_MONTHLY_KM_BY_STATION)) {
-        if (cleanStation === key || cleanStation.includes(key)) {
-            return val;
-        }
-    }
-    return 0;
-};
-
-// Conversione mese testuale (es. AGOSTO, SETTEMBRE) o numerico in indice 1..12
-window.parseMonthIndex = function (monthStr) {
-    if (!monthStr) return null;
-    const s = window.normalizeVehicleText(monthStr);
-    const months = [
-        'GENNAIO', 'FEBBRAIO', 'MARZO', 'APRILE',
-        'MAGGIO', 'GIUGNO', 'LUGLIO', 'AGOSTO',
-        'SETTEMBRE', 'OTTOBRE', 'NOVEMBRE', 'DICEMBRE'
-    ];
-    for (let i = 0; i < months.length; i++) {
-        if (s.includes(months[i])) {
-            return i + 1; // 1 (Gennaio) a 12 (Dicembre)
-        }
-    }
-    const num = parseInt(s.replace(/[^0-9]/g, ''), 10);
-    if (!isNaN(num) && num >= 1 && num <= 12) {
-        return num;
-    }
-    return null;
-};
-
-// Calcolo previsione Km a fine Dicembre in base a km attuali, mese rilevamento e sede
-window.calculateForecastKmAtYearEnd = function (currentKm, mileageMonth, station) {
-    const km = parseInt(currentKm) || 0;
-    if (km <= 0) return null;
-
-    const monthlyRate = window.getMonthlyKmForStation(station);
-    if (!monthlyRate || monthlyRate <= 0) return null;
-
-    let monthIdx = window.parseMonthIndex(mileageMonth);
-    if (!monthIdx) {
-        monthIdx = new Date().getMonth() + 1;
-    }
-
-    const remainingMonths = Math.max(0, 12 - monthIdx);
-    const forecastKm = km + (remainingMonths * monthlyRate);
-
-    return {
-        forecastKm,
-        monthlyRate,
-        remainingMonths,
-        startMonthIdx: monthIdx
-    };
 };
 
 // Helper per generare il nome del file Word: "richiesta riparazione <SIGLA> <TARGA>.docx"
@@ -1666,24 +1579,18 @@ function setupEventListeners() {
 
 window.addLocationHandler = async function (e) {
     if (e && e.preventDefault) e.preventDefault();
-    const name = prompt("Nome della nuova sede / luogo:");
-    if (!name || name.trim() === '') return;
-
-    const defaultKm = window.getMonthlyKmForStation(name) || 0;
-    const kmStr = prompt(`Km mensili stimati per ${upper(name)}:`, defaultKm > 0 ? defaultKm : '3000');
-    const kmVal = (kmStr !== null && kmStr.trim() !== '') ? parseInt(kmStr.replace(/[^0-9]/g, ''), 10) || 0 : defaultKm;
-
+    const name = prompt("Nome del nuovo luogo:");
+    if (!name) return;
     const color = "#3b82f6";
     try {
-        await store.addLocation(upper(name), color, kmVal);
-        cachedLocations = await store.getLocations();
+        await store.addLocation(upper(name), color);
+        // Refresh directly
         await renderDashboard(true);
         if (!document.getElementById('data-management-modal').classList.contains('hidden')) {
             switchDataTable('locations');
         }
     } catch (err) {
         console.error("Error adding location:", err);
-        alert("Errore durante l'aggiunta del luogo: " + err.message);
     }
 };
 
@@ -1693,7 +1600,7 @@ window.editLocationHandler = async function (oldName) {
 
     try {
         await store.updateLocation(upper(oldName), upper(newName));
-        cachedLocations = await store.getLocations();
+        // Refresh dashboard to reflect station changes in vehicle cards
         await renderDashboard(true);
         if (!document.getElementById('data-management-modal').classList.contains('hidden')) {
             switchDataTable('locations');
@@ -1701,32 +1608,6 @@ window.editLocationHandler = async function (oldName) {
         console.log("Luogo aggiornato con successo!");
     } catch (err) {
         console.error("Error editing location:", err);
-        alert("Errore durante la modifica del luogo: " + err.message);
-    }
-};
-
-window.editLocationKmHandler = async function (locationName, currentKm) {
-    const currentVal = (currentKm !== undefined && currentKm !== null) ? currentKm : (window.getMonthlyKmForStation(locationName) || 0);
-    const input = prompt(`Inserisci i Km mensili stimati per la sede ${locationName}:`, currentVal);
-    if (input === null) return; // Annullato
-
-    const num = parseInt(input.toString().replace(/[^0-9]/g, ''), 10);
-    const newKm = isNaN(num) ? 0 : num;
-
-    try {
-        await store.saveLocationKm(locationName, newKm);
-        cachedLocations = await store.getLocations();
-        // Ricarica la tabella corrente
-        if (!document.getElementById('data-management-modal').classList.contains('hidden')) {
-            if (window.lastDataManagerTab === 'locations') {
-                switchDataTable('locations');
-            } else if (window.lastDataManagerTab === 'report_officina') {
-                switchDataTable('report_officina');
-            }
-        }
-    } catch (err) {
-        console.error("Error updating location km:", err);
-        alert("Errore durante il salvataggio dei Km mensili: " + err.message);
     }
 };
 
@@ -1875,7 +1756,7 @@ window.openVehicleModal = async function (id) {
                             <button class="btn btn-repair-request" style="background: #16a34a; color: white; padding: 0.4rem 0.8rem; font-size: 0.85rem; border: none; border-radius: 0.375rem; cursor: pointer; display: flex; align-items: center; gap: 0.4rem;" onclick="openRepairRequestModal('${vehicle.id}')" title="Compila e scarica richiesta riparazione Word">
                                 <i class="fa-solid fa-file-word"></i> Richiesta Riparazione
                             </button>
-                            <button class="btn btn-wash-request" style="background: #06b6d4; color: white; padding: 0.4rem 0.8rem; font-size: 0.85rem; border: none; border-radius: 0.375rem; cursor: pointer; display: flex; align-items: center; gap: 0.4rem;" onclick="openWashModal('${vehicle.id}')" title="Compila e stampa modulo lavaggio">
+                            <button class="btn btn-wash-request" style="background: #06b6d4; color: white; padding: 0.4rem 0.8rem; font-size: 0.85rem; border: none; border-radius: 0.375rem; cursor: pointer; display: flex; align-items: center; gap: 0.4rem;" onclick="openWashModal('${vehicle.id}')" title="Compila e scarica modulo lavaggio Word (stampato)">
                                 <i class="fa-solid fa-shower"></i> Modulo Lavaggio
                             </button>
                             <button class="btn" style="background: #0284c7; color: white; padding: 0.4rem 0.8rem; font-size: 0.85rem; border: none; border-radius: 0.375rem; cursor: pointer; display: flex; align-items: center; gap: 0.4rem;" onclick="openVehicleRepairHistoryModal('${vehicle.id}')" title="Visualizza lo storico delle richieste di riparazione">
@@ -2567,18 +2448,7 @@ window.exportCurrentTableToCSV = async function () {
 
         // Fetch fresh data for export
         if (type === 'vehicles') data = await store.getVehicles();
-        else if (type === 'locations') {
-            const rawLocs = await store.getLocations();
-            data = rawLocs.map(l => {
-                const defaultKm = window.DEFAULT_MONTHLY_KM_BY_STATION[l.luogo] || 0;
-                const km = (l.km_monthly !== null && l.km_monthly !== undefined) ? l.km_monthly : defaultKm;
-                return {
-                    luogo: l.luogo,
-                    km_monthly: km,
-                    colore: l.colore || '#3b82f6'
-                };
-            });
-        }
+        else if (type === 'locations') data = await store.getLocations();
         else if (type === 'interventions') data = await store.getInterventions();
         else if (type === 'cambiomezzo') data = await store.getCambiMezzi();
         else if (type === 'contacts') data = await store.getContacts();
@@ -2716,23 +2586,16 @@ window.exportCurrentTableToCSV = async function () {
                     if (item.km && parseInt(item.km) > maxKm) maxKm = parseInt(item.km);
                 });
 
-                let forecastDec = '-';
-                const forecastObj = window.calculateForecastKmAtYearEnd(maxKm || v.mileage, v.mileage_month, v.station);
-                if (forecastObj && forecastObj.forecastKm) {
-                    forecastDec = `${forecastObj.forecastKm.toLocaleString()} km`;
-                }
-
                 data.push({
                     sigla: v.sigla,
                     plate: v.plate,
                     model: v.model,
-                    station: v.station || '-',
+                    station: v.station,
                     status: statusLabel,
                     total_days: totalDays,
                     count: count,
                     mileage: maxKm > 0 ? `${maxKm.toLocaleString()} km` : '-',
-                    mileage_month: v.mileage_month || '-',
-                    forecast_december: forecastDec
+                    mileage_month: v.mileage_month || '-'
                 });
             }
 
@@ -2753,8 +2616,8 @@ window.exportCurrentTableToCSV = async function () {
             const italianHeaders = ['ID (Non modificare)', 'Targa', 'Modello', 'Sigla', 'Stazione', 'Stato', 'Km', 'Mese Km', 'Note', 'Note Interne', 'Radio ID', 'Scadenza Revisione', 'Revisione O2'];
             csvRows.push(italianHeaders.join(';'));
         } else if (type === 'locations') {
-            headers = ['luogo', 'km_monthly', 'colore'];
-            const italianHeaders = ['Sede / Luogo', 'Km Mensili Stimati', 'Colore'];
+            headers = ['luogo', 'colore'];
+            const italianHeaders = ['Luogo', 'Colore'];
             csvRows.push(italianHeaders.join(';'));
         } else if (type === 'interventions') {
             headers = ['id', 'date', 'date_out', 'sigla', 'workshop', 'description', 'cost'];
@@ -2777,8 +2640,8 @@ window.exportCurrentTableToCSV = async function () {
             const italianHeaders = ['Sigla', 'Targa', 'Modello', 'Data Richiesta', 'Tipologia', 'Descrizione', 'Driver / Richiedente', 'Dipartimento', 'Telefono', 'Ubicazione', 'Email'];
             csvRows.push(italianHeaders.join(';'));
         } else if (type === 'report_officina') {
-            headers = ['sigla', 'plate', 'model', 'station', 'mileage', 'mileage_month', 'forecast_december', 'total_days', 'count'];
-            const italianHeaders = ['Mezzo (Sigla)', 'Targa', 'Modello', 'Sede Attuale', 'Ultimi Km Rilevati', 'Mese Riferimento Km', 'Previsione Km a Fine Dicembre', 'Totale Giorni in Officina', 'Numero Ricoveri'];
+            headers = ['sigla', 'plate', 'model', 'mileage', 'mileage_month', 'total_days', 'count'];
+            const italianHeaders = ['Mezzo (Sigla)', 'Targa', 'Modello', 'Ultimi Km Rilevati', 'Mese Riferimento Km', 'Totale Giorni in Officina', 'Numero Ricoveri'];
             csvRows.push(italianHeaders.join(';'));
         } else {
             headers = Object.keys(data[0]);
@@ -2980,8 +2843,7 @@ window.importDataTableFromCSV = function () {
                         'Revisione O2': 'revision_o2', 'revision_o2': 'revision_o2'
                     },
                     'locations': {
-                        'Luogo': 'name', 'luogo': 'name', 'name': 'name', 'Sede / Luogo': 'name',
-                        'Km Mensili Stimati': 'km_monthly', 'km_monthly': 'km_monthly', 'Km Mese': 'km_monthly', 'km_mese': 'km_monthly', 'km': 'km_monthly',
+                        'Luogo': 'name', 'luogo': 'name', 'name': 'name',
                         'Colore': 'colore', 'colore': 'colore'
                     },
                     'interventions': {
@@ -3193,22 +3055,18 @@ window.switchDataTable = async function (type) {
                 </div>`;
         } else if (type === 'locations') {
             data = await store.getLocations();
-            cachedLocations = data;
             html = `
-                <div style="margin-bottom: 1.5rem; background: #f8fafc; padding: 1rem; border-radius: 0.75rem; border: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; gap: 1rem; flex-wrap: wrap;">
-                    <div>
-                        <h4 style="font-size: 1rem; margin: 0; font-weight: 700; color: #1e293b;">Elenco Sedi e Percorrenze Mensili</h4>
-                        <div style="font-size: 0.8rem; color: #64748b; margin-top: 0.2rem;">Configura i Km/mese per ciascuna postazione usati per calcolare la previsione a fine anno</div>
-                    </div>
+                <div style="margin-bottom: 1.5rem; background: #f8fafc; padding: 1rem; border-radius: 0.75rem; border: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; gap: 1rem;">
+                    <h4 style="font-size: 0.9rem;">Elenco Luoghi</h4>
                     ${isAdmin ? `
-                    <div style="display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;">
+                    <div style="display: flex; gap: 0.5rem; align-items: center;">
                         <button class="btn btn-export" onclick="exportCurrentTableToCSV()" style="white-space: nowrap;">
                             <i class="fa-solid fa-file-excel"></i> Esporta Excel
                         </button>
                         <button class="btn btn-export" onclick="importDataTableFromCSV()" style="white-space: nowrap; background-color: #065f46;">
                             <i class="fa-solid fa-file-import"></i> Importa Excel
                         </button>
-                        <button class="btn btn-primary" onclick="window.addLocationHandler();" style="padding: 0.5rem 1rem;"><i class="fa-solid fa-plus"></i> Nuova Sede</button>
+                        <button class="btn btn-primary" onclick="window.addLocationHandler();" style="padding: 0.5rem 1rem;"><i class="fa-solid fa-plus"></i> Nuovo Luogo</button>
                     </div>
                     ` : ''}
                 </div>
@@ -3216,39 +3074,19 @@ window.switchDataTable = async function (type) {
                     <table class="mgmt-table">
                         <thead>
                             <tr>
-                                <th class="col-shrink">Sede / Postazione</th>
-                                <th class="col-shrink" style="text-align: right;">Km Mensili Stimati</th>
-                                ${isAdmin ? '<th class="col-actions" style="text-align: right;">Azioni</th>' : ''}
+                                <th>Luogo</th>
+                                ${isAdmin ? '<th class="col-actions">Azioni</th>' : ''}
                             </tr>
                         </thead>
                         <tbody>
-                            ${data.map(l => {
-                                const defaultKm = window.DEFAULT_MONTHLY_KM_BY_STATION[l.luogo] || 0;
-                                const km = (l.km_monthly !== null && l.km_monthly !== undefined) ? l.km_monthly : defaultKm;
-                                const kmDisplay = km > 0 
-                                    ? `<span style="font-weight: 700; color: #047857; font-size: 0.95rem;">${km.toLocaleString()} km/mese</span>` 
-                                    : `<span style="color: var(--text-secondary); font-size: 0.85rem;">Non impostato</span>`;
-                                return `
-                                    <tr>
-                                        <td class="col-shrink" style="font-weight: 600; font-size: 0.95rem; color: #1e293b;">${l.luogo}</td>
-                                        <td class="col-shrink" style="text-align: right; white-space: nowrap;">
-                                            ${kmDisplay}
-                                        </td>
-                                        ${isAdmin ? `
-                                        <td class="col-actions" style="text-align: right; white-space: nowrap;">
-                                            <button class="btn" onclick="window.editLocationKmHandler('${l.luogo}', ${km})" title="Modifica Km Mensili" style="padding: 0.3rem 0.6rem; font-size: 0.8rem; background: #ecfdf5; color: #047857; border: 1px solid #a7f3d0; border-radius: 0.35rem; cursor: pointer; margin-right: 0.35rem;">
-                                                <i class="fa-solid fa-gauge-high"></i> Imposta Km
-                                            </button>
-                                            <button class="btn" onclick="window.editLocationHandler('${l.luogo}')" title="Rinomina Sede" style="padding: 0.3rem 0.6rem; font-size: 0.8rem; background: #eff6ff; color: #1d4ed8; border: 1px solid #bfdbfe; border-radius: 0.35rem; cursor: pointer; margin-right: 0.35rem;">
-                                                <i class="fa-solid fa-edit"></i>
-                                            </button>
-                                            <button class="btn" onclick="setTimeout(() => { if(confirm('Eliminare la sede ${l.luogo}?')){store.deleteLocation('${l.luogo}').then(() => switchDataTable('locations'))} }, 50)" title="Elimina Sede" style="padding: 0.3rem 0.6rem; font-size: 0.8rem; background: #fef2f2; color: #b91c1c; border: 1px solid #fecaca; border-radius: 0.35rem; cursor: pointer;">
-                                                <i class="fa-solid fa-trash"></i>
-                                            </button>
-                                        </td>` : ''}
-                                    </tr>
-                                `;
-                            }).join('')}
+                            ${data.map(l =>
+                '<tr>'
+                + `<td>${l.luogo}</td>`
+                + (isAdmin ? '<td class="col-actions">'
+                    + `<button onclick="window.editLocationHandler('${l.luogo}')" style="margin-right:0.5rem; cursor:pointer; background:none; border:none; color:var(--primary-color);"><i class="fa-solid fa-edit"></i></button>`
+                    + `<button onclick="setTimeout(() => { if(confirm('Eliminare questo luogo?')){store.deleteLocation('${l.luogo}').then(() => switchDataTable('locations'))} }, 50)" style="cursor:pointer; background:none; border:none; color:var(--status-to-repair);"><i class="fa-solid fa-trash"></i></button>`
+                    + '</td>' : '') + '</tr>'
+            ).join('')}
                         </tbody>
                     </table>
                 </div>`;
@@ -3726,8 +3564,6 @@ window.switchDataTable = async function (type) {
                     if (item.km && parseInt(item.km) > maxKm) maxKm = parseInt(item.km);
                 });
 
-                const forecastObj = window.calculateForecastKmAtYearEnd(maxKm || v.mileage, v.mileage_month, v.station);
-
                 reportRows.push({
                     ...v,
                     totalDays,
@@ -3735,8 +3571,7 @@ window.switchDataTable = async function (type) {
                     hasOngoing,
                     lastStay,
                     mileage: maxKm || v.mileage || 0,
-                    mileage_month: v.mileage_month || '',
-                    forecast: forecastObj
+                    mileage_month: v.mileage_month || ''
                 });
             }
 
@@ -3752,7 +3587,7 @@ window.switchDataTable = async function (type) {
                             <i class="fa-solid fa-clock-rotate-left"></i> Report Tempo di Permanenza in Officina
                         </h3>
                         <div style="font-size: 0.85rem; opacity: 0.9; margin-top: 0.35rem;">
-                            Monitoraggio dettagliato dei giorni di fermo macchina, chilometraggi e stima percorrenze a fine anno per singola ambulanza
+                            Monitoraggio dettagliato dei giorni di fermo macchina e storico ricoveri per singola ambulanza
                         </div>
                     </div>
                     <div style="display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;">
@@ -3800,7 +3635,7 @@ window.switchDataTable = async function (type) {
                 <div style="margin-bottom: 1rem; background: #f8fafc; padding: 0.75rem 1rem; border-radius: 0.75rem; border: 1px solid var(--border-color); display: flex; gap: 1rem; align-items: center; justify-content: space-between; flex-wrap: wrap;">
                     <div style="flex-grow: 1; position: relative; min-width: 240px;">
                         <i class="fa-solid fa-search" style="position: absolute; left: 1rem; top: 50%; transform: translateY(-50%); color: var(--text-secondary);"></i>
-                        <input type="text" id="workshop-report-search" placeholder="Cerca mezzo (Sigla, Targa, Sede, Officina)..." 
+                        <input type="text" id="workshop-report-search" placeholder="Cerca mezzo (Sigla, Targa, Officina, Sede)..." 
                                oninput="window.filterWorkshopReport(this.value)"
                                style="width: 100%; padding: 0.5rem 1rem 0.5rem 2.5rem; border-radius: 0.5rem; border: 1px solid var(--border-color); outline: none; font-size: 0.9rem;">
                     </div>
@@ -3811,6 +3646,10 @@ window.switchDataTable = async function (type) {
                                 ${availableYears.map(yr => `<option value="${yr}" ${selectedYear === String(yr) ? 'selected' : ''}>${yr}</option>`).join('')}
                             </select>
                         </div>
+                        <label style="display: flex; align-items: center; gap: 0.4rem; font-size: 0.85rem; font-weight: 500; color: #475569; cursor: pointer; user-select: none;">
+                            <input type="checkbox" id="workshop-only-active" onchange="window.toggleOnlyActiveWorkshop(this.checked)" checked style="cursor: pointer;">
+                            Mostra solo con ricoveri
+                        </label>
                     </div>
                 </div>
 
@@ -3821,15 +3660,13 @@ window.switchDataTable = async function (type) {
                             <tr>
                                 <th class="col-shrink">Mezzo</th>
                                 <th class="col-shrink">Modello</th>
-                                <th class="col-shrink">Sede Attuale</th>
                                 <th class="col-shrink" style="text-align: right;">Ultimi Km Rilevati</th>
-                                <th class="col-shrink" style="text-align: right;">Previsione Km (31 Dic)</th>
                                 <th class="col-shrink" style="text-align: center;">Giorni in Officina</th>
                                 <th class="col-shrink" style="text-align: center;">N° Ricoveri</th>
                             </tr>
                         </thead>
                         <tbody>
-                            ${reportRows.length === 0 ? '<tr><td colspan="7" style="text-align:center; padding: 2rem; color: var(--text-secondary);">Nessun dato trovato per i criteri selezionati.</td></tr>' : ''}
+                            ${reportRows.length === 0 ? '<tr><td colspan="5" style="text-align:center; padding: 2rem; color: var(--text-secondary);">Nessun dato trovato per i criteri selezionati.</td></tr>' : ''}
                             ${reportRows.map(row => {
                                 let badgeClass = 'badge-days-zero';
                                 if (row.hasOngoing) badgeClass = 'badge-days-ongoing';
@@ -3837,7 +3674,8 @@ window.switchDataTable = async function (type) {
                                 else if (row.totalDays >= 4) badgeClass = 'badge-days-med';
                                 else if (row.totalDays > 0) badgeClass = 'badge-days-low';
 
-                                const trStyle = 'class="workshop-row"';
+                                const isOnlyZero = row.count === 0 && !row.hasOngoing;
+                                const trStyle = isOnlyZero ? 'style="display: none;" class="workshop-row-zero"' : 'class="workshop-row"';
 
                                 const currentWorkshop = (row.lastStay && row.lastStay.workshop) ? row.lastStay.workshop : 'Officina';
 
@@ -3845,38 +3683,17 @@ window.switchDataTable = async function (type) {
                                 const kmText = kmVal > 0 ? `${kmVal.toLocaleString()} km` : '-';
                                 const monthText = row.mileage_month ? `<div style="font-size: 0.75rem; color: #64748b; font-weight: 500;">${row.mileage_month}</div>` : '';
 
-                                const monthlyRate = window.getMonthlyKmForStation(row.station);
-                                const stationSub = monthlyRate > 0 ? `<div style="font-size: 0.72rem; color: #64748b; font-weight: 500;">~${monthlyRate.toLocaleString()} km/m</div>` : '';
-
-                                let forecastHtml = '<span style="color: var(--text-secondary); font-size: 0.85rem;">-</span>';
-                                if (row.forecast && row.forecast.forecastKm) {
-                                    const addKm = row.forecast.remainingMonths * row.forecast.monthlyRate;
-                                    forecastHtml = `
-                                        <div style="font-weight: 700; color: #047857; font-size: 0.95rem;">${row.forecast.forecastKm.toLocaleString()} km</div>
-                                        <div style="font-size: 0.72rem; color: #059669; font-weight: 500;" title="Stima: ${kmVal.toLocaleString()} km + (${row.forecast.remainingMonths} mesi × ${row.forecast.monthlyRate.toLocaleString()} km)">
-                                            +${addKm.toLocaleString()} km (${row.forecast.remainingMonths} ${row.forecast.remainingMonths === 1 ? 'mese' : 'mesi'})
-                                        </div>
-                                    `;
-                                }
-
                                 return `
-                                    <tr ${trStyle} id="w-row-${row.id}" data-search="${(row.sigla + ' ' + row.plate + ' ' + row.model + ' ' + (row.station || '') + ' ' + (row.lastStay ? row.lastStay.workshop : '')).toLowerCase()}">
+                                    <tr ${trStyle} id="w-row-${row.id}" data-search="${(row.sigla + ' ' + row.plate + ' ' + row.model + ' ' + (row.lastStay ? row.lastStay.workshop : '')).toLowerCase()}">
                                         <td class="col-shrink text-bold text-primary">
                                             <span style="font-size: 1rem;">${row.sigla}</span>
                                             ${row.is_alea ? '<span style="background: #fef3c7; color: #92400e; font-size: 0.7rem; font-weight: 700; padding: 0.15rem 0.4rem; border-radius: 4px; margin-left: 0.35rem; vertical-align: middle;">Alea</span>' : ''}
                                             <div style="font-size: 0.75rem; color: #64748b; font-weight: 500;">${row.plate}</div>
                                         </td>
                                         <td class="col-shrink" style="font-size: 0.85rem;">${row.model}</td>
-                                        <td class="col-shrink" style="white-space: nowrap;">
-                                            <span style="font-weight: 600; color: #1e293b; font-size: 0.9rem;">${row.station || '-'}</span>
-                                            ${stationSub}
-                                        </td>
                                         <td class="col-shrink" style="text-align: right; white-space: nowrap;">
                                             <div style="font-weight: 700; color: var(--primary-color); font-size: 0.95rem;">${kmText}</div>
                                             ${monthText}
-                                        </td>
-                                        <td class="col-shrink" style="text-align: right; white-space: nowrap;">
-                                            ${forecastHtml}
                                         </td>
                                         <td class="col-shrink" style="text-align: center;">
                                             <span class="badge-days ${badgeClass}">
@@ -3926,16 +3743,25 @@ window.filterWorkshopReport = function (query) {
     const table = document.getElementById('workshop-report-table');
     if (!table) return;
     const q = (query || '').toLowerCase().trim();
-    const rows = table.querySelectorAll('tbody tr.workshop-row');
+    const rows = table.querySelectorAll('tbody tr.workshop-row, tbody tr.workshop-row-zero');
+    const isOnlyActiveChecked = document.getElementById('workshop-only-active') ? document.getElementById('workshop-only-active').checked : true;
 
     rows.forEach(row => {
         const searchData = row.getAttribute('data-search') || '';
+        const isZero = row.classList.contains('workshop-row-zero');
         const matchesQuery = !q || searchData.includes(q);
 
         if (matchesQuery) {
-            row.style.display = '';
+            if (isZero && isOnlyActiveChecked && !q) {
+                row.style.display = 'none';
+            } else {
+                row.style.display = '';
+            }
         } else {
             row.style.display = 'none';
+            const id = row.id.replace('w-row-', '');
+            const detailRow = document.getElementById(`w-detail-${id}`);
+            if (detailRow) detailRow.style.display = 'none';
         }
     });
 };
@@ -3945,7 +3771,17 @@ window.filterWorkshopByYear = function (year) {
     switchDataTable('report_officina');
 };
 
-window.toggleOnlyActiveWorkshop = function () {};
+window.toggleOnlyActiveWorkshop = function (onlyActive) {
+    const zeroRows = document.querySelectorAll('.workshop-row-zero');
+    const searchVal = (document.getElementById('workshop-report-search') ? document.getElementById('workshop-report-search').value : '').trim();
+    zeroRows.forEach(row => {
+        if (!onlyActive || searchVal !== '') {
+            row.style.display = '';
+        } else {
+            row.style.display = 'none';
+        }
+    });
+};
 
 window.filterInterventionTable = function (query) {
     const table = document.querySelector('.data-mgmt-content table');
@@ -5170,7 +5006,7 @@ window.openWashModal = async function (vehicleId) {
         if (stationElem) stationElem.value = 'IP VIA CANAPA';
 
         const kmElem = document.getElementById('wash-km');
-        if (kmElem) kmElem.value = vehicle.km || vehicle.mileage || '';
+        if (kmElem) kmElem.value = vehicle.km || '';
 
         const dateElem = document.getElementById('wash-date');
         if (dateElem) dateElem.value = getLocalISODate();
@@ -5209,324 +5045,6 @@ window.closeWashModal = function () {
     if (modal) modal.classList.add('hidden');
 };
 
-window.printWashModule = async function (vehicleId) {
-    try {
-        const escapeHtml = (str) => {
-            if (!str) return '';
-            return String(str)
-                .replace(/&/g, '&amp;')
-                .replace(/</g, '&lt;')
-                .replace(/>/g, '&gt;')
-                .replace(/"/g, '&quot;')
-                .replace(/'/g, '&#039;');
-        };
-
-        const targetVehicleId = vehicleId || window.currentWashVehicleId || currentOpenedVehicleId;
-        let vehicle = (cachedVehicles && cachedVehicles.find(v => v.id === targetVehicleId));
-        if (!vehicle && targetVehicleId && window.store) {
-            try {
-                vehicle = await store.getVehicleById(targetVehicleId);
-            } catch (e) {}
-        }
-
-        // Targa e sigla: es. AMBULANZA FF 837 RS ECHO 22
-        let targa = '';
-        const displayElem = document.getElementById('wash-vehicle-display');
-        if (displayElem && displayElem.value && !vehicleId) {
-            targa = displayElem.value.trim();
-        } else if (vehicle) {
-            const parts = ['AMBULANZA'];
-            if (vehicle.plate) parts.push(vehicle.plate);
-            if (vehicle.sigla) parts.push(vehicle.sigla);
-            targa = parts.join(' ');
-        } else {
-            targa = 'AMBULANZA';
-        }
-
-        // Officina / Stazione
-        let station = 'IP VIA CANAPA';
-        const stationElem = document.getElementById('wash-station');
-        if (stationElem && stationElem.value && !vehicleId) {
-            station = stationElem.value.trim();
-        }
-
-        // Km
-        let km = '';
-        const kmElem = document.getElementById('wash-km');
-        if (kmElem && kmElem.value && !vehicleId) {
-            km = kmElem.value.trim();
-        } else if (vehicle) {
-            km = (vehicle.km || vehicle.mileage || '').toString().trim();
-        }
-
-        // Data (DD/MM/YYYY)
-        let dateVal = '';
-        const dateElem = document.getElementById('wash-date');
-        if (dateElem && dateElem.value && !vehicleId) {
-            const rawDate = dateElem.value.trim();
-            if (rawDate && rawDate.includes('-')) {
-                const p = rawDate.split('-');
-                if (p.length === 3) dateVal = `${p[2]}/${p[1]}/${p[0]}`;
-            } else {
-                dateVal = rawDate;
-            }
-        }
-        if (!dateVal) {
-            const now = new Date();
-            dateVal = `${String(now.getDate()).padStart(2, '0')}/${String(now.getMonth() + 1).padStart(2, '0')}/${now.getFullYear()}`;
-        }
-
-        // Richiedente
-        let driver = 'MARSILI PAOLO – GAMBERONI FEDERICO – MARCHESINI LUCA';
-        const driverElem = document.getElementById('wash-driver');
-        if (driverElem && driverElem.value && !vehicleId) {
-            driver = driverElem.value.trim();
-        }
-
-        let phone = '3209229345';
-        const phoneElem = document.getElementById('wash-phone');
-        if (phoneElem && phoneElem.value && !vehicleId) {
-            phone = phoneElem.value.trim();
-        }
-
-        let email = 'logistica118fe@ausl.fe.it';
-        const emailElem = document.getElementById('wash-email');
-        if (emailElem && emailElem.value && !vehicleId) {
-            email = emailElem.value.trim();
-        }
-
-        // Tipologia di intervento: sempre LAVAGGIO ESTERNO (o da scelta nel modale)
-        let description = 'LAVAGGIO ESTERNO';
-        const radCompleto = document.getElementById('wash-type-completo');
-        if (radCompleto && radCompleto.checked && !vehicleId) {
-            description = 'LAVAGGIO ESTERNO E INTERNO PIÙ SANIFICAZIONE';
-        }
-
-        const dParts = dateVal.split('/');
-        const day = (dParts[0] || '29').padStart(2, '0');
-        const month = (dParts[1] || '01').padStart(2, '0');
-        const yearFull = (dParts[2] || '2026');
-        const yy = yearFull.length === 4 ? yearFull.slice(-2) : yearFull;
-
-        const logoImgTag = window.PARTS_SERVICES_LOGO_BASE64 ? `<img src="data:image/png;base64,${window.PARTS_SERVICES_LOGO_BASE64}" style="height: 70px; object-fit: contain; margin-bottom: 4px;" alt="Logo">` : '';
-
-        const htmlContent = `<!DOCTYPE html>
-<html lang="it">
-<head>
-    <meta charset="UTF-8">
-    <title>Modulo Lavaggio - ${escapeHtml(targa)}</title>
-    <style>
-        @page {
-            size: A4 portrait;
-            margin: 15mm 20mm 15mm 20mm;
-        }
-        * {
-            box-sizing: border-box;
-            -webkit-print-color-adjust: exact;
-            print-color-adjust: exact;
-        }
-        body {
-            font-family: Verdana, Geneva, Tahoma, sans-serif;
-            color: #000;
-            margin: 0;
-            padding: 0;
-            background: #fff;
-            font-size: 11pt;
-            line-height: 1.5;
-        }
-        .header-section {
-            margin-bottom: 24px;
-        }
-        .title-ps {
-            font-size: 17pt;
-            font-weight: bold;
-            color: #000;
-            letter-spacing: 0.5px;
-            margin-top: 2px;
-            margin-bottom: 2px;
-        }
-        .slogan-ps {
-            font-size: 10pt;
-            color: #222;
-            margin-bottom: 20px;
-        }
-        .oggetto-line {
-            font-size: 11.5pt;
-            font-weight: bold;
-            margin-bottom: 14px;
-            color: #000;
-        }
-        .spett-line {
-            font-size: 11pt;
-            margin-bottom: 14px;
-            color: #000;
-        }
-        .scrivere-line {
-            font-size: 9.5pt;
-            font-style: italic;
-            color: #444;
-            margin-bottom: 22px;
-        }
-        .statement-p {
-            font-size: 11pt;
-            margin-bottom: 14px;
-            line-height: 1.6;
-        }
-        .val-bold {
-            font-weight: bold;
-        }
-        .signature-block {
-            margin-top: 20px;
-            margin-bottom: 20px;
-        }
-        .sig-header {
-            font-size: 11.5pt;
-            font-weight: bold;
-            margin-bottom: 8px;
-        }
-        .sig-names-label {
-            font-size: 10.5pt;
-            color: #333;
-            margin-bottom: 4px;
-        }
-        .sig-names-val {
-            font-size: 11pt;
-            font-weight: bold;
-            padding-left: 30px;
-            margin-bottom: 8px;
-        }
-        .sig-contact {
-            font-size: 10.5pt;
-            margin-bottom: 6px;
-        }
-        .sig-date-row {
-            font-size: 10.5pt;
-            display: flex;
-            justify-content: space-between;
-            align-items: baseline;
-            margin-top: 8px;
-        }
-        .footer-line {
-            text-align: center;
-            margin-top: 40px;
-            font-size: 8.5pt;
-            color: #333;
-            line-height: 1.4;
-        }
-    </style>
-</head>
-<body>
-    <div class="header-section">
-        ${logoImgTag}
-        <div class="title-ps">PARTS &amp; SERVICES</div>
-        <div class="slogan-ps">Hard for your need</div>
-    </div>
-
-    <div class="oggetto-line">
-        OGGETTO: Ricovero Veicolo per manutenzione - consegna/ Ritiro
-    </div>
-
-    <div class="spett-line">
-        Spett: AZIENDA U.S.L. FERRARA Via Arturo Cassoli, 30 44121- FERRARA
-    </div>
-
-    <div class="scrivere-line">
-        Scrivere in modo chiaro e leggibile
-    </div>
-
-    <div class="statement-p">
-        Si comunica che il Veicolo: &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <span class="val-bold">${escapeHtml(targa)}</span>
-    </div>
-
-    <div class="statement-p">
-        Km: &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; è stato ricoverato presso l'officina: <span class="val-bold">${escapeHtml(station)}</span>
-    </div>
-
-    <div class="statement-p" style="margin-bottom: 24px;">
-        per svolgere i seguenti interventi: &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <span class="val-bold">${escapeHtml(description)}</span>
-    </div>
-
-    <!-- Sezione Consegna -->
-    <div class="signature-block">
-        <div class="sig-header">Consegna il veicolo:</div>
-        <div class="sig-names-label">Nome &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Cognome</div>
-        <div class="sig-names-val">${escapeHtml(driver)}</div>
-        <div class="sig-contact">Indirizzo e-mail: <span class="val-bold">${escapeHtml(email)}</span></div>
-        <div class="sig-contact">Nr. Cell.: <span class="val-bold">${escapeHtml(phone)}</span></div>
-        <div class="sig-date-row">
-            <span>data: …${day}...../…..${month}.../…….${yy}....</span>
-            <span>Firma _________________________________</span>
-        </div>
-    </div>
-
-    <!-- Sezione Ritiro -->
-    <div class="signature-block" style="margin-top: 24px;">
-        <div class="sig-header">Ritira il veicolo:</div>
-        <div class="sig-names-label">Nome &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Cognome</div>
-        <div class="sig-names-val">${escapeHtml(driver)}</div>
-        <div class="sig-contact">Indirizzo e-mail: <span class="val-bold">${escapeHtml(email)}</span></div>
-        <div class="sig-contact">Nr. Cell.: <span class="val-bold">${escapeHtml(phone)}</span></div>
-        <div class="sig-date-row">
-            <span>data: …${day}…../…${month}...../….${yy}…....</span>
-            <span>Firma _________________________________</span>
-        </div>
-    </div>
-
-    <div class="footer-line">
-        PARTS &amp; SERVICES - Via Pollenzo, 28 - 00166 Roma<br>
-        info@parts-services.it - www.parts-services.it - Tel. +39 0692936934
-    </div>
-</body>
-</html>`;
-
-        // Utilizzo di iframe invisibile per avviare la stampa nativa
-        let printFrame = document.getElementById('wash-print-iframe');
-        if (printFrame && printFrame.parentNode) {
-            printFrame.parentNode.removeChild(printFrame);
-        }
-        printFrame = document.createElement('iframe');
-        printFrame.id = 'wash-print-iframe';
-        printFrame.style.position = 'fixed';
-        printFrame.style.top = '-9999px';
-        printFrame.style.left = '-9999px';
-        printFrame.style.width = '1024px';
-        printFrame.style.height = '1024px';
-        printFrame.style.border = '0';
-        printFrame.style.opacity = '0';
-        printFrame.style.pointerEvents = 'none';
-        document.body.appendChild(printFrame);
-
-        const frameDoc = printFrame.contentWindow ? printFrame.contentWindow.document : printFrame.contentDocument;
-        frameDoc.open();
-        frameDoc.write(htmlContent);
-        frameDoc.close();
-
-        setTimeout(() => {
-            try {
-                printFrame.contentWindow.focus();
-                printFrame.contentWindow.print();
-            } catch (err) {
-                console.warn("Stampa via iframe non disponibile, apertura finestra:", err);
-                const win = window.open('', '_blank');
-                if (win) {
-                    win.document.write(htmlContent);
-                    win.document.close();
-                    win.focus();
-                    win.print();
-                }
-            }
-        }, 350);
-
-        // Chiudi il modal lavaggio se aperto
-        if (document.getElementById('wash-modal') && !document.getElementById('wash-modal').classList.contains('hidden')) {
-            window.closeWashModal();
-        }
-    } catch (err) {
-        console.error("Errore durante la stampa del modulo lavaggio:", err);
-        alert("Errore durante la preparazione per la stampa: " + (err.message || err));
-    }
-};
-
 window.generateAndDownloadWashDocx = async function () {
     try {
         const vehicleId = window.currentWashVehicleId || currentOpenedVehicleId;
@@ -5554,7 +5072,7 @@ window.generateAndDownloadWashDocx = async function () {
         const isCompleto = document.getElementById('wash-type-completo') && document.getElementById('wash-type-completo').checked;
         const description = isCompleto ? 'LAVAGGIO ESTERNO E INTERNO PIÙ SANIFICAZIONE' : 'LAVAGGIO ESTERNO';
 
-        let filenameInput = (document.getElementById('wash-filename') ? document.getElementById('wash-filename').value : '').trim();
+        let filenameInput = (document.getElementById('wash-filename').value || '').trim();
         let filename = filenameInput || ('modulo lavaggio ' + (vehicle ? `${vehicle.sigla || ''} ${vehicle.plate || ''}`.trim() : '')).trim();
         filename = filename.replace(/[\\/:*?"<>|]/g, "_");
         if (!filename.toLowerCase().endsWith(".docx")) {

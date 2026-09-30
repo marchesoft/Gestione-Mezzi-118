@@ -1,16 +1,16 @@
-# Regole e Contesto del Progetto (v3.3.9)
+# Regole e Contesto del Progetto (v3.3.2)
 
-Questo file definisce le linee guida e lo stato di salvataggio del progetto per garantire la coerenza con la versione **3.3.9**.
+Questo file definisce le linee guida e lo stato di salvataggio del progetto per garantire la coerenza con la versione **3.3.2**.
 
-## Stato di Riferimento (v3.3.9)
+## Stato di Riferimento (v3.3.2)
 
 1. **Gestione Versioni**:
-   - La versione attuale di riferimento è **3.3.9**.
-   - Qualsiasi modifica futura richiede l'avanzamento della versione (es. `3.4.0` o successive) in `app.js` (`const APP_VERSION = "X.Y.Z";`) e in `index.html` (header).
+   - La versione attuale di riferimento è **3.3.2**.
+   - Qualsiasi modifica futura richiede l'avanzamento della versione (es. `3.3.3` o successive) in `app.js` (`const APP_VERSION = "X.Y.Z";`) e in `index.html` (header).
 
 2. **Bypass della Cache (Cache-Busting)**:
    - I file `app.js` e `style.css` sono importati in `index.html` con il parametro di versione `?v=X.Y.Z` per forzare il caricamento immediato degli aggiornamenti sui dispositivi client (specialmente mobili).
-   - Esempio: `<link rel="stylesheet" href="style.css?v=3.3.9">`, `<script src="store.js?v=3.3.9"></script>` e `<script src="app.js?v=3.3.9"></script>`.
+   - Esempio: `<link rel="stylesheet" href="style.css?v=3.3.2">` e `<script src="app.js?v=3.3.2"></script>`.
    - Ad ogni cambio di codice, aggiornare questa stringa con la nuova versione dell'applicazione.
 
 3. **Integrazione Git e GitHub**:
@@ -94,43 +94,3 @@ Questo file definisce le linee guida e lo stato di salvataggio del progetto per 
     - Rimossa la tabella duplicata dello "Storico Richieste di Riparazione" posizionata in fondo al modal dei dettagli del veicolo (`openVehicleModal`) dopo lo "Storico Manutenzione".
     - Lo storico delle richieste di riparazione del singolo mezzo rimane comodamente consultabile e gestibile tramite il pulsante dedicato in alto **Storico Richieste** (con badge numerico) che apre la finestra modale dedicata `#vehicle-repair-history-modal`, oltre che dalla scheda globale **Riparazioni** in "Gestione Database".
 
-13. **Sede Attuale e Previsione Km a Fine Dicembre nel Report Officina (v3.3.3 / v3.3.4)**:
-    - Nella scheda **Report Officina** di "Gestione Database" sono state integrate due nuove colonne:
-      1. **Sede Attuale**: mostra la postazione in cui il mezzo è attualmente allocato (es. *FERRARA*, *ARGENTA*, *COMACCHIO*, ecc.) con il relativo coefficiente di percorrenza mensile stimato.
-      2. **Previsione Km (31 Dic)**: calcola la stima dei chilometri a fine anno:
-         $$\text{Previsione Km} = \text{Ultimi Km Rilevati} + (\text{Mesi rimanenti a Dicembre} \times \text{Km/Mese della Sede Attuale})$$
-    - **Tabella di percorrenza mensile per sede**:
-      - FERRARA: 3.000 km/mese
-      - ARGENTA: 5.000 km/mese
-      - LAGOSANTO: 6.000 km/mese
-      - DELTA: 6.000 km/mese
-      - COMACCHIO: 10.000 km/mese
-      - BONDENO: 10.000 km/mese
-      - PORTOMAGGIORE: 7.000 km/mese
-      - CENTO: 6.000 km/mese
-      - COPPARO: 12.000 km/mese
-      - CONA: 2.000 km/mese
-      - CASUMARO: 7.000 km/mese
-    - **Riassegnazione Dinamica**: In caso di spostamento o riassegnazione di un mezzo a un'altra postazione (es. da Ferrara a Copparo), il calcolo della previsione a fine anno si aggiorna automaticamente in tempo reale.
-    - **Filtro e Ricerca**: Il campo di ricerca istantanea della tabella consente di filtrare i veicoli anche per Sede/Postazione.
-    - **Esportazione Excel**: Aggiornata l'esportazione Excel del riepilogo con le colonne *Sede Attuale* e *Previsione Km a Fine Dicembre*.
-
-14. **Visualizzazione Completa Flotta nel Report Officina (v3.3.5)**:
-    - Rimossa la casella di spunta "Mostra solo con ricoveri" dalla barra filtri del Report Officina.
-    - Tutti i mezzi della flotta vengono ora mostrati sempre e per intero nella tabella, consentendo di visualizzare immediatamente per ciascun veicolo sia i dati di fermo macchina che la sede e la stima dei Km a fine anno.
-
-15. **Persistenza Dinamica Km Mensili nel Database Luoghi (v3.3.6)**:
-    - I Km mensili stimati per ciascuna sede sono ora salvati e gestiti direttamente come campo `km_monthly` all'interno della collection Firestore `locations`.
-    - Nella scheda **Luoghi** del modal "Gestione Database", gli amministratori possono visualizzare la colonna **Km Mensili Stimati** e modificarne il valore all'istante tramite il pulsante dedicato **Imposta Km** (`editLocationKmHandler`) o all'aggiunta di una nuova sede (`addLocationHandler`), senza dover modificare il codice sorgente dell'applicazione.
-    - Il calcolo della previsione a fine anno nel Report Officina legge dinamicamente i valori aggiornati dal database Firestore con fallback automatico alle costanti predefinite.
-    - Aggiornate le procedure di esportazione e importazione CSV della tabella Luoghi per includere la colonna *Km Mensili Stimati*.
-
-16. **Modulo Lavaggio Esterno Compilabile con Stampa Diretta (v3.3.9)**:
-    - Cliccando sul pulsante **Modulo Lavaggio** (`.btn-wash-request`) nella schermata dettagli del veicolo (`openVehicleModal`), si apre la finestra modale (`#wash-modal`) che consente di compilare o modificare all'occorrenza tutti i campi:
-      - *Veicolo*: precompilato con Sigla e Targa (es. `AMBULANZA FF 837 RS ECHO 22`).
-      - *Officina / Ricovero*: scelta tra `IP VIA CANAPA` (predefinita) e `CAVAGION`.
-      - *Km*: precompilato con i km correnti del mezzo, modificabile.
-      - *Data*: precompilata con la data odierna, modificabile.
-      - *Tipologia di Lavaggio*: scelta tra `LAVAGGIO ESTERNO` e `LAVAGGIO ESTERNO E INTERNO PIÙ SANIFICAZIONE`.
-      - *Operatore / Driver, Recapito Telefonico ed Email*: precompilati e modificabili.
-    - Premendo il pulsante **Stampa** nel modal, viene generato il documento ufficiale fedele al 100% con il logo originale Parts & Services e si avvia direttamente l'anteprima di stampa del browser su singola pagina A4.
