@@ -1,4 +1,4 @@
-const APP_VERSION = "3.3.5";
+const APP_VERSION = "3.3.6";
 let isAdmin = false;
 let cachedVehicles = null;
 let cachedLocations = null;
@@ -4078,36 +4078,41 @@ window.handleWashOptionChange = function (type) {
     const descEl = document.getElementById('repair-description');
     if (!descEl) return;
 
-    const textEsterno = "AUTOLAVAGGIO ESTERNO";
-    const textCompleto = "AUTOLAVAGGIO INTERNO ED ESTERNO PIÙ SANIFICAZIONE";
+    const textEsterno = "AUTOLAVAGGIO ESTERNO IP VIA CANAPA";
+    const textCompleto = "AUTOLAVAGGIO INTERNO ED ESTERNO PIÙ SANIFICAZIONE IP VIA CANAPA";
+    const allWashTexts = [
+        textEsterno,
+        textCompleto,
+        "AUTOLAVAGGIO ESTERNO",
+        "AUTOLAVAGGIO INTERNO ED ESTERNO PIÙ SANIFICAZIONE"
+    ];
 
-    let currentVal = descEl.value;
+    const cleanAllWashTexts = (str) => {
+        let res = str;
+        allWashTexts.forEach(t => {
+            const escaped = t.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+            res = res.replace(new RegExp('^' + escaped + '\\n?', 'i'), '');
+            res = res.replace(new RegExp('\\n?' + escaped + '$', 'i'), '');
+            res = res.replace(new RegExp(escaped + '\\n?', 'gi'), '');
+        });
+        return res.trim();
+    };
+
+    let baseText = cleanAllWashTexts(descEl.value);
 
     if (type === 'esterno') {
         if (chkEsterno && chkEsterno.checked) {
             if (chkCompleto) chkCompleto.checked = false;
-            // Rimuovi eventuale testo del lavaggio completo
-            currentVal = currentVal.replace(new RegExp('^' + textCompleto.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\n?', 'i'), '').trim();
-            if (!currentVal.toUpperCase().includes(textEsterno)) {
-                currentVal = textEsterno + (currentVal ? '\n' + currentVal : '');
-            }
-            descEl.value = currentVal;
+            descEl.value = textEsterno + (baseText ? '\n' + baseText : '');
         } else {
-            currentVal = currentVal.replace(new RegExp('^' + textEsterno.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\n?', 'i'), '').trim();
-            descEl.value = currentVal;
+            descEl.value = baseText;
         }
     } else if (type === 'completo') {
         if (chkCompleto && chkCompleto.checked) {
             if (chkEsterno) chkEsterno.checked = false;
-            // Rimuovi eventuale testo del lavaggio esterno
-            currentVal = currentVal.replace(new RegExp('^' + textEsterno.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\n?', 'i'), '').trim();
-            if (!currentVal.toUpperCase().includes(textCompleto)) {
-                currentVal = textCompleto + (currentVal ? '\n' + currentVal : '');
-            }
-            descEl.value = currentVal;
+            descEl.value = textCompleto + (baseText ? '\n' + baseText : '');
         } else {
-            currentVal = currentVal.replace(new RegExp('^' + textCompleto.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\n?', 'i'), '').trim();
-            descEl.value = currentVal;
+            descEl.value = baseText;
         }
     }
 };
@@ -4580,9 +4585,9 @@ window.generateAndDownloadRepairDocx = async function () {
 
         let descRaw = document.getElementById('repair-description').value.trim();
         if (chkLavaggioEsterno && !descRaw.toUpperCase().includes('AUTOLAVAGGIO ESTERNO') && !descRaw.toUpperCase().includes('LAVAGGIO ESTERNO')) {
-            descRaw = 'AUTOLAVAGGIO ESTERNO' + (descRaw ? '\n' + descRaw : '');
+            descRaw = 'AUTOLAVAGGIO ESTERNO IP VIA CANAPA' + (descRaw ? '\n' + descRaw : '');
         } else if (chkLavaggioCompleto && !descRaw.toUpperCase().includes('SANIFICAZIONE')) {
-            descRaw = 'AUTOLAVAGGIO INTERNO ED ESTERNO PIÙ SANIFICAZIONE' + (descRaw ? '\n' + descRaw : '');
+            descRaw = 'AUTOLAVAGGIO INTERNO ED ESTERNO PIÙ SANIFICAZIONE IP VIA CANAPA' + (descRaw ? '\n' + descRaw : '');
         }
 
         let filenameInput = (document.getElementById('repair-filename').value || '').trim();
