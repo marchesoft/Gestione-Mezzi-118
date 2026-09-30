@@ -1,4 +1,4 @@
-const APP_VERSION = "3.3.6";
+const APP_VERSION = "3.3.7";
 let isAdmin = false;
 let cachedVehicles = null;
 let cachedLocations = null;
@@ -1875,7 +1875,7 @@ window.openVehicleModal = async function (id) {
                             <button class="btn btn-repair-request" style="background: #16a34a; color: white; padding: 0.4rem 0.8rem; font-size: 0.85rem; border: none; border-radius: 0.375rem; cursor: pointer; display: flex; align-items: center; gap: 0.4rem;" onclick="openRepairRequestModal('${vehicle.id}')" title="Compila e scarica richiesta riparazione Word">
                                 <i class="fa-solid fa-file-word"></i> Richiesta Riparazione
                             </button>
-                            <button class="btn btn-wash-request" style="background: #06b6d4; color: white; padding: 0.4rem 0.8rem; font-size: 0.85rem; border: none; border-radius: 0.375rem; cursor: pointer; display: flex; align-items: center; gap: 0.4rem;" onclick="openWashModal('${vehicle.id}')" title="Compila e scarica modulo lavaggio Word (stampato)">
+                            <button class="btn btn-wash-request" style="background: #06b6d4; color: white; padding: 0.4rem 0.8rem; font-size: 0.85rem; border: none; border-radius: 0.375rem; cursor: pointer; display: flex; align-items: center; gap: 0.4rem;" onclick="openWashModal('${vehicle.id}')" title="Compila e stampa modulo lavaggio (stampato)">
                                 <i class="fa-solid fa-shower"></i> Modulo Lavaggio
                             </button>
                             <button class="btn" style="background: #0284c7; color: white; padding: 0.4rem 0.8rem; font-size: 0.85rem; border: none; border-radius: 0.375rem; cursor: pointer; display: flex; align-items: center; gap: 0.4rem;" onclick="openVehicleRepairHistoryModal('${vehicle.id}')" title="Visualizza lo storico delle richieste di riparazione">
@@ -5209,6 +5209,343 @@ window.closeWashModal = function () {
     if (modal) modal.classList.add('hidden');
 };
 
+window.printWashModule = function () {
+    try {
+        const escapeHtml = (str) => {
+            if (!str) return '';
+            return String(str)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#039;');
+        };
+
+        const vehicleId = window.currentWashVehicleId || currentOpenedVehicleId;
+        const vehicle = (cachedVehicles && cachedVehicles.find(v => v.id === vehicleId));
+
+        const targa = (document.getElementById('wash-vehicle-display').value || '').trim() || (vehicle ? `AMBULANZA ${vehicle.plate || ''} ${vehicle.sigla || ''}`.trim() : 'AMBULANZA');
+        const station = (document.getElementById('wash-station').value || 'IP VIA CANAPA').trim();
+        const km = (document.getElementById('wash-km').value || '').trim();
+        const rawDate = (document.getElementById('wash-date').value || '').trim();
+        let dateVal = rawDate;
+        if (rawDate && rawDate.includes('-')) {
+            const p = rawDate.split('-');
+            if (p.length === 3) dateVal = `${p[2]}/${p[1]}/${p[0]}`;
+        }
+        if (!dateVal) {
+            const now = new Date();
+            dateVal = `${String(now.getDate()).padStart(2, '0')}/${String(now.getMonth() + 1).padStart(2, '0')}/${now.getFullYear()}`;
+        }
+
+        const driver = (document.getElementById('wash-driver').value || 'MARSILI PAOLO – GAMBERONI FEDERICO – MARCHESINI LUCA').trim();
+        const phone = (document.getElementById('wash-phone').value || '3209229345').trim();
+        const email = (document.getElementById('wash-email').value || 'logistica118fe@ausl.fe.it').trim();
+
+        // Tipologia di intervento: scelta tra 2 opzioni
+        const isCompleto = document.getElementById('wash-type-completo') && document.getElementById('wash-type-completo').checked;
+        const description = isCompleto ? 'LAVAGGIO ESTERNO E INTERNO PIÙ SANIFICAZIONE' : 'LAVAGGIO ESTERNO';
+
+        const htmlContent = `<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <title>Modulo Lavaggio - ${escapeHtml(targa)}</title>
+    <style>
+        @page {
+            size: A4 portrait;
+            margin: 12mm 15mm 10mm 15mm;
+        }
+        * {
+            box-sizing: border-box;
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+        }
+        body {
+            font-family: Arial, "Helvetica Neue", Helvetica, sans-serif;
+            color: #0f172a;
+            margin: 0;
+            padding: 0;
+            background: #fff;
+            font-size: 11pt;
+            line-height: 1.4;
+        }
+        .header-wrap {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            border-bottom: 2px solid #0f172a;
+            padding-bottom: 10px;
+            margin-bottom: 12px;
+        }
+        .logo-title {
+            font-size: 20pt;
+            font-weight: 900;
+            color: #0f172a;
+            letter-spacing: 0.5px;
+            line-height: 1;
+        }
+        .logo-sub {
+            font-size: 8.5pt;
+            font-style: italic;
+            color: #64748b;
+            margin-top: 3px;
+        }
+        .spett-box {
+            text-align: right;
+            font-size: 10pt;
+            line-height: 1.3;
+            color: #334155;
+        }
+        .spett-box strong {
+            font-size: 10.5pt;
+            color: #0f172a;
+        }
+        .subject-bar {
+            background: #f1f5f9;
+            border: 1.5px solid #0f172a;
+            padding: 8px 12px;
+            font-size: 11.5pt;
+            font-weight: 800;
+            text-transform: uppercase;
+            text-align: center;
+            letter-spacing: 0.5px;
+            margin-bottom: 8px;
+        }
+        .instruction-note {
+            font-size: 8.5pt;
+            font-style: italic;
+            color: #64748b;
+            text-align: right;
+            margin-bottom: 12px;
+        }
+        .main-statement {
+            font-size: 11.5pt;
+            line-height: 1.7;
+            margin-bottom: 12px;
+            padding: 10px 14px;
+            border: 1px solid #cbd5e1;
+            border-radius: 6px;
+            background: #ffffff;
+        }
+        .highlight {
+            font-weight: 800;
+            color: #000;
+        }
+        .intervention-box {
+            margin-top: 8px;
+            padding: 8px 14px;
+            background: #f8fafc;
+            border: 2px solid #0284c7;
+            border-radius: 6px;
+            font-size: 11.5pt;
+            font-weight: 800;
+            color: #0369a1;
+            display: inline-block;
+        }
+        .section-box {
+            border: 1.5px solid #94a3b8;
+            border-radius: 6px;
+            padding: 12px 14px;
+            margin-bottom: 12px;
+            background: #ffffff;
+        }
+        .section-header {
+            font-size: 11pt;
+            font-weight: 800;
+            color: #0f172a;
+            text-transform: uppercase;
+            margin-bottom: 8px;
+            border-bottom: 1px solid #cbd5e1;
+            padding-bottom: 4px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .row-item {
+            display: flex;
+            margin-bottom: 6px;
+            font-size: 10.5pt;
+        }
+        .row-item .label {
+            width: 140px;
+            font-weight: 600;
+            color: #475569;
+            flex-shrink: 0;
+        }
+        .row-item .val {
+            font-weight: 700;
+            color: #0f172a;
+            flex-grow: 1;
+        }
+        .sign-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+            margin-top: 14px;
+            padding-top: 6px;
+        }
+        .sign-field {
+            display: flex;
+            align-items: flex-end;
+            gap: 8px;
+        }
+        .sign-line {
+            width: 220px;
+            border-bottom: 1.5px solid #0f172a;
+            height: 20px;
+        }
+        .footer-info {
+            margin-top: 14px;
+            border-top: 1px solid #cbd5e1;
+            padding-top: 8px;
+            text-align: center;
+            font-size: 8pt;
+            color: #64748b;
+            line-height: 1.35;
+        }
+    </style>
+</head>
+<body>
+    <div class="header-wrap">
+        <div>
+            <div class="logo-title">PARTS &amp; SERVICES</div>
+            <div class="logo-sub">Hard for your need</div>
+        </div>
+        <div class="spett-box">
+            <strong>Spett: AZIENDA U.S.L. FERRARA</strong><br>
+            Via Arturo Cassoli, 30<br>
+            44121 - FERRARA
+        </div>
+    </div>
+
+    <div class="subject-bar">
+        OGGETTO: Ricovero Veicolo per manutenzione - Consegna / Ritiro
+    </div>
+
+    <div class="instruction-note">
+        Scrivere in modo chiaro e leggibile
+    </div>
+
+    <div class="main-statement">
+        <div>Si comunica che il Veicolo: <span class="highlight">${escapeHtml(targa)}</span></div>
+        <div style="margin-top: 4px;">
+            Km: <span class="highlight">${escapeHtml(km || '__________')}</span> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 
+            è stato ricoverato presso l'officina: <span class="highlight">${escapeHtml(station)}</span>
+        </div>
+        <div style="margin-top: 6px;">
+            per svolgere i seguenti interventi:
+            <div>
+                <div class="intervention-box">
+                    &#9632; ${escapeHtml(description)}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Sezione Consegna -->
+    <div class="section-box">
+        <div class="section-header">&#9658; Consegna il veicolo:</div>
+        <div class="row-item">
+            <span class="label">Nome Cognome:</span>
+            <span class="val">${escapeHtml(driver)}</span>
+        </div>
+        <div class="row-item">
+            <span class="label">Indirizzo e-mail:</span>
+            <span class="val">${escapeHtml(email)}</span>
+        </div>
+        <div class="row-item">
+            <span class="label">Nr. Cellulare:</span>
+            <span class="val">${escapeHtml(phone)}</span>
+        </div>
+        <div class="sign-row">
+            <div>
+                <strong>Data:</strong> <span class="highlight" style="border-bottom: 1px solid #000; padding: 0 12px;">${escapeHtml(dateVal)}</span>
+            </div>
+            <div class="sign-field">
+                <strong>Firma:</strong>
+                <div class="sign-line"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Sezione Ritiro -->
+    <div class="section-box">
+        <div class="section-header">&#9658; Ritira il veicolo:</div>
+        <div class="row-item">
+            <span class="label">Nome Cognome:</span>
+            <span class="val">${escapeHtml(driver)}</span>
+        </div>
+        <div class="row-item">
+            <span class="label">Indirizzo e-mail:</span>
+            <span class="val">${escapeHtml(email)}</span>
+        </div>
+        <div class="row-item">
+            <span class="label">Nr. Cellulare:</span>
+            <span class="val">${escapeHtml(phone)}</span>
+        </div>
+        <div class="sign-row">
+            <div>
+                <strong>Data:</strong> <span class="highlight" style="border-bottom: 1px solid #000; padding: 0 12px;">${escapeHtml(dateVal)}</span>
+            </div>
+            <div class="sign-field">
+                <strong>Firma:</strong>
+                <div class="sign-line"></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="footer-info">
+        <strong>PARTS &amp; SERVICES</strong> - Via Pollenzo, 28 - 00166 Roma<br>
+        info@parts-services.it - www.parts-services.it - Tel. +39 0692936934
+    </div>
+</body>
+</html>`;
+
+        // Utilizzo di iframe invisibile per avviare la stampa nativa
+        let printFrame = document.getElementById('wash-print-iframe');
+        if (printFrame && printFrame.parentNode) {
+            printFrame.parentNode.removeChild(printFrame);
+        }
+        printFrame = document.createElement('iframe');
+        printFrame.id = 'wash-print-iframe';
+        printFrame.style.position = 'fixed';
+        printFrame.style.right = '0';
+        printFrame.style.bottom = '0';
+        printFrame.style.width = '0';
+        printFrame.style.height = '0';
+        printFrame.style.border = '0';
+        document.body.appendChild(printFrame);
+
+        const frameDoc = printFrame.contentWindow ? printFrame.contentWindow.document : printFrame.contentDocument;
+        frameDoc.open();
+        frameDoc.write(htmlContent);
+        frameDoc.close();
+
+        setTimeout(() => {
+            try {
+                printFrame.contentWindow.focus();
+                printFrame.contentWindow.print();
+            } catch (err) {
+                console.warn("Stampa via iframe non disponibile, apertura finestra:", err);
+                const win = window.open('', '_blank');
+                if (win) {
+                    win.document.write(htmlContent);
+                    win.document.close();
+                    win.focus();
+                    win.print();
+                }
+            }
+        }, 350);
+
+        // Chiudi il modal lavaggio
+        window.closeWashModal();
+    } catch (err) {
+        console.error("Errore durante la stampa del modulo lavaggio:", err);
+        alert("Errore durante la preparazione per la stampa: " + (err.message || err));
+    }
+};
+
 window.generateAndDownloadWashDocx = async function () {
     try {
         const vehicleId = window.currentWashVehicleId || currentOpenedVehicleId;
@@ -5236,7 +5573,7 @@ window.generateAndDownloadWashDocx = async function () {
         const isCompleto = document.getElementById('wash-type-completo') && document.getElementById('wash-type-completo').checked;
         const description = isCompleto ? 'LAVAGGIO ESTERNO E INTERNO PIÙ SANIFICAZIONE' : 'LAVAGGIO ESTERNO';
 
-        let filenameInput = (document.getElementById('wash-filename').value || '').trim();
+        let filenameInput = (document.getElementById('wash-filename') ? document.getElementById('wash-filename').value : '').trim();
         let filename = filenameInput || ('modulo lavaggio ' + (vehicle ? `${vehicle.sigla || ''} ${vehicle.plate || ''}`.trim() : '')).trim();
         filename = filename.replace(/[\\/:*?"<>|]/g, "_");
         if (!filename.toLowerCase().endsWith(".docx")) {

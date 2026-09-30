@@ -25,7 +25,7 @@
     <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <!-- App Styles -->
-    <link rel="stylesheet" href="style.css?v=3.3.6">
+    <link rel="stylesheet" href="style.css?v=3.3.7">
 </head>
 
 <body>
@@ -876,7 +876,7 @@
         </div>
     </div>
 
-    <!-- Modal Modulo Lavaggio Esterno (Stampato Word Parts & Services) -->
+    <!-- Modal Modulo Lavaggio Esterno (Stampato Parts & Services) -->
     <div id="wash-modal" class="modal hidden" style="z-index: 2550;">
         <div class="modal-content" style="max-width: 720px; height: auto; max-height: 90vh; display: flex; flex-direction: column;">
             <div class="modal-header-mgmt" style="background: #ecfeff; border-bottom: 2px solid #a5f3fc; display: flex; justify-content: space-between; align-items: center; padding: 1rem 1.5rem;">
@@ -889,7 +889,7 @@
                             <h2 class="modal-title-mgmt" style="font-size: 1.25rem; color: #0e7490; margin: 0; font-weight: 800;">Modulo Lavaggio Esterno</h2>
                             <span style="font-size: 0.72rem; padding: 0.2rem 0.55rem; border-radius: 9999px; background: #cffafe; color: #0891b2; font-weight: 700; text-transform: uppercase; letter-spacing: 0.03em;">Solo Stampato</span>
                         </div>
-                        <span style="font-size: 0.85rem; color: #0891b2;">Compila i dettagli e scarica lo stampato Word (.docx)</span>
+                        <span style="font-size: 0.85rem; color: #0891b2;">Compila i dettagli e stampa lo stampato di ricovero</span>
                     </div>
                 </div>
                 <button class="close-modal" onclick="closeWashModal()" style="font-size: 1.8rem; background: none; border: none; cursor: pointer; color: #64748b;">&times;</button>
@@ -961,25 +961,14 @@
                         </div>
                     </div>
                 </div>
-
-                <!-- Nome file Word -->
-                <div style="background: #f1f5f9; padding: 0.75rem 1rem; border-radius: 0.5rem; border: 1px solid #cbd5e1; display: flex; flex-direction: column; gap: 0.25rem;">
-                    <label style="font-size: 0.75rem; font-weight: 700; color: #475569; text-transform: uppercase;">
-                        <i class="fa-solid fa-file-arrow-down"></i> Nome File Word da Salvare (.docx)
-                    </label>
-                    <div style="display: flex; align-items: center; gap: 0.5rem;">
-                        <input type="text" id="wash-filename" placeholder="Es. modulo lavaggio ECHO 22 FF 837 RS" style="flex: 1; padding: 0.5rem 0.75rem; border: 1px solid #94a3b8; border-radius: 0.375rem; font-weight: 600; color: #0f172a;">
-                        <span style="font-weight: 700; color: #64748b; font-size: 0.95rem;">.docx</span>
-                    </div>
-                </div>
             </div>
 
             <div class="modal-footer" style="padding: 1rem 1.5rem; border-top: 1px solid var(--border-color); display: flex; justify-content: flex-end; gap: 0.75rem; background: white; border-radius: 0 0 var(--radius-xl) var(--radius-xl);">
                 <button type="button" class="btn" onclick="closeWashModal()" style="padding: 0.6rem 1.25rem; font-size: 0.95rem;">
                     Annulla
                 </button>
-                <button type="button" class="btn btn-wash-request" onclick="generateAndDownloadWashDocx()" style="background: #06b6d4; color: white; padding: 0.6rem 1.5rem; font-size: 0.95rem; display: flex; align-items: center; gap: 0.5rem; border: none; border-radius: 0.375rem; cursor: pointer; font-weight: 600;">
-                    <i class="fa-solid fa-download"></i> Scarica Modulo Word (.docx)
+                <button type="button" class="btn btn-wash-request" onclick="printWashModule()" style="background: #06b6d4; color: white; padding: 0.6rem 1.5rem; font-size: 0.95rem; display: flex; align-items: center; gap: 0.5rem; border: none; border-radius: 0.375rem; cursor: pointer; font-weight: 600;">
+                    <i class="fa-solid fa-print"></i> Stampa
                 </button>
             </div>
         </div>
@@ -1024,8 +1013,8 @@
 
     <script src="firebase-config.js"></script>
 
-    <script src="store.js?v=3.3.6"></script>
-    <script src="app.js?v=3.3.6"></script>
+    <script src="store.js?v=3.3.7"></script>
+    <script src="app.js?v=3.3.7"></script>
 </body>
 
 </html>
