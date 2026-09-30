@@ -1,4 +1,4 @@
-const APP_VERSION = "3.3.5";
+const APP_VERSION = "3.3.6";
 let isAdmin = false;
 let cachedVehicles = null;
 let cachedLocations = null;
@@ -6,8 +6,8 @@ let currentOpenedVehicleId = null;
 let lastRefreshTime = new Date();
 let currentFilter = 'all';
 
-// Coefficienti di percorrenza mensile stimata per sede (Km/mese)
-const MONTHLY_KM_BY_STATION = {
+// Tabella di fallback predefinita per Km mensili per sede (se non ancora salvati a DB)
+const DEFAULT_MONTHLY_KM_BY_STATION = {
     'FERRARA': 3000,
     'ARGENTA': 5000,
     'LAGOSANTO': 6000,
@@ -20,7 +20,8 @@ const MONTHLY_KM_BY_STATION = {
     'CONA': 2000,
     'CASUMARO': 7000
 };
-window.MONTHLY_KM_BY_STATION = MONTHLY_KM_BY_STATION;
+window.DEFAULT_MONTHLY_KM_BY_STATION = DEFAULT_MONTHLY_KM_BY_STATION;
+window.MONTHLY_KM_BY_STATION = DEFAULT_MONTHLY_KM_BY_STATION;
 
 // Helper to ensure strings are uppercase
 const upper = (str) => (str || '').toString().toUpperCase().trim();
@@ -36,11 +37,24 @@ window.normalizeVehicleText = function (str) {
         .trim();
 };
 
-// Calcolo Km/mese stimati per sede
+// Calcolo Km/mese stimati per sede: legge prima da cachedLocations (DB) e poi fallback
 window.getMonthlyKmForStation = function (station) {
     if (!station) return 0;
     const cleanStation = window.normalizeVehicleText(station);
-    for (const [key, val] of Object.entries(MONTHLY_KM_BY_STATION)) {
+
+    // 1. Cerca nei luoghi caricati dal database (cachedLocations)
+    if (cachedLocations && Array.isArray(cachedLocations)) {
+        const found = cachedLocations.find(l => {
+            const locName = window.normalizeVehicleText(l.luogo || l.name);
+            return locName === cleanStation || cleanStation.includes(locName) || locName.includes(cleanStation);
+        });
+        if (found && found.km_monthly !== undefined && found.km_monthly !== null && !isNaN(Number(found.km_monthly))) {
+            return Number(found.km_monthly);
+        }
+    }
+
+    // 2. Fallback su costanti predefinite
+    for (const [key, val] of Object.entries(DEFAULT_MONTHLY_KM_BY_STATION)) {
         if (cleanStation === key || cleanStation.includes(key)) {
             return val;
         }
@@ -1652,18 +1666,24 @@ function setupEventListeners() {
 
 window.addLocationHandler = async function (e) {
     if (e && e.preventDefault) e.preventDefault();
-    const name = prompt("Nome del nuovo luogo:");
-    if (!name) return;
+    const name = prompt("Nome della nuova sede / luogo:");
+    if (!name || name.trim() === '') return;
+
+    const defaultKm = window.getMonthlyKmForStation(name) || 0;
+    const kmStr = prompt(`Km mensili stimati per ${upper(name)}:`, defaultKm > 0 ? defaultKm : '3000');
+    const kmVal = (kmStr !== null && kmStr.trim() !== '') ? parseInt(kmStr.replace(/[^0-9]/g, ''), 10) || 0 : defaultKm;
+
     const color = "#3b82f6";
     try {
-        await store.addLocation(upper(name), color);
-        // Refresh directly
+        await store.addLocation(upper(name), color, kmVal);
+        cachedLocations = await store.getLocations();
         await renderDashboard(true);
         if (!document.getElementById('data-management-modal').classList.contains('hidden')) {
             switchDataTable('locations');
         }
     } catch (err) {
         console.error("Error adding location:", err);
+        alert("Errore durante l'aggiunta del luogo: " + err.message);
     }
 };
 
@@ -1673,7 +1693,7 @@ window.editLocationHandler = async function (oldName) {
 
     try {
         await store.updateLocation(upper(oldName), upper(newName));
-        // Refresh dashboard to reflect station changes in vehicle cards
+        cachedLocations = await store.getLocations();
         await renderDashboard(true);
         if (!document.getElementById('data-management-modal').classList.contains('hidden')) {
             switchDataTable('locations');
@@ -1681,6 +1701,32 @@ window.editLocationHandler = async function (oldName) {
         console.log("Luogo aggiornato con successo!");
     } catch (err) {
         console.error("Error editing location:", err);
+        alert("Errore durante la modifica del luogo: " + err.message);
+    }
+};
+
+window.editLocationKmHandler = async function (locationName, currentKm) {
+    const currentVal = (currentKm !== undefined && currentKm !== null) ? currentKm : (window.getMonthlyKmForStation(locationName) || 0);
+    const input = prompt(`Inserisci i Km mensili stimati per la sede ${locationName}:`, currentVal);
+    if (input === null) return; // Annullato
+
+    const num = parseInt(input.toString().replace(/[^0-9]/g, ''), 10);
+    const newKm = isNaN(num) ? 0 : num;
+
+    try {
+        await store.saveLocationKm(locationName, newKm);
+        cachedLocations = await store.getLocations();
+        // Ricarica la tabella corrente
+        if (!document.getElementById('data-management-modal').classList.contains('hidden')) {
+            if (window.lastDataManagerTab === 'locations') {
+                switchDataTable('locations');
+            } else if (window.lastDataManagerTab === 'report_officina') {
+                switchDataTable('report_officina');
+            }
+        }
+    } catch (err) {
+        console.error("Error updating location km:", err);
+        alert("Errore durante il salvataggio dei Km mensili: " + err.message);
     }
 };
 
@@ -2521,7 +2567,18 @@ window.exportCurrentTableToCSV = async function () {
 
         // Fetch fresh data for export
         if (type === 'vehicles') data = await store.getVehicles();
-        else if (type === 'locations') data = await store.getLocations();
+        else if (type === 'locations') {
+            const rawLocs = await store.getLocations();
+            data = rawLocs.map(l => {
+                const defaultKm = window.DEFAULT_MONTHLY_KM_BY_STATION[l.luogo] || 0;
+                const km = (l.km_monthly !== null && l.km_monthly !== undefined) ? l.km_monthly : defaultKm;
+                return {
+                    luogo: l.luogo,
+                    km_monthly: km,
+                    colore: l.colore || '#3b82f6'
+                };
+            });
+        }
         else if (type === 'interventions') data = await store.getInterventions();
         else if (type === 'cambiomezzo') data = await store.getCambiMezzi();
         else if (type === 'contacts') data = await store.getContacts();
@@ -2696,8 +2753,8 @@ window.exportCurrentTableToCSV = async function () {
             const italianHeaders = ['ID (Non modificare)', 'Targa', 'Modello', 'Sigla', 'Stazione', 'Stato', 'Km', 'Mese Km', 'Note', 'Note Interne', 'Radio ID', 'Scadenza Revisione', 'Revisione O2'];
             csvRows.push(italianHeaders.join(';'));
         } else if (type === 'locations') {
-            headers = ['luogo', 'colore'];
-            const italianHeaders = ['Luogo', 'Colore'];
+            headers = ['luogo', 'km_monthly', 'colore'];
+            const italianHeaders = ['Sede / Luogo', 'Km Mensili Stimati', 'Colore'];
             csvRows.push(italianHeaders.join(';'));
         } else if (type === 'interventions') {
             headers = ['id', 'date', 'date_out', 'sigla', 'workshop', 'description', 'cost'];
@@ -2923,7 +2980,8 @@ window.importDataTableFromCSV = function () {
                         'Revisione O2': 'revision_o2', 'revision_o2': 'revision_o2'
                     },
                     'locations': {
-                        'Luogo': 'name', 'luogo': 'name', 'name': 'name',
+                        'Luogo': 'name', 'luogo': 'name', 'name': 'name', 'Sede / Luogo': 'name',
+                        'Km Mensili Stimati': 'km_monthly', 'km_monthly': 'km_monthly', 'Km Mese': 'km_monthly', 'km_mese': 'km_monthly', 'km': 'km_monthly',
                         'Colore': 'colore', 'colore': 'colore'
                     },
                     'interventions': {
@@ -3135,18 +3193,22 @@ window.switchDataTable = async function (type) {
                 </div>`;
         } else if (type === 'locations') {
             data = await store.getLocations();
+            cachedLocations = data;
             html = `
-                <div style="margin-bottom: 1.5rem; background: #f8fafc; padding: 1rem; border-radius: 0.75rem; border: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; gap: 1rem;">
-                    <h4 style="font-size: 0.9rem;">Elenco Luoghi</h4>
+                <div style="margin-bottom: 1.5rem; background: #f8fafc; padding: 1rem; border-radius: 0.75rem; border: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; gap: 1rem; flex-wrap: wrap;">
+                    <div>
+                        <h4 style="font-size: 1rem; margin: 0; font-weight: 700; color: #1e293b;">Elenco Sedi e Percorrenze Mensili</h4>
+                        <div style="font-size: 0.8rem; color: #64748b; margin-top: 0.2rem;">Configura i Km/mese per ciascuna postazione usati per calcolare la previsione a fine anno</div>
+                    </div>
                     ${isAdmin ? `
-                    <div style="display: flex; gap: 0.5rem; align-items: center;">
+                    <div style="display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;">
                         <button class="btn btn-export" onclick="exportCurrentTableToCSV()" style="white-space: nowrap;">
                             <i class="fa-solid fa-file-excel"></i> Esporta Excel
                         </button>
                         <button class="btn btn-export" onclick="importDataTableFromCSV()" style="white-space: nowrap; background-color: #065f46;">
                             <i class="fa-solid fa-file-import"></i> Importa Excel
                         </button>
-                        <button class="btn btn-primary" onclick="window.addLocationHandler();" style="padding: 0.5rem 1rem;"><i class="fa-solid fa-plus"></i> Nuovo Luogo</button>
+                        <button class="btn btn-primary" onclick="window.addLocationHandler();" style="padding: 0.5rem 1rem;"><i class="fa-solid fa-plus"></i> Nuova Sede</button>
                     </div>
                     ` : ''}
                 </div>
@@ -3154,19 +3216,39 @@ window.switchDataTable = async function (type) {
                     <table class="mgmt-table">
                         <thead>
                             <tr>
-                                <th>Luogo</th>
-                                ${isAdmin ? '<th class="col-actions">Azioni</th>' : ''}
+                                <th class="col-shrink">Sede / Postazione</th>
+                                <th class="col-shrink" style="text-align: right;">Km Mensili Stimati</th>
+                                ${isAdmin ? '<th class="col-actions" style="text-align: right;">Azioni</th>' : ''}
                             </tr>
                         </thead>
                         <tbody>
-                            ${data.map(l =>
-                '<tr>'
-                + `<td>${l.luogo}</td>`
-                + (isAdmin ? '<td class="col-actions">'
-                    + `<button onclick="window.editLocationHandler('${l.luogo}')" style="margin-right:0.5rem; cursor:pointer; background:none; border:none; color:var(--primary-color);"><i class="fa-solid fa-edit"></i></button>`
-                    + `<button onclick="setTimeout(() => { if(confirm('Eliminare questo luogo?')){store.deleteLocation('${l.luogo}').then(() => switchDataTable('locations'))} }, 50)" style="cursor:pointer; background:none; border:none; color:var(--status-to-repair);"><i class="fa-solid fa-trash"></i></button>`
-                    + '</td>' : '') + '</tr>'
-            ).join('')}
+                            ${data.map(l => {
+                                const defaultKm = window.DEFAULT_MONTHLY_KM_BY_STATION[l.luogo] || 0;
+                                const km = (l.km_monthly !== null && l.km_monthly !== undefined) ? l.km_monthly : defaultKm;
+                                const kmDisplay = km > 0 
+                                    ? `<span style="font-weight: 700; color: #047857; font-size: 0.95rem;">${km.toLocaleString()} km/mese</span>` 
+                                    : `<span style="color: var(--text-secondary); font-size: 0.85rem;">Non impostato</span>`;
+                                return `
+                                    <tr>
+                                        <td class="col-shrink" style="font-weight: 600; font-size: 0.95rem; color: #1e293b;">${l.luogo}</td>
+                                        <td class="col-shrink" style="text-align: right; white-space: nowrap;">
+                                            ${kmDisplay}
+                                        </td>
+                                        ${isAdmin ? `
+                                        <td class="col-actions" style="text-align: right; white-space: nowrap;">
+                                            <button class="btn" onclick="window.editLocationKmHandler('${l.luogo}', ${km})" title="Modifica Km Mensili" style="padding: 0.3rem 0.6rem; font-size: 0.8rem; background: #ecfdf5; color: #047857; border: 1px solid #a7f3d0; border-radius: 0.35rem; cursor: pointer; margin-right: 0.35rem;">
+                                                <i class="fa-solid fa-gauge-high"></i> Imposta Km
+                                            </button>
+                                            <button class="btn" onclick="window.editLocationHandler('${l.luogo}')" title="Rinomina Sede" style="padding: 0.3rem 0.6rem; font-size: 0.8rem; background: #eff6ff; color: #1d4ed8; border: 1px solid #bfdbfe; border-radius: 0.35rem; cursor: pointer; margin-right: 0.35rem;">
+                                                <i class="fa-solid fa-edit"></i>
+                                            </button>
+                                            <button class="btn" onclick="setTimeout(() => { if(confirm('Eliminare la sede ${l.luogo}?')){store.deleteLocation('${l.luogo}').then(() => switchDataTable('locations'))} }, 50)" title="Elimina Sede" style="padding: 0.3rem 0.6rem; font-size: 0.8rem; background: #fef2f2; color: #b91c1c; border: 1px solid #fecaca; border-radius: 0.35rem; cursor: pointer;">
+                                                <i class="fa-solid fa-trash"></i>
+                                            </button>
+                                        </td>` : ''}
+                                    </tr>
+                                `;
+                            }).join('')}
                         </tbody>
                     </table>
                 </div>`;

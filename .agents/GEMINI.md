@@ -1,16 +1,16 @@
-# Regole e Contesto del Progetto (v3.3.5)
+# Regole e Contesto del Progetto (v3.3.6)
 
-Questo file definisce le linee guida e lo stato di salvataggio del progetto per garantire la coerenza con la versione **3.3.5**.
+Questo file definisce le linee guida e lo stato di salvataggio del progetto per garantire la coerenza con la versione **3.3.6**.
 
-## Stato di Riferimento (v3.3.5)
+## Stato di Riferimento (v3.3.6)
 
 1. **Gestione Versioni**:
-   - La versione attuale di riferimento è **3.3.5**.
-   - Qualsiasi modifica futura richiede l'avanzamento della versione (es. `3.3.6` o successive) in `app.js` (`const APP_VERSION = "X.Y.Z";`) e in `index.html` (header).
+   - La versione attuale di riferimento è **3.3.6**.
+   - Qualsiasi modifica futura richiede l'avanzamento della versione (es. `3.3.7` o successive) in `app.js` (`const APP_VERSION = "X.Y.Z";`) e in `index.html` (header).
 
 2. **Bypass della Cache (Cache-Busting)**:
    - I file `app.js` e `style.css` sono importati in `index.html` con il parametro di versione `?v=X.Y.Z` per forzare il caricamento immediato degli aggiornamenti sui dispositivi client (specialmente mobili).
-   - Esempio: `<link rel="stylesheet" href="style.css?v=3.3.5">` e `<script src="app.js?v=3.3.5"></script>`.
+   - Esempio: `<link rel="stylesheet" href="style.css?v=3.3.6">`, `<script src="store.js?v=3.3.6"></script>` e `<script src="app.js?v=3.3.6"></script>`.
    - Ad ogni cambio di codice, aggiornare questa stringa con la nuova versione dell'applicazione.
 
 3. **Integrazione Git e GitHub**:
@@ -118,6 +118,13 @@ Questo file definisce le linee guida e lo stato di salvataggio del progetto per 
 14. **Visualizzazione Completa Flotta nel Report Officina (v3.3.5)**:
     - Rimossa la casella di spunta "Mostra solo con ricoveri" dalla barra filtri del Report Officina.
     - Tutti i mezzi della flotta vengono ora mostrati sempre e per intero nella tabella, consentendo di visualizzare immediatamente per ciascun veicolo sia i dati di fermo macchina che la sede e la stima dei Km a fine anno.
+
+15. **Persistenza Dinamica Km Mensili nel Database Luoghi (v3.3.6)**:
+    - I Km mensili stimati per ciascuna sede sono ora salvati e gestiti direttamente come campo `km_monthly` all'interno della collection Firestore `locations`.
+    - Nella scheda **Luoghi** del modal "Gestione Database", gli amministratori possono visualizzare la colonna **Km Mensili Stimati** e modificarne il valore all'istante tramite il pulsante dedicato **Imposta Km** (`editLocationKmHandler`) o all'aggiunta di una nuova sede (`addLocationHandler`), senza dover modificare il codice sorgente dell'applicazione.
+    - Il calcolo della previsione a fine anno nel Report Officina legge dinamicamente i valori aggiornati dal database Firestore con fallback automatico alle costanti predefinite.
+    - Aggiornate le procedure di esportazione e importazione CSV della tabella Luoghi per includere la colonna *Km Mensili Stimati*.
+
 
 
 
