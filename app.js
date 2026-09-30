@@ -5302,6 +5302,14 @@ window.printWashModule = async function (vehicleId) {
             description = 'LAVAGGIO ESTERNO E INTERNO PIÙ SANIFICAZIONE';
         }
 
+        const dParts = dateVal.split('/');
+        const day = (dParts[0] || '29').padStart(2, '0');
+        const month = (dParts[1] || '01').padStart(2, '0');
+        const yearFull = (dParts[2] || '2026');
+        const yy = yearFull.length === 4 ? yearFull.slice(-2) : yearFull;
+
+        const logoImgTag = window.PARTS_SERVICES_LOGO_BASE64 ? `<img src="data:image/png;base64,${window.PARTS_SERVICES_LOGO_BASE64}" style="height: 70px; object-fit: contain; margin-bottom: 4px;" alt="Logo">` : '';
+
         const htmlContent = `<!DOCTYPE html>
 <html lang="it">
 <head>
@@ -5310,7 +5318,7 @@ window.printWashModule = async function (vehicleId) {
     <style>
         @page {
             size: A4 portrait;
-            margin: 12mm 15mm 10mm 15mm;
+            margin: 15mm 20mm 15mm 20mm;
         }
         * {
             box-sizing: border-box;
@@ -5318,241 +5326,154 @@ window.printWashModule = async function (vehicleId) {
             print-color-adjust: exact;
         }
         body {
-            font-family: Arial, "Helvetica Neue", Helvetica, sans-serif;
-            color: #0f172a;
+            font-family: Verdana, Geneva, Tahoma, sans-serif;
+            color: #000;
             margin: 0;
             padding: 0;
             background: #fff;
             font-size: 11pt;
-            line-height: 1.4;
+            line-height: 1.5;
         }
-        .header-wrap {
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-start;
-            border-bottom: 2px solid #0f172a;
-            padding-bottom: 10px;
-            margin-bottom: 12px;
+        .header-section {
+            margin-bottom: 24px;
         }
-        .logo-title {
-            font-size: 20pt;
-            font-weight: 900;
-            color: #0f172a;
+        .title-ps {
+            font-size: 17pt;
+            font-weight: bold;
+            color: #000;
             letter-spacing: 0.5px;
-            line-height: 1;
+            margin-top: 2px;
+            margin-bottom: 2px;
         }
-        .logo-sub {
-            font-size: 8.5pt;
-            font-style: italic;
-            color: #64748b;
-            margin-top: 3px;
-        }
-        .spett-box {
-            text-align: right;
+        .slogan-ps {
             font-size: 10pt;
-            line-height: 1.3;
-            color: #334155;
+            color: #222;
+            margin-bottom: 20px;
         }
-        .spett-box strong {
-            font-size: 10.5pt;
-            color: #0f172a;
-        }
-        .subject-bar {
-            background: #f1f5f9;
-            border: 1.5px solid #0f172a;
-            padding: 8px 12px;
+        .oggetto-line {
             font-size: 11.5pt;
-            font-weight: 800;
-            text-transform: uppercase;
-            text-align: center;
-            letter-spacing: 0.5px;
-            margin-bottom: 8px;
-        }
-        .instruction-note {
-            font-size: 8.5pt;
-            font-style: italic;
-            color: #64748b;
-            text-align: right;
-            margin-bottom: 12px;
-        }
-        .main-statement {
-            font-size: 11.5pt;
-            line-height: 1.7;
-            margin-bottom: 12px;
-            padding: 10px 14px;
-            border: 1px solid #cbd5e1;
-            border-radius: 6px;
-            background: #ffffff;
-        }
-        .highlight {
-            font-weight: 800;
+            font-weight: bold;
+            margin-bottom: 14px;
             color: #000;
         }
-        .intervention-box {
-            margin-top: 8px;
-            padding: 8px 14px;
-            background: #f8fafc;
-            border: 2px solid #0284c7;
-            border-radius: 6px;
-            font-size: 11.5pt;
-            font-weight: 800;
-            color: #0369a1;
-            display: inline-block;
-        }
-        .section-box {
-            border: 1.5px solid #94a3b8;
-            border-radius: 6px;
-            padding: 12px 14px;
-            margin-bottom: 12px;
-            background: #ffffff;
-        }
-        .section-header {
+        .spett-line {
             font-size: 11pt;
-            font-weight: 800;
-            color: #0f172a;
-            text-transform: uppercase;
+            margin-bottom: 14px;
+            color: #000;
+        }
+        .scrivere-line {
+            font-size: 9.5pt;
+            font-style: italic;
+            color: #444;
+            margin-bottom: 22px;
+        }
+        .statement-p {
+            font-size: 11pt;
+            margin-bottom: 14px;
+            line-height: 1.6;
+        }
+        .val-bold {
+            font-weight: bold;
+        }
+        .signature-block {
+            margin-top: 20px;
+            margin-bottom: 20px;
+        }
+        .sig-header {
+            font-size: 11.5pt;
+            font-weight: bold;
             margin-bottom: 8px;
-            border-bottom: 1px solid #cbd5e1;
-            padding-bottom: 4px;
-            display: flex;
-            align-items: center;
-            gap: 6px;
         }
-        .row-item {
-            display: flex;
-            margin-bottom: 6px;
+        .sig-names-label {
             font-size: 10.5pt;
+            color: #333;
+            margin-bottom: 4px;
         }
-        .row-item .label {
-            width: 140px;
-            font-weight: 600;
-            color: #475569;
-            flex-shrink: 0;
+        .sig-names-val {
+            font-size: 11pt;
+            font-weight: bold;
+            padding-left: 30px;
+            margin-bottom: 8px;
         }
-        .row-item .val {
-            font-weight: 700;
-            color: #0f172a;
-            flex-grow: 1;
+        .sig-contact {
+            font-size: 10.5pt;
+            margin-bottom: 6px;
         }
-        .sign-row {
+        .sig-date-row {
+            font-size: 10.5pt;
             display: flex;
             justify-content: space-between;
-            align-items: flex-end;
-            margin-top: 14px;
-            padding-top: 6px;
+            align-items: baseline;
+            margin-top: 8px;
         }
-        .sign-field {
-            display: flex;
-            align-items: flex-end;
-            gap: 8px;
-        }
-        .sign-line {
-            width: 220px;
-            border-bottom: 1.5px solid #0f172a;
-            height: 20px;
-        }
-        .footer-info {
-            margin-top: 14px;
-            border-top: 1px solid #cbd5e1;
-            padding-top: 8px;
+        .footer-line {
             text-align: center;
-            font-size: 8pt;
-            color: #64748b;
-            line-height: 1.35;
+            margin-top: 40px;
+            font-size: 8.5pt;
+            color: #333;
+            line-height: 1.4;
         }
     </style>
 </head>
 <body>
-    <div class="header-wrap">
-        <div>
-            <div class="logo-title">PARTS &amp; SERVICES</div>
-            <div class="logo-sub">Hard for your need</div>
-        </div>
-        <div class="spett-box">
-            <strong>Spett: AZIENDA U.S.L. FERRARA</strong><br>
-            Via Arturo Cassoli, 30<br>
-            44121 - FERRARA
-        </div>
+    <div class="header-section">
+        ${logoImgTag}
+        <div class="title-ps">PARTS &amp; SERVICES</div>
+        <div class="slogan-ps">Hard for your need</div>
     </div>
 
-    <div class="subject-bar">
-        OGGETTO: Ricovero Veicolo per manutenzione - Consegna / Ritiro
+    <div class="oggetto-line">
+        OGGETTO: Ricovero Veicolo per manutenzione - consegna/ Ritiro
     </div>
 
-    <div class="instruction-note">
+    <div class="spett-line">
+        Spett: AZIENDA U.S.L. FERRARA Via Arturo Cassoli, 30 44121- FERRARA
+    </div>
+
+    <div class="scrivere-line">
         Scrivere in modo chiaro e leggibile
     </div>
 
-    <div class="main-statement">
-        <div>Si comunica che il Veicolo: <span class="highlight">${escapeHtml(targa)}</span></div>
-        <div style="margin-top: 4px;">
-            Km: <span class="highlight">${escapeHtml(km || '__________')}</span> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 
-            è stato ricoverato presso l'officina: <span class="highlight">${escapeHtml(station)}</span>
-        </div>
-        <div style="margin-top: 6px;">
-            per svolgere i seguenti interventi:
-            <div>
-                <div class="intervention-box">
-                    &#9632; ${escapeHtml(description)}
-                </div>
-            </div>
-        </div>
+    <div class="statement-p">
+        Si comunica che il Veicolo: &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <span class="val-bold">${escapeHtml(targa)}</span>
+    </div>
+
+    <div class="statement-p">
+        Km: &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; è stato ricoverato presso l'officina: <span class="val-bold">${escapeHtml(station)}</span>
+    </div>
+
+    <div class="statement-p" style="margin-bottom: 24px;">
+        per svolgere i seguenti interventi: &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <span class="val-bold">${escapeHtml(description)}</span>
     </div>
 
     <!-- Sezione Consegna -->
-    <div class="section-box">
-        <div class="section-header">&#9658; Consegna il veicolo:</div>
-        <div class="row-item">
-            <span class="label">Nome Cognome:</span>
-            <span class="val">${escapeHtml(driver)}</span>
-        </div>
-        <div class="row-item">
-            <span class="label">Indirizzo e-mail:</span>
-            <span class="val">${escapeHtml(email)}</span>
-        </div>
-        <div class="row-item">
-            <span class="label">Nr. Cellulare:</span>
-            <span class="val">${escapeHtml(phone)}</span>
-        </div>
-        <div class="sign-row">
-            <div>
-                <strong>Data:</strong> <span class="highlight" style="border-bottom: 1px solid #000; padding: 0 12px;">${escapeHtml(dateVal)}</span>
-            </div>
-            <div class="sign-field">
-                <strong>Firma:</strong>
-                <div class="sign-line"></div>
-            </div>
+    <div class="signature-block">
+        <div class="sig-header">Consegna il veicolo:</div>
+        <div class="sig-names-label">Nome &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Cognome</div>
+        <div class="sig-names-val">${escapeHtml(driver)}</div>
+        <div class="sig-contact">Indirizzo e-mail: <span class="val-bold">${escapeHtml(email)}</span></div>
+        <div class="sig-contact">Nr. Cell.: <span class="val-bold">${escapeHtml(phone)}</span></div>
+        <div class="sig-date-row">
+            <span>data: …${day}...../…..${month}.../…….${yy}....</span>
+            <span>Firma _________________________________</span>
         </div>
     </div>
 
     <!-- Sezione Ritiro -->
-    <div class="section-box">
-        <div class="section-header">&#9658; Ritira il veicolo:</div>
-        <div class="row-item">
-            <span class="label">Nome Cognome:</span>
-            <span class="val">${escapeHtml(driver)}</span>
-        </div>
-        <div class="row-item">
-            <span class="label">Indirizzo e-mail:</span>
-            <span class="val">${escapeHtml(email)}</span>
-        </div>
-        <div class="row-item">
-            <span class="label">Nr. Cellulare:</span>
-            <span class="val">${escapeHtml(phone)}</span>
-        </div>
-        <div class="sign-row">
-            <div>
-                <strong>Data:</strong> <span class="highlight" style="border-bottom: 1px solid #000; padding: 0 12px;">${escapeHtml(dateVal)}</span>
-            </div>
-            <div class="sign-field">
-                <strong>Firma:</strong>
-                <div class="sign-line"></div>
-            </div>
+    <div class="signature-block" style="margin-top: 24px;">
+        <div class="sig-header">Ritira il veicolo:</div>
+        <div class="sig-names-label">Nome &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Cognome</div>
+        <div class="sig-names-val">${escapeHtml(driver)}</div>
+        <div class="sig-contact">Indirizzo e-mail: <span class="val-bold">${escapeHtml(email)}</span></div>
+        <div class="sig-contact">Nr. Cell.: <span class="val-bold">${escapeHtml(phone)}</span></div>
+        <div class="sig-date-row">
+            <span>data: …${day}…../…${month}...../….${yy}…....</span>
+            <span>Firma _________________________________</span>
         </div>
     </div>
 
-    <div class="footer-info">
-        <strong>PARTS &amp; SERVICES</strong> - Via Pollenzo, 28 - 00166 Roma<br>
+    <div class="footer-line">
+        PARTS &amp; SERVICES - Via Pollenzo, 28 - 00166 Roma<br>
         info@parts-services.it - www.parts-services.it - Tel. +39 0692936934
     </div>
 </body>
