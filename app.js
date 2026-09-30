@@ -1,4 +1,4 @@
-const APP_VERSION = "3.3.7";
+const APP_VERSION = "3.3.8";
 let isAdmin = false;
 let cachedVehicles = null;
 let cachedLocations = null;
@@ -1875,7 +1875,7 @@ window.openVehicleModal = async function (id) {
                             <button class="btn btn-repair-request" style="background: #16a34a; color: white; padding: 0.4rem 0.8rem; font-size: 0.85rem; border: none; border-radius: 0.375rem; cursor: pointer; display: flex; align-items: center; gap: 0.4rem;" onclick="openRepairRequestModal('${vehicle.id}')" title="Compila e scarica richiesta riparazione Word">
                                 <i class="fa-solid fa-file-word"></i> Richiesta Riparazione
                             </button>
-                            <button class="btn btn-wash-request" style="background: #06b6d4; color: white; padding: 0.4rem 0.8rem; font-size: 0.85rem; border: none; border-radius: 0.375rem; cursor: pointer; display: flex; align-items: center; gap: 0.4rem;" onclick="openWashModal('${vehicle.id}')" title="Compila e stampa modulo lavaggio (stampato)">
+                            <button class="btn btn-wash-request" style="background: #06b6d4; color: white; padding: 0.4rem 0.8rem; font-size: 0.85rem; border: none; border-radius: 0.375rem; cursor: pointer; display: flex; align-items: center; gap: 0.4rem;" onclick="printWashModule('${vehicle.id}')" title="Stampa modulo lavaggio esterno">
                                 <i class="fa-solid fa-shower"></i> Modulo Lavaggio
                             </button>
                             <button class="btn" style="background: #0284c7; color: white; padding: 0.4rem 0.8rem; font-size: 0.85rem; border: none; border-radius: 0.375rem; cursor: pointer; display: flex; align-items: center; gap: 0.4rem;" onclick="openVehicleRepairHistoryModal('${vehicle.id}')" title="Visualizza lo storico delle richieste di riparazione">
@@ -5209,7 +5209,7 @@ window.closeWashModal = function () {
     if (modal) modal.classList.add('hidden');
 };
 
-window.printWashModule = function () {
+window.printWashModule = async function (vehicleId) {
     try {
         const escapeHtml = (str) => {
             if (!str) return '';
@@ -5221,30 +5221,86 @@ window.printWashModule = function () {
                 .replace(/'/g, '&#039;');
         };
 
-        const vehicleId = window.currentWashVehicleId || currentOpenedVehicleId;
-        const vehicle = (cachedVehicles && cachedVehicles.find(v => v.id === vehicleId));
+        const targetVehicleId = vehicleId || window.currentWashVehicleId || currentOpenedVehicleId;
+        let vehicle = (cachedVehicles && cachedVehicles.find(v => v.id === targetVehicleId));
+        if (!vehicle && targetVehicleId && window.store) {
+            try {
+                vehicle = await store.getVehicleById(targetVehicleId);
+            } catch (e) {}
+        }
 
-        const targa = (document.getElementById('wash-vehicle-display').value || '').trim() || (vehicle ? `AMBULANZA ${vehicle.plate || ''} ${vehicle.sigla || ''}`.trim() : 'AMBULANZA');
-        const station = (document.getElementById('wash-station').value || 'IP VIA CANAPA').trim();
-        const km = (document.getElementById('wash-km').value || '').trim();
-        const rawDate = (document.getElementById('wash-date').value || '').trim();
-        let dateVal = rawDate;
-        if (rawDate && rawDate.includes('-')) {
-            const p = rawDate.split('-');
-            if (p.length === 3) dateVal = `${p[2]}/${p[1]}/${p[0]}`;
+        // Targa e sigla: es. AMBULANZA FF 837 RS ECHO 22
+        let targa = '';
+        const displayElem = document.getElementById('wash-vehicle-display');
+        if (displayElem && displayElem.value && !vehicleId) {
+            targa = displayElem.value.trim();
+        } else if (vehicle) {
+            const parts = ['AMBULANZA'];
+            if (vehicle.plate) parts.push(vehicle.plate);
+            if (vehicle.sigla) parts.push(vehicle.sigla);
+            targa = parts.join(' ');
+        } else {
+            targa = 'AMBULANZA';
+        }
+
+        // Officina / Stazione
+        let station = 'IP VIA CANAPA';
+        const stationElem = document.getElementById('wash-station');
+        if (stationElem && stationElem.value && !vehicleId) {
+            station = stationElem.value.trim();
+        }
+
+        // Km
+        let km = '';
+        const kmElem = document.getElementById('wash-km');
+        if (kmElem && kmElem.value && !vehicleId) {
+            km = kmElem.value.trim();
+        } else if (vehicle) {
+            km = (vehicle.km || vehicle.mileage || '').toString().trim();
+        }
+
+        // Data (DD/MM/YYYY)
+        let dateVal = '';
+        const dateElem = document.getElementById('wash-date');
+        if (dateElem && dateElem.value && !vehicleId) {
+            const rawDate = dateElem.value.trim();
+            if (rawDate && rawDate.includes('-')) {
+                const p = rawDate.split('-');
+                if (p.length === 3) dateVal = `${p[2]}/${p[1]}/${p[0]}`;
+            } else {
+                dateVal = rawDate;
+            }
         }
         if (!dateVal) {
             const now = new Date();
             dateVal = `${String(now.getDate()).padStart(2, '0')}/${String(now.getMonth() + 1).padStart(2, '0')}/${now.getFullYear()}`;
         }
 
-        const driver = (document.getElementById('wash-driver').value || 'MARSILI PAOLO – GAMBERONI FEDERICO – MARCHESINI LUCA').trim();
-        const phone = (document.getElementById('wash-phone').value || '3209229345').trim();
-        const email = (document.getElementById('wash-email').value || 'logistica118fe@ausl.fe.it').trim();
+        // Richiedente
+        let driver = 'MARSILI PAOLO – GAMBERONI FEDERICO – MARCHESINI LUCA';
+        const driverElem = document.getElementById('wash-driver');
+        if (driverElem && driverElem.value && !vehicleId) {
+            driver = driverElem.value.trim();
+        }
 
-        // Tipologia di intervento: scelta tra 2 opzioni
-        const isCompleto = document.getElementById('wash-type-completo') && document.getElementById('wash-type-completo').checked;
-        const description = isCompleto ? 'LAVAGGIO ESTERNO E INTERNO PIÙ SANIFICAZIONE' : 'LAVAGGIO ESTERNO';
+        let phone = '3209229345';
+        const phoneElem = document.getElementById('wash-phone');
+        if (phoneElem && phoneElem.value && !vehicleId) {
+            phone = phoneElem.value.trim();
+        }
+
+        let email = 'logistica118fe@ausl.fe.it';
+        const emailElem = document.getElementById('wash-email');
+        if (emailElem && emailElem.value && !vehicleId) {
+            email = emailElem.value.trim();
+        }
+
+        // Tipologia di intervento: sempre LAVAGGIO ESTERNO (o da scelta nel modale)
+        let description = 'LAVAGGIO ESTERNO';
+        const radCompleto = document.getElementById('wash-type-completo');
+        if (radCompleto && radCompleto.checked && !vehicleId) {
+            description = 'LAVAGGIO ESTERNO E INTERNO PIÙ SANIFICAZIONE';
+        }
 
         const htmlContent = `<!DOCTYPE html>
 <html lang="it">
@@ -5510,11 +5566,13 @@ window.printWashModule = function () {
         printFrame = document.createElement('iframe');
         printFrame.id = 'wash-print-iframe';
         printFrame.style.position = 'fixed';
-        printFrame.style.right = '0';
-        printFrame.style.bottom = '0';
-        printFrame.style.width = '0';
-        printFrame.style.height = '0';
+        printFrame.style.top = '-9999px';
+        printFrame.style.left = '-9999px';
+        printFrame.style.width = '1024px';
+        printFrame.style.height = '1024px';
         printFrame.style.border = '0';
+        printFrame.style.opacity = '0';
+        printFrame.style.pointerEvents = 'none';
         document.body.appendChild(printFrame);
 
         const frameDoc = printFrame.contentWindow ? printFrame.contentWindow.document : printFrame.contentDocument;
@@ -5538,8 +5596,10 @@ window.printWashModule = function () {
             }
         }, 350);
 
-        // Chiudi il modal lavaggio
-        window.closeWashModal();
+        // Chiudi il modal lavaggio se aperto
+        if (document.getElementById('wash-modal') && !document.getElementById('wash-modal').classList.contains('hidden')) {
+            window.closeWashModal();
+        }
     } catch (err) {
         console.error("Errore durante la stampa del modulo lavaggio:", err);
         alert("Errore durante la preparazione per la stampa: " + (err.message || err));
