@@ -1,4 +1,4 @@
-const APP_VERSION = "3.3.6";
+const APP_VERSION = "3.3.7";
 let isAdmin = false;
 let cachedVehicles = null;
 let cachedLocations = null;
@@ -4002,11 +4002,10 @@ window.toggleRepairTemplate = function (isAlea) {
     }
 
     if (submitBtn) {
+        submitBtn.innerHTML = '<i class="fa-solid fa-floppy-disk"></i> Salva';
         if (isAlea) {
-            submitBtn.innerHTML = '<i class="fa-solid fa-download"></i> Scarica Word Alea (.docx)';
             submitBtn.style.background = '#d97706';
         } else {
-            submitBtn.innerHTML = '<i class="fa-solid fa-download"></i> Scarica Word (.docx)';
             submitBtn.style.background = '#2563eb';
         }
     }
