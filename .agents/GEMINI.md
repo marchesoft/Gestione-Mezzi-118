@@ -1,16 +1,16 @@
-# Regole e Contesto del Progetto (v3.3.4)
+# Regole e Contesto del Progetto (v3.3.5)
 
-Questo file definisce le linee guida e lo stato di salvataggio del progetto per garantire la coerenza con la versione **3.3.4**.
+Questo file definisce le linee guida e lo stato di salvataggio del progetto per garantire la coerenza con la versione **3.3.5**.
 
-## Stato di Riferimento (v3.3.4)
+## Stato di Riferimento (v3.3.5)
 
 1. **Gestione Versioni**:
-   - La versione attuale di riferimento è **3.3.4**.
-   - Qualsiasi modifica futura richiede l'avanzamento della versione (es. `3.3.5` o successive) in `app.js` (`const APP_VERSION = "X.Y.Z";`) e in `index.html` (header).
+   - La versione attuale di riferimento è **3.3.5**.
+   - Qualsiasi modifica futura richiede l'avanzamento della versione (es. `3.3.6` o successive) in `app.js` (`const APP_VERSION = "X.Y.Z";`) e in `index.html` (header).
 
 2. **Bypass della Cache (Cache-Busting)**:
    - I file `app.js` e `style.css` sono importati in `index.html` con il parametro di versione `?v=X.Y.Z` per forzare il caricamento immediato degli aggiornamenti sui dispositivi client (specialmente mobili).
-   - Esempio: `<link rel="stylesheet" href="style.css?v=3.3.4">` e `<script src="app.js?v=3.3.4"></script>`.
+   - Esempio: `<link rel="stylesheet" href="style.css?v=3.3.5">` e `<script src="app.js?v=3.3.5"></script>`.
    - Ad ogni cambio di codice, aggiornare questa stringa con la nuova versione dell'applicazione.
 
 3. **Integrazione Git e GitHub**:
@@ -94,7 +94,7 @@ Questo file definisce le linee guida e lo stato di salvataggio del progetto per 
     - Rimossa la tabella duplicata dello "Storico Richieste di Riparazione" posizionata in fondo al modal dei dettagli del veicolo (`openVehicleModal`) dopo lo "Storico Manutenzione".
     - Lo storico delle richieste di riparazione del singolo mezzo rimane comodamente consultabile e gestibile tramite il pulsante dedicato in alto **Storico Richieste** (con badge numerico) che apre la finestra modale dedicata `#vehicle-repair-history-modal`, oltre che dalla scheda globale **Riparazioni** in "Gestione Database".
 
-13. **Sede Attuale e Previsione Km a Fine Dicembre nel Report Officina (v3.3.3)**:
+13. **Sede Attuale e Previsione Km a Fine Dicembre nel Report Officina (v3.3.3 / v3.3.4)**:
     - Nella scheda **Report Officina** di "Gestione Database" sono state integrate due nuove colonne:
       1. **Sede Attuale**: mostra la postazione in cui il mezzo è attualmente allocato (es. *FERRARA*, *ARGENTA*, *COMACCHIO*, ecc.) con il relativo coefficiente di percorrenza mensile stimato.
       2. **Previsione Km (31 Dic)**: calcola la stima dei chilometri a fine anno:
@@ -114,5 +114,10 @@ Questo file definisce le linee guida e lo stato di salvataggio del progetto per 
     - **Riassegnazione Dinamica**: In caso di spostamento o riassegnazione di un mezzo a un'altra postazione (es. da Ferrara a Copparo), il calcolo della previsione a fine anno si aggiorna automaticamente in tempo reale.
     - **Filtro e Ricerca**: Il campo di ricerca istantanea della tabella consente di filtrare i veicoli anche per Sede/Postazione.
     - **Esportazione Excel**: Aggiornata l'esportazione Excel del riepilogo con le colonne *Sede Attuale* e *Previsione Km a Fine Dicembre*.
+
+14. **Visualizzazione Completa Flotta nel Report Officina (v3.3.5)**:
+    - Rimossa la casella di spunta "Mostra solo con ricoveri" dalla barra filtri del Report Officina.
+    - Tutti i mezzi della flotta vengono ora mostrati sempre e per intero nella tabella, consentendo di visualizzare immediatamente per ciascun veicolo sia i dati di fermo macchina che la sede e la stima dei Km a fine anno.
+
 
 

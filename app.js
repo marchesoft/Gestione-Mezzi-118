@@ -1,4 +1,4 @@
-const APP_VERSION = "3.3.4";
+const APP_VERSION = "3.3.5";
 let isAdmin = false;
 let cachedVehicles = null;
 let cachedLocations = null;
@@ -3729,10 +3729,6 @@ window.switchDataTable = async function (type) {
                                 ${availableYears.map(yr => `<option value="${yr}" ${selectedYear === String(yr) ? 'selected' : ''}>${yr}</option>`).join('')}
                             </select>
                         </div>
-                        <label style="display: flex; align-items: center; gap: 0.4rem; font-size: 0.85rem; font-weight: 500; color: #475569; cursor: pointer; user-select: none;">
-                            <input type="checkbox" id="workshop-only-active" onchange="window.toggleOnlyActiveWorkshop(this.checked)" checked style="cursor: pointer;">
-                            Mostra solo con ricoveri
-                        </label>
                     </div>
                 </div>
 
@@ -3759,8 +3755,7 @@ window.switchDataTable = async function (type) {
                                 else if (row.totalDays >= 4) badgeClass = 'badge-days-med';
                                 else if (row.totalDays > 0) badgeClass = 'badge-days-low';
 
-                                const isOnlyZero = row.count === 0 && !row.hasOngoing;
-                                const trStyle = isOnlyZero ? 'style="display: none;" class="workshop-row-zero"' : 'class="workshop-row"';
+                                const trStyle = 'class="workshop-row"';
 
                                 const currentWorkshop = (row.lastStay && row.lastStay.workshop) ? row.lastStay.workshop : 'Officina';
 
@@ -3849,25 +3844,16 @@ window.filterWorkshopReport = function (query) {
     const table = document.getElementById('workshop-report-table');
     if (!table) return;
     const q = (query || '').toLowerCase().trim();
-    const rows = table.querySelectorAll('tbody tr.workshop-row, tbody tr.workshop-row-zero');
-    const isOnlyActiveChecked = document.getElementById('workshop-only-active') ? document.getElementById('workshop-only-active').checked : true;
+    const rows = table.querySelectorAll('tbody tr.workshop-row');
 
     rows.forEach(row => {
         const searchData = row.getAttribute('data-search') || '';
-        const isZero = row.classList.contains('workshop-row-zero');
         const matchesQuery = !q || searchData.includes(q);
 
         if (matchesQuery) {
-            if (isZero && isOnlyActiveChecked && !q) {
-                row.style.display = 'none';
-            } else {
-                row.style.display = '';
-            }
+            row.style.display = '';
         } else {
             row.style.display = 'none';
-            const id = row.id.replace('w-row-', '');
-            const detailRow = document.getElementById(`w-detail-${id}`);
-            if (detailRow) detailRow.style.display = 'none';
         }
     });
 };
@@ -3877,17 +3863,7 @@ window.filterWorkshopByYear = function (year) {
     switchDataTable('report_officina');
 };
 
-window.toggleOnlyActiveWorkshop = function (onlyActive) {
-    const zeroRows = document.querySelectorAll('.workshop-row-zero');
-    const searchVal = (document.getElementById('workshop-report-search') ? document.getElementById('workshop-report-search').value : '').trim();
-    zeroRows.forEach(row => {
-        if (!onlyActive || searchVal !== '') {
-            row.style.display = '';
-        } else {
-            row.style.display = 'none';
-        }
-    });
-};
+window.toggleOnlyActiveWorkshop = function () {};
 
 window.filterInterventionTable = function (query) {
     const table = document.querySelector('.data-mgmt-content table');
