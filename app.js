@@ -1,4 +1,4 @@
-const APP_VERSION = "3.3.8";
+const APP_VERSION = "3.3.9";
 let isAdmin = false;
 let cachedVehicles = null;
 let cachedLocations = null;
@@ -41,25 +41,51 @@ window.parseMonthNumber = function (monthStr) {
     return map[s] || null;
 };
 
-// Calcolo stima km a fine Dicembre partendo dai km del mezzo e dai km mensili della sede
-window.calculateDecemberKmEstimate = function (currentKm, monthStr, stationMonthlyKm) {
+// Calcolo stima km a fine Dicembre partendo dai km del mezzo e dai km mensili della sede,
+// scalando i giorni già trascorsi nel mese corrente
+window.calculateDecemberKmEstimate = function (currentKm, monthStr, stationMonthlyKm, customDate = null) {
     const km = parseInt(currentKm, 10) || 0;
     if (km <= 0) {
-        return { estimatedKm: 0, deltaKm: 0, remainingMonths: 0, refMonth: null };
+        return { estimatedKm: 0, deltaKm: 0, remainingMonths: 0, daysRemaining: 0, fullMonths: 0, label: '-' };
     }
     
-    const refMonth = window.parseMonthNumber(monthStr);
-    const effectiveMonth = refMonth !== null ? refMonth : (new Date().getMonth() + 1);
-    const remainingMonths = Math.max(0, 12 - effectiveMonth);
+    const now = customDate instanceof Date ? customDate : new Date();
+    const currentYear = now.getFullYear();
+    const currentMonth = now.getMonth() + 1; // 1-12
+    const currentDay = now.getDate();
+    
+    // Giorni totali nel mese corrente
+    const daysInMonth = new Date(currentYear, currentMonth, 0).getDate();
+    // Giorni rimanenti del mese corrente scalando i giorni passati
+    const daysRemaining = Math.max(0, daysInMonth - currentDay);
+    const fractionMonth = daysInMonth > 0 ? (daysRemaining / daysInMonth) : 0;
+    
+    // Mesi interi successivi fino a Dicembre (mesi da currentMonth + 1 a 12)
+    const fullMonths = Math.max(0, 12 - currentMonth);
+    
+    const totalMonthsRemaining = fractionMonth + fullMonths;
     const monthlyRate = Number(stationMonthlyKm) || 0;
-    const deltaKm = remainingMonths * monthlyRate;
+    const deltaKm = Math.round(totalMonthsRemaining * monthlyRate);
     const estimatedKm = km + deltaKm;
+    
+    let label = '';
+    if (fullMonths > 0 && daysRemaining > 0) {
+        label = `${fullMonths} ${fullMonths === 1 ? 'mese' : 'mesi'} e ${daysRemaining} gg`;
+    } else if (fullMonths > 0) {
+        label = `${fullMonths} ${fullMonths === 1 ? 'mese' : 'mesi'}`;
+    } else if (daysRemaining > 0) {
+        label = `${daysRemaining} gg`;
+    } else {
+        label = 'Fine anno';
+    }
     
     return {
         estimatedKm,
         deltaKm,
-        remainingMonths,
-        refMonth
+        remainingMonths: totalMonthsRemaining,
+        daysRemaining,
+        fullMonths,
+        label
     };
 };
 
@@ -3710,7 +3736,7 @@ window.switchDataTable = async function (type) {
                     estimatedKm: est.estimatedKm,
                     deltaKm: est.deltaKm,
                     remainingMonths: est.remainingMonths,
-                    refMonth: est.refMonth
+                    estimateLabel: est.label
                 });
             }
 
@@ -3849,8 +3875,8 @@ window.switchDataTable = async function (type) {
                                                 </div>
                                                 <div style="font-size: 0.75rem; color: ${row.deltaKm > 0 ? '#059669' : '#64748b'}; font-weight: 600;">
                                                     ${row.deltaKm > 0 
-                                                        ? `+${row.deltaKm.toLocaleString('it-IT')} km (${row.remainingMonths} ${row.remainingMonths === 1 ? 'mese' : 'mesi'})`
-                                                        : (row.remainingMonths === 0 ? '(Dati Dicembre)' : '(0 km previsti)')}
+                                                        ? `+${row.deltaKm.toLocaleString('it-IT')} km (${row.estimateLabel})`
+                                                        : (row.stationMonthlyKm === 0 ? '(0 km/m sede)' : '(Fine anno)')}
                                                 </div>
                                             ` : '<span style="color: #94a3b8;">-</span>'}
                                         </td>

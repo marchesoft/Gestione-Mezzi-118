@@ -1,16 +1,16 @@
-# Regole e Contesto del Progetto (v3.3.8)
+# Regole e Contesto del Progetto (v3.3.9)
 
-Questo file definisce le linee guida e lo stato di salvataggio del progetto per garantire la coerenza con la versione **3.3.8**.
+Questo file definisce le linee guida e lo stato di salvataggio del progetto per garantire la coerenza con la versione **3.3.9**.
 
-## Stato di Riferimento (v3.3.8)
+## Stato di Riferimento (v3.3.9)
 
 1. **Gestione Versioni**:
-   - La versione attuale di riferimento è **3.3.8**.
-   - Qualsiasi modifica futura richiede l'avanzamento della versione (es. `3.3.9` o successive) in `app.js` (`const APP_VERSION = "X.Y.Z";`) e in `index.html` (header).
+   - La versione attuale di riferimento è **3.3.9**.
+   - Qualsiasi modifica futura richiede l'avanzamento della versione (es. `3.3.10` o successive) in `app.js` (`const APP_VERSION = "X.Y.Z";`) e in `index.html` (header).
 
 2. **Bypass della Cache (Cache-Busting)**:
    - I file `app.js` e `style.css` sono importati in `index.html` con il parametro di versione `?v=X.Y.Z` per forzare il caricamento immediato degli aggiornamenti sui dispositivi client (specialmente mobili).
-   - Esempio: `<link rel="stylesheet" href="style.css?v=3.3.8">` e `<script src="app.js?v=3.3.8"></script>`.
+   - Esempio: `<link rel="stylesheet" href="style.css?v=3.3.9">` e `<script src="app.js?v=3.3.9"></script>`.
    - Ad ogni cambio di codice, aggiornare questa stringa con la nuova versione dell'applicazione.
 
 3. **Integrazione Git e GitHub**:
@@ -111,12 +111,17 @@ Questo file definisce le linee guida e lo stato di salvataggio del progetto per 
       - `AUTOLAVAGGIO INTERNO ED ESTERNO PIÙ SANIFICAZIONE IP VIA CANAPA`
       garantendo che il testo sia chiaramente riportato sia nel file Word generato che nello storico del veicolo.
 
-15. **Sede e Proiezione Km a Fine Dicembre nel Report Officina (v3.3.8)**:
+15. **Sede e Proiezione Km a Fine Dicembre nel Report Officina (v3.3.9)**:
     - Nella tabella **Report Tempo di Permanenza in Officina** (`switchDataTable('report_officina')`) in "Gestione Database":
       - Aggiunta la colonna **Sede** con visualizzazione della sede assegnata al veicolo e il relativo tasso di percorrenza mensile (`km/mese` configurato nella scheda *Luoghi*).
-      - Aggiunta la colonna **Stima Fine Dicembre** che proietta i chilometri che il veicolo raggiungerà al 31 dicembre, calcolati a partire dagli *Ultimi Km Rilevati* e dal *Mese di Riferimento*, sommando per ciascun mese rimanente i chilometri mensili previsti per la sede (`stima = km_attuali + (mesi_rimanenti * km_mensili_sede)`).
-      - Mostrato sotto alla stima il dettaglio dell'incremento previsto (es. `+10.000 km (4 mesi)`).
+      - Aggiunta la colonna **Stima Fine Dicembre** che proietta i chilometri che il veicolo raggiungerà al 31 dicembre, calcolati a partire dagli *Ultimi Km Rilevati* e scalando i giorni già trascorsi nel mese corrente:
+        - I giorni rimanenti nel mese corrente sono calcolati come: `giorni_rimanenti = giorni_totali_mese - giorno_corrente`.
+        - Frazione mese corrente: `giorni_rimanenti / giorni_totali_mese`.
+        - Mesi successivi interi: `12 - mese_corrente`.
+        - Incremento stimato: `(frazione_mese_corrente + mesi_successivi) * km_mensili_sede`.
+      - Mostrato sotto alla stima il dettaglio dell'incremento previsto con i mesi e giorni effettivi (es. `+9.200 km (2 mesi e 16 gg)`).
       - Integrazione completa nell'esportazione Excel (*Esporta Riepilogo Excel*) con le nuove colonne `Sede`, `Km Mensili Sede` e `Stima Km Fine Dicembre`.
       - La barra di ricerca istantanea (`filterWorkshopReport`) supporta anche il filtro per nome della sede.
+
 
 
