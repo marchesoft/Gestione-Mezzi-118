@@ -1,4 +1,4 @@
-const APP_VERSION = "3.3.3";
+const APP_VERSION = "3.3.4";
 let isAdmin = false;
 let cachedVehicles = null;
 let cachedLocations = null;
@@ -11,6 +11,7 @@ const MONTHLY_KM_BY_STATION = {
     'FERRARA': 3000,
     'ARGENTA': 5000,
     'LAGOSANTO': 6000,
+    'DELTA': 6000,
     'COMACCHIO': 10000,
     'BONDENO': 10000,
     'PORTOMAGGIORE': 7000,

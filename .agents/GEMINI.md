@@ -1,16 +1,16 @@
-# Regole e Contesto del Progetto (v3.3.3)
+# Regole e Contesto del Progetto (v3.3.4)
 
-Questo file definisce le linee guida e lo stato di salvataggio del progetto per garantire la coerenza con la versione **3.3.3**.
+Questo file definisce le linee guida e lo stato di salvataggio del progetto per garantire la coerenza con la versione **3.3.4**.
 
-## Stato di Riferimento (v3.3.3)
+## Stato di Riferimento (v3.3.4)
 
 1. **Gestione Versioni**:
-   - La versione attuale di riferimento è **3.3.3**.
-   - Qualsiasi modifica futura richiede l'avanzamento della versione (es. `3.3.4` o successive) in `app.js` (`const APP_VERSION = "X.Y.Z";`) e in `index.html` (header).
+   - La versione attuale di riferimento è **3.3.4**.
+   - Qualsiasi modifica futura richiede l'avanzamento della versione (es. `3.3.5` o successive) in `app.js` (`const APP_VERSION = "X.Y.Z";`) e in `index.html` (header).
 
 2. **Bypass della Cache (Cache-Busting)**:
    - I file `app.js` e `style.css` sono importati in `index.html` con il parametro di versione `?v=X.Y.Z` per forzare il caricamento immediato degli aggiornamenti sui dispositivi client (specialmente mobili).
-   - Esempio: `<link rel="stylesheet" href="style.css?v=3.3.3">` e `<script src="app.js?v=3.3.3"></script>`.
+   - Esempio: `<link rel="stylesheet" href="style.css?v=3.3.4">` e `<script src="app.js?v=3.3.4"></script>`.
    - Ad ogni cambio di codice, aggiornare questa stringa con la nuova versione dell'applicazione.
 
 3. **Integrazione Git e GitHub**:
@@ -103,6 +103,7 @@ Questo file definisce le linee guida e lo stato di salvataggio del progetto per 
       - FERRARA: 3.000 km/mese
       - ARGENTA: 5.000 km/mese
       - LAGOSANTO: 6.000 km/mese
+      - DELTA: 6.000 km/mese
       - COMACCHIO: 10.000 km/mese
       - BONDENO: 10.000 km/mese
       - PORTOMAGGIORE: 7.000 km/mese
