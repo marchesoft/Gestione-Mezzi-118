@@ -1,4 +1,4 @@
-const APP_VERSION = "3.3.7";
+const APP_VERSION = "3.3.8";
 let isAdmin = false;
 let cachedVehicles = null;
 let cachedLocations = null;
@@ -18,6 +18,49 @@ window.normalizeVehicleText = function (str) {
         .replace(/[\u0300-\u036f]/g, "")
         .toUpperCase()
         .trim();
+};
+
+// Helper per convertire il mese (stringa o numero) in indice 1-12
+window.parseMonthNumber = function (monthStr) {
+    if (!monthStr) return null;
+    const s = String(monthStr).trim().toUpperCase();
+    const map = {
+        'GENNAIO': 1, 'GEN': 1, '01': 1, '1': 1,
+        'FEBBRAIO': 2, 'FEB': 2, '02': 2, '2': 2,
+        'MARZO': 3, 'MAR': 3, '03': 3, '3': 3,
+        'APRILE': 4, 'APR': 4, '04': 4, '4': 4,
+        'MAGGIO': 5, 'MAG': 5, '05': 5, '5': 5,
+        'GIUGNO': 6, 'GIU': 6, '06': 6, '6': 6,
+        'LUGLIO': 7, 'LUG': 7, '07': 7, '7': 7,
+        'AGOSTO': 8, 'AGO': 8, '08': 8, '8': 8,
+        'SETTEMBRE': 9, 'SET': 9, '09': 9, '9': 9,
+        'OTTOBRE': 10, 'OTT': 10, '10': 10,
+        'NOVEMBRE': 11, 'NOV': 11, '11': 11,
+        'DICEMBRE': 12, 'DIC': 12, '12': 12
+    };
+    return map[s] || null;
+};
+
+// Calcolo stima km a fine Dicembre partendo dai km del mezzo e dai km mensili della sede
+window.calculateDecemberKmEstimate = function (currentKm, monthStr, stationMonthlyKm) {
+    const km = parseInt(currentKm, 10) || 0;
+    if (km <= 0) {
+        return { estimatedKm: 0, deltaKm: 0, remainingMonths: 0, refMonth: null };
+    }
+    
+    const refMonth = window.parseMonthNumber(monthStr);
+    const effectiveMonth = refMonth !== null ? refMonth : (new Date().getMonth() + 1);
+    const remainingMonths = Math.max(0, 12 - effectiveMonth);
+    const monthlyRate = Number(stationMonthlyKm) || 0;
+    const deltaKm = remainingMonths * monthlyRate;
+    const estimatedKm = km + deltaKm;
+    
+    return {
+        estimatedKm,
+        deltaKm,
+        remainingMonths,
+        refMonth
+    };
 };
 
 // Helper per generare il nome del file Word: "richiesta riparazione <SIGLA> <TARGA>.docx"
@@ -2556,6 +2599,12 @@ window.exportCurrentTableToCSV = async function () {
         } else if (type === 'report_officina') {
             const vehicles = await store.getVehicles();
             const interventions = await store.getInterventions();
+            const locations = await store.getLocations();
+            const locMap = new Map();
+            locations.forEach(loc => {
+                if (loc.luogo) locMap.set(loc.luogo.trim().toUpperCase(), loc);
+            });
+
             data = [];
 
             const vMap = new Map();
@@ -2567,6 +2616,8 @@ window.exportCurrentTableToCSV = async function () {
                     model: v.model || '-',
                     station: v.station || '-',
                     status: v.status || 'unknown',
+                    mileage: v.mileage || 0,
+                    mileage_month: v.mileage_month || '',
                     interventions: []
                 });
             });
@@ -2635,6 +2686,10 @@ window.exportCurrentTableToCSV = async function () {
                     if (item.km && parseInt(item.km) > maxKm) maxKm = parseInt(item.km);
                 });
 
+                const loc = locMap.get((v.station || '').trim().toUpperCase());
+                const stationMonthlyKm = (loc && loc.monthly_km) ? Number(loc.monthly_km) : 0;
+                const est = window.calculateDecemberKmEstimate(maxKm || v.mileage, v.mileage_month, stationMonthlyKm);
+
                 data.push({
                     sigla: v.sigla,
                     plate: v.plate,
@@ -2643,8 +2698,10 @@ window.exportCurrentTableToCSV = async function () {
                     status: statusLabel,
                     total_days: totalDays,
                     count: count,
-                    mileage: maxKm > 0 ? `${maxKm.toLocaleString()} km` : '-',
-                    mileage_month: v.mileage_month || '-'
+                    mileage: maxKm > 0 ? `${maxKm.toLocaleString('it-IT')} km` : '-',
+                    mileage_month: v.mileage_month || '-',
+                    station_monthly_km: stationMonthlyKm > 0 ? `${stationMonthlyKm.toLocaleString('it-IT')} km` : '-',
+                    estimated_december_km: est.estimatedKm > 0 ? `${est.estimatedKm.toLocaleString('it-IT')} km` : '-'
                 });
             }
 
@@ -2689,8 +2746,8 @@ window.exportCurrentTableToCSV = async function () {
             const italianHeaders = ['Sigla', 'Targa', 'Modello', 'Data Richiesta', 'Tipologia', 'Descrizione', 'Driver / Richiedente', 'Dipartimento', 'Telefono', 'Ubicazione', 'Email'];
             csvRows.push(italianHeaders.join(';'));
         } else if (type === 'report_officina') {
-            headers = ['sigla', 'plate', 'model', 'mileage', 'mileage_month', 'total_days', 'count'];
-            const italianHeaders = ['Mezzo (Sigla)', 'Targa', 'Modello', 'Ultimi Km Rilevati', 'Mese Riferimento Km', 'Totale Giorni in Officina', 'Numero Ricoveri'];
+            headers = ['sigla', 'plate', 'model', 'station', 'mileage', 'mileage_month', 'station_monthly_km', 'estimated_december_km', 'total_days', 'count'];
+            const italianHeaders = ['Mezzo (Sigla)', 'Targa', 'Modello', 'Sede', 'Ultimi Km Rilevati', 'Mese Riferimento Km', 'Km Mensili Sede', 'Stima Km Fine Dicembre', 'Totale Giorni in Officina', 'Numero Ricoveri'];
             csvRows.push(italianHeaders.join(';'));
         } else {
             headers = Object.keys(data[0]);
@@ -3483,6 +3540,11 @@ window.switchDataTable = async function (type) {
         } else if (type === 'report_officina') {
             const vehicles = await store.getVehicles();
             let interventions = await store.getInterventions();
+            const locations = await store.getLocations();
+            const locMap = new Map();
+            locations.forEach(loc => {
+                if (loc.luogo) locMap.set(loc.luogo.trim().toUpperCase(), loc);
+            });
 
             // AUTO-CLEANUP: elimina interventi orfani (vehicle_id non corrisponde a nessun veicolo) se admin
             if (isAdmin) {
@@ -3631,6 +3693,10 @@ window.switchDataTable = async function (type) {
                     if (item.km && parseInt(item.km) > maxKm) maxKm = parseInt(item.km);
                 });
 
+                const loc = locMap.get((v.station || '').trim().toUpperCase());
+                const stationMonthlyKm = (loc && loc.monthly_km) ? Number(loc.monthly_km) : 0;
+                const est = window.calculateDecemberKmEstimate(maxKm || v.mileage, v.mileage_month, stationMonthlyKm);
+
                 reportRows.push({
                     ...v,
                     totalDays,
@@ -3638,7 +3704,13 @@ window.switchDataTable = async function (type) {
                     hasOngoing,
                     lastStay,
                     mileage: maxKm || v.mileage || 0,
-                    mileage_month: v.mileage_month || ''
+                    mileage_month: v.mileage_month || '',
+                    stationMonthlyKm,
+                    stationColor: loc ? loc.colore : '#3b82f6',
+                    estimatedKm: est.estimatedKm,
+                    deltaKm: est.deltaKm,
+                    remainingMonths: est.remainingMonths,
+                    refMonth: est.refMonth
                 });
             }
 
@@ -3654,7 +3726,7 @@ window.switchDataTable = async function (type) {
                             <i class="fa-solid fa-clock-rotate-left"></i> Report Tempo di Permanenza in Officina
                         </h3>
                         <div style="font-size: 0.85rem; opacity: 0.9; margin-top: 0.35rem;">
-                            Monitoraggio dettagliato dei giorni di fermo macchina e storico ricoveri per singola ambulanza
+                            Monitoraggio dettagliato dei giorni di fermo macchina, chilometri e storico ricoveri per singola ambulanza
                         </div>
                     </div>
                     <div style="display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;">
@@ -3703,8 +3775,8 @@ window.switchDataTable = async function (type) {
                     <div style="flex-grow: 1; position: relative; min-width: 240px;">
                         <i class="fa-solid fa-search" style="position: absolute; left: 1rem; top: 50%; transform: translateY(-50%); color: var(--text-secondary);"></i>
                         <input type="text" id="workshop-report-search" placeholder="Cerca mezzo (Sigla, Targa, Officina, Sede)..." 
-                               oninput="window.filterWorkshopReport(this.value)"
-                               style="width: 100%; padding: 0.5rem 1rem 0.5rem 2.5rem; border-radius: 0.5rem; border: 1px solid var(--border-color); outline: none; font-size: 0.9rem;">
+                                oninput="window.filterWorkshopReport(this.value)"
+                                style="width: 100%; padding: 0.5rem 1rem 0.5rem 2.5rem; border-radius: 0.5rem; border: 1px solid var(--border-color); outline: none; font-size: 0.9rem;">
                     </div>
                     <div style="display: flex; gap: 0.75rem; align-items: center; flex-wrap: wrap;">
                         <div style="display: flex; align-items: center; gap: 0.4rem; font-size: 0.85rem; font-weight: 600; color: #475569;">
@@ -3727,13 +3799,15 @@ window.switchDataTable = async function (type) {
                             <tr>
                                 <th class="col-shrink">Mezzo</th>
                                 <th class="col-shrink">Modello</th>
+                                <th class="col-shrink">Sede</th>
                                 <th class="col-shrink" style="text-align: right;">Ultimi Km Rilevati</th>
+                                <th class="col-shrink" style="text-align: right;">Stima Fine Dicembre</th>
                                 <th class="col-shrink" style="text-align: center;">Giorni in Officina</th>
                                 <th class="col-shrink" style="text-align: center;">N° Ricoveri</th>
                             </tr>
                         </thead>
                         <tbody>
-                            ${reportRows.length === 0 ? '<tr><td colspan="5" style="text-align:center; padding: 2rem; color: var(--text-secondary);">Nessun dato trovato per i criteri selezionati.</td></tr>' : ''}
+                            ${reportRows.length === 0 ? '<tr><td colspan="7" style="text-align:center; padding: 2rem; color: var(--text-secondary);">Nessun dato trovato per i criteri selezionati.</td></tr>' : ''}
                             ${reportRows.map(row => {
                                 let badgeClass = 'badge-days-zero';
                                 if (row.hasOngoing) badgeClass = 'badge-days-ongoing';
@@ -3747,20 +3821,38 @@ window.switchDataTable = async function (type) {
                                 const currentWorkshop = (row.lastStay && row.lastStay.workshop) ? row.lastStay.workshop : 'Officina';
 
                                 const kmVal = parseInt(row.mileage) || 0;
-                                const kmText = kmVal > 0 ? `${kmVal.toLocaleString()} km` : '-';
+                                const kmText = kmVal > 0 ? `${kmVal.toLocaleString('it-IT')} km` : '-';
                                 const monthText = row.mileage_month ? `<div style="font-size: 0.75rem; color: #64748b; font-weight: 500;">${row.mileage_month}</div>` : '';
 
                                 return `
-                                    <tr ${trStyle} id="w-row-${row.id}" data-search="${(row.sigla + ' ' + row.plate + ' ' + row.model + ' ' + (row.lastStay ? row.lastStay.workshop : '')).toLowerCase()}">
+                                    <tr ${trStyle} id="w-row-${row.id}" data-search="${(row.sigla + ' ' + row.plate + ' ' + row.model + ' ' + (row.station || '') + ' ' + (row.lastStay ? row.lastStay.workshop : '')).toLowerCase()}">
                                         <td class="col-shrink text-bold text-primary">
                                             <span style="font-size: 1rem;">${row.sigla}</span>
                                             ${row.is_alea ? '<span style="background: #fef3c7; color: #92400e; font-size: 0.7rem; font-weight: 700; padding: 0.15rem 0.4rem; border-radius: 4px; margin-left: 0.35rem; vertical-align: middle;">Alea</span>' : ''}
                                             <div style="font-size: 0.75rem; color: #64748b; font-weight: 500;">${row.plate}</div>
                                         </td>
                                         <td class="col-shrink" style="font-size: 0.85rem;">${row.model}</td>
+                                        <td class="col-shrink" style="font-size: 0.85rem;">
+                                            <div style="font-weight: 700; color: #1e293b;">${row.station || '-'}</div>
+                                            ${row.stationMonthlyKm > 0 
+                                                ? `<div style="font-size: 0.75rem; color: #0284c7; font-weight: 600;"><i class="fa-solid fa-gauge-high" style="font-size: 0.65rem;"></i> ${row.stationMonthlyKm.toLocaleString('it-IT')} km/m</div>` 
+                                                : '<div style="font-size: 0.75rem; color: #94a3b8;">0 km/m</div>'}
+                                        </td>
                                         <td class="col-shrink" style="text-align: right; white-space: nowrap;">
                                             <div style="font-weight: 700; color: var(--primary-color); font-size: 0.95rem;">${kmText}</div>
                                             ${monthText}
+                                        </td>
+                                        <td class="col-shrink" style="text-align: right; white-space: nowrap;">
+                                            ${row.estimatedKm > 0 ? `
+                                                <div style="font-weight: 800; color: #6d28d9; font-size: 0.95rem;">
+                                                    ${row.estimatedKm.toLocaleString('it-IT')} km
+                                                </div>
+                                                <div style="font-size: 0.75rem; color: ${row.deltaKm > 0 ? '#059669' : '#64748b'}; font-weight: 600;">
+                                                    ${row.deltaKm > 0 
+                                                        ? `+${row.deltaKm.toLocaleString('it-IT')} km (${row.remainingMonths} ${row.remainingMonths === 1 ? 'mese' : 'mesi'})`
+                                                        : (row.remainingMonths === 0 ? '(Dati Dicembre)' : '(0 km previsti)')}
+                                                </div>
+                                            ` : '<span style="color: #94a3b8;">-</span>'}
                                         </td>
                                         <td class="col-shrink" style="text-align: center;">
                                             <span class="badge-days ${badgeClass}">
