@@ -25,7 +25,7 @@
     <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <!-- App Styles -->
-    <link rel="stylesheet" href="style.css?v=3.3.6">
+    <link rel="stylesheet" href="style.css?v=3.3.5">
 </head>
 
 <body>
@@ -873,12 +873,8 @@
                             Carrozzeria
                         </label>
                         <label style="display: flex; align-items: center; gap: 0.5rem; font-size: 0.85rem; font-weight: 600; cursor: pointer; color: #1e293b;">
-                            <input type="checkbox" id="repair-chk-lavaggio-canapa" onchange="window.handleWashOptionChange('canapa')" style="width: 18px; height: 18px; cursor: pointer;">
-                            Autolavaggio Esterno IP Via Canapa
-                        </label>
-                        <label style="display: flex; align-items: center; gap: 0.5rem; font-size: 0.85rem; font-weight: 600; cursor: pointer; color: #1e293b;">
-                            <input type="checkbox" id="repair-chk-lavaggio-cavagion" onchange="window.handleWashOptionChange('cavagion')" style="width: 18px; height: 18px; cursor: pointer;">
-                            Autolavaggio Esterno Cavagion
+                            <input type="checkbox" id="repair-chk-lavaggio-esterno" onchange="window.handleWashOptionChange('esterno')" style="width: 18px; height: 18px; cursor: pointer;">
+                            Autolavaggio Esterno
                         </label>
                         <label style="display: flex; align-items: center; gap: 0.5rem; font-size: 0.85rem; font-weight: 600; cursor: pointer; color: #1e293b;">
                             <input type="checkbox" id="repair-chk-lavaggio-completo" onchange="window.handleWashOptionChange('completo')" style="width: 18px; height: 18px; cursor: pointer;">
@@ -1063,8 +1059,8 @@
 
     <script src="firebase-config.js"></script>
 
-    <script src="store.js?v=3.3.6"></script>
-    <script src="app.js?v=3.3.6"></script>
+    <script src="store.js?v=3.3.5"></script>
+    <script src="app.js?v=3.3.5"></script>
 </body>
 
 </html>
