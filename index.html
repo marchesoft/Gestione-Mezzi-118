@@ -25,7 +25,7 @@
     <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <!-- App Styles -->
-    <link rel="stylesheet" href="style.css?v=3.3.3">
+    <link rel="stylesheet" href="style.css?v=3.3.4">
 </head>
 
 <body>
@@ -565,6 +565,48 @@
             </div>
         </div>
 
+        <!-- Location Form Modal (Add / Edit) -->
+        <div id="location-form-modal" class="modal hidden" style="z-index: 2600;">
+            <div class="modal-content" style="max-width: 440px; height: auto; border-radius: 0.75rem;">
+                <div style="padding: 1.25rem 1.5rem; border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; background: #f8fafc;">
+                    <div style="display: flex; align-items: center; gap: 0.5rem;">
+                        <i class="fa-solid fa-location-dot" style="color: #0284c7; font-size: 1.2rem;"></i>
+                        <h3 id="location-form-title" style="font-size: 1.15rem; font-weight: 700; color: #0f172a; margin: 0;">Gestione Luogo / Sede</h3>
+                    </div>
+                    <span onclick="window.closeLocationFormModal()" style="font-size: 1.5rem; cursor: pointer; color: #64748b; line-height: 1;">&times;</span>
+                </div>
+                <form id="location-form" onsubmit="window.saveLocationForm(event)" style="padding: 1.5rem;">
+                    <input type="hidden" id="location-old-name" value="">
+                    
+                    <div class="form-group" style="margin-bottom: 1.25rem;">
+                        <label style="display: block; margin-bottom: 0.5rem; font-weight: 600; font-size: 0.9rem; color: #334155;">
+                            <i class="fa-solid fa-map-pin" style="color: #0284c7; margin-right: 4px;"></i> Nome Luogo / Sede
+                        </label>
+                        <input type="text" id="location-name-input" required placeholder="Es. LAGOSANTO, CENTO, FERRARA..."
+                            style="width: 100%; padding: 0.65rem 0.85rem; border: 1px solid #cbd5e1; border-radius: 0.5rem; font-weight: 600; text-transform: uppercase;">
+                    </div>
+
+                    <div class="form-group" style="margin-bottom: 1.5rem;">
+                        <label style="display: block; margin-bottom: 0.5rem; font-weight: 600; font-size: 0.9rem; color: #334155;">
+                            <i class="fa-solid fa-gauge-high" style="color: #0284c7; margin-right: 4px;"></i> Km Mensili Previsti Sede
+                        </label>
+                        <input type="number" id="location-km-input" min="0" step="1" placeholder="Es. 1500, 3000..."
+                            style="width: 100%; padding: 0.65rem 0.85rem; border: 1px solid #cbd5e1; border-radius: 0.5rem; font-weight: 600;">
+                        <small style="color: #64748b; font-size: 0.78rem; margin-top: 0.35rem; display: block;">Chilometri medi mensili stimati per i mezzi assegnati a questa sede.</small>
+                    </div>
+
+                    <div style="display: flex; justify-content: flex-end; gap: 0.75rem;">
+                        <button type="button" class="btn" onclick="window.closeLocationFormModal()"
+                            style="background: white; border: 1px solid var(--border-color); color: #475569; padding: 0.6rem 1.2rem;">Annulla</button>
+                        <button type="submit" class="btn btn-primary"
+                            style="background: #0284c7; border-color: #0284c7; color: white; padding: 0.6rem 1.4rem; font-weight: 600;">
+                            <i class="fa-solid fa-check"></i> Salva Luogo
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
         <!-- Admin Login Modal -->
         <div id="admin-login-modal" class="modal hidden">
             <div class="modal-content" style="max-width: 400px; height: auto;">
@@ -1013,8 +1055,8 @@
 
     <script src="firebase-config.js"></script>
 
-    <script src="store.js?v=3.3.3"></script>
-    <script src="app.js?v=3.3.3"></script>
+    <script src="store.js?v=3.3.4"></script>
+    <script src="app.js?v=3.3.4"></script>
 </body>
 
 </html>

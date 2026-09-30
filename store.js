@@ -93,7 +93,15 @@ try {
                 const snapshot = await this.db.collection('locations').get();
                 return snapshot.docs.map(doc => {
                     const data = doc.data();
-                    return { luogo: data.name, colore: data.colore };
+                    const monthlyKm = (data.monthly_km !== undefined && data.monthly_km !== null) 
+                        ? Number(data.monthly_km) 
+                        : (data.km_mensili !== undefined && data.km_mensili !== null ? Number(data.km_mensili) : 0);
+                    return { 
+                        id: doc.id,
+                        luogo: data.name, 
+                        colore: data.colore || '#3b82f6',
+                        monthly_km: isNaN(monthlyKm) ? 0 : monthlyKm
+                    };
                 });
             } catch (error) {
                 console.error('Error fetching locations:', error);
@@ -101,11 +109,18 @@ try {
             }
         }
 
-        async addLocation(name, colore = '#3b82f6') {
+        async addLocation(name, colore = '#3b82f6', monthly_km = 0) {
             try {
-                await this.db.collection('locations').add({ name, colore });
+                const parsedKm = Number(monthly_km);
+                await this.db.collection('locations').add({ 
+                    name: (name || '').trim().toUpperCase(), 
+                    colore: colore || '#3b82f6',
+                    monthly_km: isNaN(parsedKm) ? 0 : parsedKm
+                });
             } catch (error) {
                 console.error('Error adding location:', error);
+                alert("Errore salvataggio luogo: " + error.message);
+                throw error;
             }
         }
 
@@ -117,17 +132,31 @@ try {
                 await batch.commit();
             } catch (error) {
                 console.error('Error deleting location:', error);
+                alert("Errore eliminazione luogo: " + error.message);
+                throw error;
             }
         }
 
-        async updateLocation(oldName, newName) {
+        async updateLocation(oldName, newName, monthly_km, colore = '#3b82f6') {
             try {
                 const snapshot = await this.db.collection('locations').where('name', '==', oldName).get();
                 const batch = this.db.batch();
-                snapshot.forEach(doc => batch.update(doc.ref, { name: newName }));
+                const updateData = { 
+                    name: (newName || oldName).trim().toUpperCase()
+                };
+                if (monthly_km !== undefined && monthly_km !== null) {
+                    const parsedKm = Number(monthly_km);
+                    updateData.monthly_km = isNaN(parsedKm) ? 0 : parsedKm;
+                }
+                if (colore) {
+                    updateData.colore = colore;
+                }
+                snapshot.forEach(doc => batch.update(doc.ref, updateData));
                 await batch.commit();
             } catch (error) {
                 console.error('Error updating location:', error);
+                alert("Errore aggiornamento luogo: " + error.message);
+                throw error;
             }
         }
 
@@ -284,11 +313,34 @@ try {
         async upsertData(table, rows) {
             try {
                 const batch = this.db.batch();
-                rows.forEach(row => {
-                    const { id, ...data } = row;
-                    const docRef = id ? this.db.collection(table).doc(id) : this.db.collection(table).doc();
-                    batch.set(docRef, data, { merge: true });
-                });
+                if (table === 'locations') {
+                    const snapshot = await this.db.collection('locations').get();
+                    const existingDocs = {};
+                    snapshot.forEach(doc => {
+                        const d = doc.data();
+                        if (d.name) existingDocs[d.name.toUpperCase()] = doc.id;
+                    });
+
+                    rows.forEach(row => {
+                        const nameKey = (row.name || row.luogo || '').trim().toUpperCase();
+                        if (nameKey) {
+                            const docId = existingDocs[nameKey];
+                            const docRef = docId ? this.db.collection('locations').doc(docId) : this.db.collection('locations').doc();
+                            const parsedKm = Number(row.monthly_km !== undefined ? row.monthly_km : row.km_mensili);
+                            batch.set(docRef, {
+                                name: nameKey,
+                                colore: row.colore || '#3b82f6',
+                                monthly_km: isNaN(parsedKm) ? 0 : parsedKm
+                            }, { merge: true });
+                        }
+                    });
+                } else {
+                    rows.forEach(row => {
+                        const { id, ...data } = row;
+                        const docRef = id ? this.db.collection(table).doc(id) : this.db.collection(table).doc();
+                        batch.set(docRef, data, { merge: true });
+                    });
+                }
                 await batch.commit();
             } catch (error) {
                 console.error(`Error upserting data to ${table}:`, error);

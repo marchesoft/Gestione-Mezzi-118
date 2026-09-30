@@ -1,4 +1,4 @@
-const APP_VERSION = "3.3.3";
+const APP_VERSION = "3.3.4";
 let isAdmin = false;
 let cachedVehicles = null;
 let cachedLocations = null;
@@ -1569,45 +1569,94 @@ function setupEventListeners() {
         const notesModal = document.getElementById('operational-notes-modal');
         const repairModal = document.getElementById('repair-request-modal');
         const repairHistoryModal = document.getElementById('vehicle-repair-history-modal');
+        const locationFormModal = document.getElementById('location-form-modal');
         if (event.target === cambioModal) cambioModal.classList.add('hidden');
         if (event.target === adminModal) adminModal.classList.add('hidden');
         if (event.target === notesModal) closeOperationalNotesModal();
         if (event.target === repairModal) closeRepairRequestModal();
         if (event.target === repairHistoryModal) closeVehicleRepairHistoryModal();
+        if (event.target === locationFormModal) window.closeLocationFormModal();
     }
 }
 
-window.addLocationHandler = async function (e) {
-    if (e && e.preventDefault) e.preventDefault();
-    const name = prompt("Nome del nuovo luogo:");
-    if (!name) return;
-    const color = "#3b82f6";
-    try {
-        await store.addLocation(upper(name), color);
-        // Refresh directly
-        await renderDashboard(true);
-        if (!document.getElementById('data-management-modal').classList.contains('hidden')) {
-            switchDataTable('locations');
-        }
-    } catch (err) {
-        console.error("Error adding location:", err);
-    }
+window.openAddLocationModal = function () {
+    const modal = document.getElementById('location-form-modal');
+    if (!modal) return;
+    document.getElementById('location-form-title').textContent = "Nuovo Luogo / Sede";
+    document.getElementById('location-old-name').value = "";
+    document.getElementById('location-name-input').value = "";
+    document.getElementById('location-km-input').value = "";
+    modal.classList.remove('hidden');
+    setTimeout(() => {
+        const input = document.getElementById('location-name-input');
+        if (input) input.focus();
+    }, 50);
 };
 
-window.editLocationHandler = async function (oldName) {
-    const newName = prompt("Inserisci il nuovo nome per questo luogo:", oldName);
-    if (!newName || newName.trim() === '' || upper(newName) === upper(oldName)) return;
+window.addLocationHandler = async function (e) {
+    if (e && e.preventDefault) e.preventDefault();
+    window.openAddLocationModal();
+};
+
+window.openEditLocationModal = function (name, monthlyKm) {
+    const modal = document.getElementById('location-form-modal');
+    if (!modal) return;
+    const decodedName = decodeURIComponent(name || '');
+    document.getElementById('location-form-title').textContent = "Modifica Luogo / Sede";
+    document.getElementById('location-old-name').value = decodedName;
+    document.getElementById('location-name-input').value = decodedName;
+    document.getElementById('location-km-input').value = (monthlyKm !== undefined && monthlyKm !== null && monthlyKm !== '') ? monthlyKm : "";
+    modal.classList.remove('hidden');
+    setTimeout(() => {
+        const input = document.getElementById('location-km-input');
+        if (input) input.focus();
+    }, 50);
+};
+
+window.editLocationHandler = async function (name, monthlyKm) {
+    window.openEditLocationModal(name, monthlyKm);
+};
+
+window.closeLocationFormModal = function () {
+    const modal = document.getElementById('location-form-modal');
+    if (modal) modal.classList.add('hidden');
+};
+
+window.saveLocationForm = async function (e) {
+    if (e && e.preventDefault) e.preventDefault();
+    const oldName = (document.getElementById('location-old-name').value || '').trim();
+    const rawName = (document.getElementById('location-name-input').value || '').trim();
+    const rawKm = document.getElementById('location-km-input').value;
+    const monthlyKm = rawKm !== '' ? Number(rawKm) : 0;
+
+    if (!rawName) {
+        alert("Inserisci il nome del luogo.");
+        return;
+    }
+
+    const newName = upper(rawName);
 
     try {
-        await store.updateLocation(upper(oldName), upper(newName));
-        // Refresh dashboard to reflect station changes in vehicle cards
+        if (oldName) {
+            await store.updateLocation(upper(oldName), newName, monthlyKm);
+        } else {
+            await store.addLocation(newName, '#3b82f6', monthlyKm);
+        }
+
+        window.closeLocationFormModal();
+
+        // Ricarica cache e dashboard
+        cachedLocations = await store.getLocations();
+        cachedLocations.sort((a, b) => a.luogo.localeCompare(b.luogo));
         await renderDashboard(true);
-        if (!document.getElementById('data-management-modal').classList.contains('hidden')) {
+
+        const dataMgmt = document.getElementById('data-management-modal');
+        if (dataMgmt && !dataMgmt.classList.contains('hidden')) {
             switchDataTable('locations');
         }
-        console.log("Luogo aggiornato con successo!");
     } catch (err) {
-        console.error("Error editing location:", err);
+        console.error("Errore salvataggio luogo:", err);
+        alert("Errore durante il salvataggio del luogo: " + (err.message || err));
     }
 };
 
@@ -2616,8 +2665,8 @@ window.exportCurrentTableToCSV = async function () {
             const italianHeaders = ['ID (Non modificare)', 'Targa', 'Modello', 'Sigla', 'Stazione', 'Stato', 'Km', 'Mese Km', 'Note', 'Note Interne', 'Radio ID', 'Scadenza Revisione', 'Revisione O2'];
             csvRows.push(italianHeaders.join(';'));
         } else if (type === 'locations') {
-            headers = ['luogo', 'colore'];
-            const italianHeaders = ['Luogo', 'Colore'];
+            headers = ['luogo', 'monthly_km', 'colore'];
+            const italianHeaders = ['Luogo', 'Km Mensili', 'Colore'];
             csvRows.push(italianHeaders.join(';'));
         } else if (type === 'interventions') {
             headers = ['id', 'date', 'date_out', 'sigla', 'workshop', 'description', 'cost'];
@@ -2844,7 +2893,8 @@ window.importDataTableFromCSV = function () {
                     },
                     'locations': {
                         'Luogo': 'name', 'luogo': 'name', 'name': 'name',
-                        'Colore': 'colore', 'colore': 'colore'
+                        'Colore': 'colore', 'colore': 'colore',
+                        'Km Mensili': 'monthly_km', 'km_mensili': 'monthly_km', 'monthly_km': 'monthly_km', 'Km': 'monthly_km', 'km': 'monthly_km'
                     },
                     'interventions': {
                         'ID (Non modificare)': 'id', 'id': 'id',
@@ -2886,7 +2936,7 @@ window.importDataTableFromCSV = function () {
                         if (dbField) {
                             let val = values[idx];
                             // Basic type conversion
-                            if (dbField === 'mileage' || dbField === 'cost') val = parseFloat(val) || 0;
+                            if (dbField === 'mileage' || dbField === 'cost' || dbField === 'monthly_km') val = parseFloat(val) || 0;
 
                             // Date conversion (handle both ISO and Italian format)
                             if (['date', 'date_out', 'data', 'inspection_expiry', 'revision_o2'].includes(dbField) && val) {
@@ -3056,17 +3106,22 @@ window.switchDataTable = async function (type) {
         } else if (type === 'locations') {
             data = await store.getLocations();
             html = `
-                <div style="margin-bottom: 1.5rem; background: #f8fafc; padding: 1rem; border-radius: 0.75rem; border: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; gap: 1rem;">
-                    <h4 style="font-size: 0.9rem;">Elenco Luoghi</h4>
+                <div style="margin-bottom: 1.5rem; background: #f8fafc; padding: 1rem; border-radius: 0.75rem; border: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; gap: 1rem; flex-wrap: wrap;">
+                    <div>
+                        <h4 style="font-size: 0.95rem; font-weight: 700; color: #0f172a; margin: 0 0 0.25rem 0;">Elenco Luoghi / Sedi Flotta</h4>
+                        <span style="font-size: 0.8rem; color: #64748b;">Gestisci le sedi operative e i chilometri mensili di riferimento stimati.</span>
+                    </div>
                     ${isAdmin ? `
-                    <div style="display: flex; gap: 0.5rem; align-items: center;">
+                    <div style="display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;">
                         <button class="btn btn-export" onclick="exportCurrentTableToCSV()" style="white-space: nowrap;">
                             <i class="fa-solid fa-file-excel"></i> Esporta Excel
                         </button>
                         <button class="btn btn-export" onclick="importDataTableFromCSV()" style="white-space: nowrap; background-color: #065f46;">
                             <i class="fa-solid fa-file-import"></i> Importa Excel
                         </button>
-                        <button class="btn btn-primary" onclick="window.addLocationHandler();" style="padding: 0.5rem 1rem;"><i class="fa-solid fa-plus"></i> Nuovo Luogo</button>
+                        <button class="btn btn-primary" onclick="window.addLocationHandler();" style="padding: 0.5rem 1rem; background: #0284c7; border-color: #0284c7; display: flex; align-items: center; gap: 0.4rem;">
+                            <i class="fa-solid fa-plus"></i> Nuovo Luogo
+                        </button>
                     </div>
                     ` : ''}
                 </div>
@@ -3074,19 +3129,31 @@ window.switchDataTable = async function (type) {
                     <table class="mgmt-table">
                         <thead>
                             <tr>
-                                <th>Luogo</th>
-                                ${isAdmin ? '<th class="col-actions">Azioni</th>' : ''}
+                                <th>Luogo / Sede</th>
+                                <th style="text-align: right; width: 220px;">Km Mensili Sede</th>
+                                ${isAdmin ? '<th class="col-actions" style="text-align: center; width: 120px;">Azioni</th>' : ''}
                             </tr>
                         </thead>
                         <tbody>
-                            ${data.map(l =>
-                '<tr>'
-                + `<td>${l.luogo}</td>`
-                + (isAdmin ? '<td class="col-actions">'
-                    + `<button onclick="window.editLocationHandler('${l.luogo}')" style="margin-right:0.5rem; cursor:pointer; background:none; border:none; color:var(--primary-color);"><i class="fa-solid fa-edit"></i></button>`
-                    + `<button onclick="setTimeout(() => { if(confirm('Eliminare questo luogo?')){store.deleteLocation('${l.luogo}').then(() => switchDataTable('locations'))} }, 50)" style="cursor:pointer; background:none; border:none; color:var(--status-to-repair);"><i class="fa-solid fa-trash"></i></button>`
-                    + '</td>' : '') + '</tr>'
-            ).join('')}
+                            ${data.map(l => {
+                                const hasKm = l.monthly_km !== undefined && l.monthly_km !== null && l.monthly_km !== 0 && !isNaN(l.monthly_km);
+                                const kmFormatted = hasKm 
+                                    ? `<span style="display: inline-flex; align-items: center; gap: 0.35rem; font-weight: 700; color: #0284c7; background: #e0f2fe; padding: 0.25rem 0.65rem; border-radius: 9999px; font-size: 0.85rem;"><i class="fa-solid fa-gauge-high" style="font-size: 0.75rem;"></i> ${Number(l.monthly_km).toLocaleString('it-IT')} km</span>`
+                                    : `<span style="color: #94a3b8; font-style: italic; font-size: 0.82rem;">Non impostato</span>`;
+                                const encodedName = encodeURIComponent(l.luogo || '');
+                                const kmNum = Number(l.monthly_km) || 0;
+                                return `<tr>
+                                    <td style="font-weight: 700; color: #0f172a;">
+                                        <i class="fa-solid fa-location-dot" style="color: #0284c7; margin-right: 0.5rem;"></i>
+                                        ${l.luogo}
+                                    </td>
+                                    <td style="text-align: right;">${kmFormatted}</td>
+                                    ${isAdmin ? `<td class="col-actions" style="text-align: center;">
+                                        <button onclick="window.editLocationHandler('${encodedName}', ${kmNum})" title="Modifica Luogo e Km" style="margin-right:0.6rem; cursor:pointer; background:none; border:none; color:var(--primary-color); font-size: 1.05rem;"><i class="fa-solid fa-pen-to-square"></i></button>
+                                        <button onclick="setTimeout(() => { if(confirm('Eliminare il luogo ${l.luogo}?')){store.deleteLocation('${l.luogo}').then(() => switchDataTable('locations'))} }, 50)" title="Elimina Luogo" style="cursor:pointer; background:none; border:none; color:var(--status-to-repair); font-size: 1.05rem;"><i class="fa-solid fa-trash"></i></button>
+                                    </td>` : ''}
+                                </tr>`;
+                            }).join('')}
                         </tbody>
                     </table>
                 </div>`;

@@ -1,16 +1,16 @@
-# Regole e Contesto del Progetto (v3.3.3)
+# Regole e Contesto del Progetto (v3.3.4)
 
-Questo file definisce le linee guida e lo stato di salvataggio del progetto per garantire la coerenza con la versione **3.3.3**.
+Questo file definisce le linee guida e lo stato di salvataggio del progetto per garantire la coerenza con la versione **3.3.4**.
 
-## Stato di Riferimento (v3.3.3)
+## Stato di Riferimento (v3.3.4)
 
 1. **Gestione Versioni**:
-   - La versione attuale di riferimento è **3.3.3**.
-   - Qualsiasi modifica futura richiede l'avanzamento della versione (es. `3.3.4` o successive) in `app.js` (`const APP_VERSION = "X.Y.Z";`) e in `index.html` (header).
+   - La versione attuale di riferimento è **3.3.4**.
+   - Qualsiasi modifica futura richiede l'avanzamento della versione (es. `3.3.5` o successive) in `app.js` (`const APP_VERSION = "X.Y.Z";`) e in `index.html` (header).
 
 2. **Bypass della Cache (Cache-Busting)**:
    - I file `app.js` e `style.css` sono importati in `index.html` con il parametro di versione `?v=X.Y.Z` per forzare il caricamento immediato degli aggiornamenti sui dispositivi client (specialmente mobili).
-   - Esempio: `<link rel="stylesheet" href="style.css?v=3.3.3">` e `<script src="app.js?v=3.3.3"></script>`.
+   - Esempio: `<link rel="stylesheet" href="style.css?v=3.3.4">` e `<script src="app.js?v=3.3.4"></script>`.
    - Ad ogni cambio di codice, aggiornare questa stringa con la nuova versione dell'applicazione.
 
 3. **Integrazione Git e GitHub**:
@@ -93,4 +93,10 @@ Questo file definisce le linee guida e lo stato di salvataggio del progetto per 
 12. **Snellimento Modale Dettagli Veicolo (v3.3.2)**:
     - Rimossa la tabella duplicata dello "Storico Richieste di Riparazione" posizionata in fondo al modal dei dettagli del veicolo (`openVehicleModal`) dopo lo "Storico Manutenzione".
     - Lo storico delle richieste di riparazione del singolo mezzo rimane comodamente consultabile e gestibile tramite il pulsante dedicato in alto **Storico Richieste** (con badge numerico) che apre la finestra modale dedicata `#vehicle-repair-history-modal`, oltre che dalla scheda globale **Riparazioni** in "Gestione Database".
+
+13. **Gestione Km Mensili nella Tabella Luoghi / Sedi (v3.3.4)**:
+    - Nella schermata **Gestione Database** alla scheda **Luoghi** (`switchDataTable('locations')`) è stata introdotta la colonna dedicata **Km Mensili Sede**.
+    - Gli amministratori possono inserire e modificare sia il *Nome del Luogo/Sede* che i *Km Mensili Previsti* tramite l'apposita finestra modale dedicata `#location-form-modal` (apribile con i pulsanti *Nuovo Luogo* e l'icona di modifica su ciascuna riga).
+    - I chilometri mensili sono salvati su Firestore nel campo `monthly_km` di ciascun documento della collection `locations`.
+    - La colonna è completamente integrata nelle funzioni di **Esporta Excel** e **Importa Excel** (con mappatura per le intestazioni `Km Mensili`, `monthly_km`, `km_mensili`).
 
