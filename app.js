@@ -1,4 +1,4 @@
-const APP_VERSION = "3.3.8";
+const APP_VERSION = "3.3.9";
 let isAdmin = false;
 let cachedVehicles = null;
 let cachedLocations = null;
@@ -1875,7 +1875,7 @@ window.openVehicleModal = async function (id) {
                             <button class="btn btn-repair-request" style="background: #16a34a; color: white; padding: 0.4rem 0.8rem; font-size: 0.85rem; border: none; border-radius: 0.375rem; cursor: pointer; display: flex; align-items: center; gap: 0.4rem;" onclick="openRepairRequestModal('${vehicle.id}')" title="Compila e scarica richiesta riparazione Word">
                                 <i class="fa-solid fa-file-word"></i> Richiesta Riparazione
                             </button>
-                            <button class="btn btn-wash-request" style="background: #06b6d4; color: white; padding: 0.4rem 0.8rem; font-size: 0.85rem; border: none; border-radius: 0.375rem; cursor: pointer; display: flex; align-items: center; gap: 0.4rem;" onclick="printWashModule('${vehicle.id}')" title="Stampa modulo lavaggio esterno">
+                            <button class="btn btn-wash-request" style="background: #06b6d4; color: white; padding: 0.4rem 0.8rem; font-size: 0.85rem; border: none; border-radius: 0.375rem; cursor: pointer; display: flex; align-items: center; gap: 0.4rem;" onclick="openWashModal('${vehicle.id}')" title="Compila e stampa modulo lavaggio">
                                 <i class="fa-solid fa-shower"></i> Modulo Lavaggio
                             </button>
                             <button class="btn" style="background: #0284c7; color: white; padding: 0.4rem 0.8rem; font-size: 0.85rem; border: none; border-radius: 0.375rem; cursor: pointer; display: flex; align-items: center; gap: 0.4rem;" onclick="openVehicleRepairHistoryModal('${vehicle.id}')" title="Visualizza lo storico delle richieste di riparazione">
@@ -5170,7 +5170,7 @@ window.openWashModal = async function (vehicleId) {
         if (stationElem) stationElem.value = 'IP VIA CANAPA';
 
         const kmElem = document.getElementById('wash-km');
-        if (kmElem) kmElem.value = vehicle.km || '';
+        if (kmElem) kmElem.value = vehicle.km || vehicle.mileage || '';
 
         const dateElem = document.getElementById('wash-date');
         if (dateElem) dateElem.value = getLocalISODate();

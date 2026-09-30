@@ -1,16 +1,16 @@
-# Regole e Contesto del Progetto (v3.3.8)
+# Regole e Contesto del Progetto (v3.3.9)
 
-Questo file definisce le linee guida e lo stato di salvataggio del progetto per garantire la coerenza con la versione **3.3.8**.
+Questo file definisce le linee guida e lo stato di salvataggio del progetto per garantire la coerenza con la versione **3.3.9**.
 
-## Stato di Riferimento (v3.3.8)
+## Stato di Riferimento (v3.3.9)
 
 1. **Gestione Versioni**:
-   - La versione attuale di riferimento è **3.3.8**.
-   - Qualsiasi modifica futura richiede l'avanzamento della versione (es. `3.3.9` o successive) in `app.js` (`const APP_VERSION = "X.Y.Z";`) e in `index.html` (header).
+   - La versione attuale di riferimento è **3.3.9**.
+   - Qualsiasi modifica futura richiede l'avanzamento della versione (es. `3.4.0` o successive) in `app.js` (`const APP_VERSION = "X.Y.Z";`) e in `index.html` (header).
 
 2. **Bypass della Cache (Cache-Busting)**:
    - I file `app.js` e `style.css` sono importati in `index.html` con il parametro di versione `?v=X.Y.Z` per forzare il caricamento immediato degli aggiornamenti sui dispositivi client (specialmente mobili).
-   - Esempio: `<link rel="stylesheet" href="style.css?v=3.3.8">`, `<script src="store.js?v=3.3.8"></script>` e `<script src="app.js?v=3.3.8"></script>`.
+   - Esempio: `<link rel="stylesheet" href="style.css?v=3.3.9">`, `<script src="store.js?v=3.3.9"></script>` e `<script src="app.js?v=3.3.9"></script>`.
    - Ad ogni cambio di codice, aggiornare questa stringa con la nuova versione dell'applicazione.
 
 3. **Integrazione Git e GitHub**:
@@ -125,7 +125,12 @@ Questo file definisce le linee guida e lo stato di salvataggio del progetto per 
     - Il calcolo della previsione a fine anno nel Report Officina legge dinamicamente i valori aggiornati dal database Firestore con fallback automatico alle costanti predefinite.
     - Aggiornate le procedure di esportazione e importazione CSV della tabella Luoghi per includere la colonna *Km Mensili Stimati*.
 
-16. **Stampa Diretta Modulo Lavaggio Esterno (v3.3.7 / v3.3.8)**:
-    - Cliccando sul pulsante **Modulo Lavaggio** (`.btn-wash-request`) nella schermata dettagli del veicolo (`openVehicleModal`), viene avviata direttamente la stampa del modulo di ricovero per lavaggio esterno (`printWashModule('${vehicle.id}')`), precompilato con i dati del mezzo selezionato (es. *AMBULANZA FF 837 RS ECHO 22*), Km correnti, officina (*IP VIA CANAPA*), data odierna e richiedente.
-    - Il comando genera un layout A4 conforme allo stampato ufficiale Parts & Services (*Ricovero Veicolo per manutenzione - Consegna / Ritiro*) ed apre istantaneamente l'anteprima di stampa del browser.
-    - Rimosso il campo del nome file Word non più necessario, rendendo l'interfaccia snella e focalizzata sulla stampa immediata.
+16. **Modulo Lavaggio Esterno Compilabile con Stampa Diretta (v3.3.9)**:
+    - Cliccando sul pulsante **Modulo Lavaggio** (`.btn-wash-request`) nella schermata dettagli del veicolo (`openVehicleModal`), si apre la finestra modale (`#wash-modal`) che consente di compilare o modificare all'occorrenza tutti i campi:
+      - *Veicolo*: precompilato con Sigla e Targa (es. `AMBULANZA FF 837 RS ECHO 22`).
+      - *Officina / Ricovero*: scelta tra `IP VIA CANAPA` (predefinita) e `CAVAGION`.
+      - *Km*: precompilato con i km correnti del mezzo, modificabile.
+      - *Data*: precompilata con la data odierna, modificabile.
+      - *Tipologia di Lavaggio*: scelta tra `LAVAGGIO ESTERNO` e `LAVAGGIO ESTERNO E INTERNO PIÙ SANIFICAZIONE`.
+      - *Operatore / Driver, Recapito Telefonico ed Email*: precompilati e modificabili.
+    - Premendo il pulsante **Stampa** nel modal, viene generato il documento ufficiale fedele al 100% con il logo originale Parts & Services e si avvia direttamente l'anteprima di stampa del browser su singola pagina A4.
