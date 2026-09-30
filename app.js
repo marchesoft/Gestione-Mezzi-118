@@ -1,4 +1,4 @@
-const APP_VERSION = "3.3.1";
+const APP_VERSION = "3.3.2";
 let isAdmin = false;
 let cachedVehicles = null;
 let cachedLocations = null;
@@ -2028,58 +2028,6 @@ window.openVehicleModal = async function (id) {
                         </tbody>
                     </table>
                 ` : '<p style="padding: 2rem; text-align: center; color: var(--text-secondary);">Nessun record di manutenzione trovato.</p>'}
-                    </div>
-
-                    <div style="margin-top: 1.5rem;">
-                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
-                            <div style="display: flex; align-items: center; gap: 0.5rem;">
-                                <div style="background: #2563eb; color: white; width: 32px; height: 32px; border-radius: 6px; display: flex; align-items: center; justify-content: center; font-size: 1rem;">
-                                    <i class="fa-solid fa-file-word"></i>
-                                </div>
-                                <h3 style="font-size: 1.1rem; margin: 0; color: black;">Storico Richieste di Riparazione</h3>
-                            </div>
-                        </div>
-
-                        <div style="background: white; border: 1px solid var(--border-color); border-radius: 1rem; overflow-x: auto;">
-                            ${vehicle.repair_requests && vehicle.repair_requests.length > 0 ? `
-                        <table style="width: 100%; border-collapse: collapse;">
-                            <thead style="background: #eff6ff; border-bottom: 1px solid #bfdbfe;">
-                                <tr>
-                                    <th style="text-align: left; padding: 0.85rem 1rem; font-size: 0.85rem; color: #1e3a8a;">Data</th>
-                                    <th style="text-align: left; padding: 0.85rem 1rem; font-size: 0.85rem; color: #1e3a8a;">Tipologia</th>
-                                    <th style="text-align: left; padding: 0.85rem 1rem; font-size: 0.85rem; color: #1e3a8a;">Descrizione</th>
-                                    <th style="text-align: left; padding: 0.85rem 1rem; font-size: 0.85rem; color: #1e3a8a;">Richiedente / Driver</th>
-                                    <th style="text-align: right; padding: 0.85rem 1rem; font-size: 0.85rem; color: #1e3a8a;">Azioni</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                ${vehicle.repair_requests.map((req, reqIdx) => `
-                                    <tr style="border-bottom: 1px solid var(--border-color);">
-                                        <td style="padding: 0.85rem 1rem; font-weight: 600; white-space: nowrap; color: #0f172a;">${req.date || '-'}</td>
-                                        <td style="padding: 0.85rem 1rem;">
-                                            ${(req.types && req.types.length > 0) ? req.types.map(t => `<span style="background: #dbeafe; color: #1e40af; font-size: 0.75rem; font-weight: 600; padding: 0.2rem 0.5rem; border-radius: 4px; display: inline-block; margin: 0.1rem;">${t}</span>`).join('') : '<span style="color: var(--text-secondary); font-size: 0.8rem;">Non specificata</span>'}
-                                        </td>
-                                        <td style="padding: 0.85rem 1rem; max-width: 280px; font-size: 0.9rem; color: #334155; white-space: pre-wrap;">${req.description || '-'}</td>
-                                        <td style="padding: 0.85rem 1rem; font-size: 0.85rem; color: #475569;">
-                                            <strong>${req.driver || '-'}</strong>
-                                            ${(req.dept || req.phone) ? `<div style="font-size: 0.75rem; color: #64748b;">${[req.dept, req.phone].filter(Boolean).join(' • ')}</div>` : ''}
-                                        </td>
-                                        <td style="padding: 0.85rem 1rem; text-align: right; white-space: nowrap;">
-                                            <button class="btn" style="background: #2563eb; color: white; padding: 0.3rem 0.6rem; font-size: 0.8rem; margin-right: 0.4rem; border: none; border-radius: 0.3rem; cursor: pointer;" onclick="downloadSavedRepairDocx('${vehicle.id}', '${req.id || ''}', ${reqIdx})" title="Scarica di nuovo il file Word">
-                                                <i class="fa-solid fa-download"></i> Word
-                                            </button>
-                                            ${isAdmin ? `
-                                            <button class="btn" style="background: var(--status-to-repair); color: white; padding: 0.3rem 0.6rem; font-size: 0.8rem; border: none; border-radius: 0.3rem; cursor: pointer;" onclick="deleteRepairRequest('${vehicle.id}', '${req.id || ''}', ${reqIdx})" title="Elimina richiesta">
-                                                <i class="fa-solid fa-trash"></i>
-                                            </button>
-                                            ` : ''}
-                                        </td>
-                                    </tr>
-                                `).join('')}
-                            </tbody>
-                        </table>
-                    ` : '<p style="padding: 1.5rem; text-align: center; color: var(--text-secondary); font-size: 0.9rem; margin: 0;">Nessuna richiesta di riparazione registrata per questo mezzo.</p>'}
-                        </div>
                     </div>
                 </div>
                 `;

@@ -1,16 +1,16 @@
-# Regole e Contesto del Progetto (v3.3.1)
+# Regole e Contesto del Progetto (v3.3.2)
 
-Questo file definisce le linee guida e lo stato di salvataggio del progetto per garantire la coerenza con la versione **3.3.1**.
+Questo file definisce le linee guida e lo stato di salvataggio del progetto per garantire la coerenza con la versione **3.3.2**.
 
-## Stato di Riferimento (v3.3.1)
+## Stato di Riferimento (v3.3.2)
 
 1. **Gestione Versioni**:
-   - La versione attuale di riferimento è **3.3.1**.
-   - Qualsiasi modifica futura richiede l'avanzamento della versione (es. `3.3.2` o successive) in `app.js` (`const APP_VERSION = "X.Y.Z";`) e in `index.html` (header).
+   - La versione attuale di riferimento è **3.3.2**.
+   - Qualsiasi modifica futura richiede l'avanzamento della versione (es. `3.3.3` o successive) in `app.js` (`const APP_VERSION = "X.Y.Z";`) e in `index.html` (header).
 
 2. **Bypass della Cache (Cache-Busting)**:
    - I file `app.js` e `style.css` sono importati in `index.html` con il parametro di versione `?v=X.Y.Z` per forzare il caricamento immediato degli aggiornamenti sui dispositivi client (specialmente mobili).
-   - Esempio: `<link rel="stylesheet" href="style.css?v=3.3.1">` e `<script src="app.js?v=3.3.1"></script>`.
+   - Esempio: `<link rel="stylesheet" href="style.css?v=3.3.2">` e `<script src="app.js?v=3.3.2"></script>`.
    - Ad ogni cambio di codice, aggiornare questa stringa con la nuova versione dell'applicazione.
 
 3. **Integrazione Git e GitHub**:
@@ -89,3 +89,8 @@ Questo file definisce le linee guida e lo stato di salvataggio del progetto per 
       - `deleteRepairRequest` è stata riscritta per ricercare la richiesta **prima per ID univoco** (`req.id`) e solo in fallback per posizione nell'array (`reqIndex`), evitando eliminazioni errate in caso di riordino dell'array.
       - `downloadSavedRepairDocx` aggiornato con la stessa logica doppia ID + indice.
       - Tutti i pulsanti Elimina e Scarica Word (in `openVehicleModal`, `openVehicleRepairHistoryModal` e `switchDataTable('riparazioni')`) trasmettono ora sia l'ID della richiesta che il suo indice posizionale.
+
+12. **Snellimento Modale Dettagli Veicolo (v3.3.2)**:
+    - Rimossa la tabella duplicata dello "Storico Richieste di Riparazione" posizionata in fondo al modal dei dettagli del veicolo (`openVehicleModal`) dopo lo "Storico Manutenzione".
+    - Lo storico delle richieste di riparazione del singolo mezzo rimane comodamente consultabile e gestibile tramite il pulsante dedicato in alto **Storico Richieste** (con badge numerico) che apre la finestra modale dedicata `#vehicle-repair-history-modal`, oltre che dalla scheda globale **Riparazioni** in "Gestione Database".
+
