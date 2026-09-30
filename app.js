@@ -1,10 +1,25 @@
-const APP_VERSION = "3.3.2";
+const APP_VERSION = "3.3.3";
 let isAdmin = false;
 let cachedVehicles = null;
 let cachedLocations = null;
 let currentOpenedVehicleId = null;
 let lastRefreshTime = new Date();
 let currentFilter = 'all';
+
+// Coefficienti di percorrenza mensile stimata per sede (Km/mese)
+const MONTHLY_KM_BY_STATION = {
+    'FERRARA': 3000,
+    'ARGENTA': 5000,
+    'LAGOSANTO': 6000,
+    'COMACCHIO': 10000,
+    'BONDENO': 10000,
+    'PORTOMAGGIORE': 7000,
+    'CENTO': 6000,
+    'COPPARO': 12000,
+    'CONA': 2000,
+    'CASUMARO': 7000
+};
+window.MONTHLY_KM_BY_STATION = MONTHLY_KM_BY_STATION;
 
 // Helper to ensure strings are uppercase
 const upper = (str) => (str || '').toString().toUpperCase().trim();
@@ -18,6 +33,63 @@ window.normalizeVehicleText = function (str) {
         .replace(/[\u0300-\u036f]/g, "")
         .toUpperCase()
         .trim();
+};
+
+// Calcolo Km/mese stimati per sede
+window.getMonthlyKmForStation = function (station) {
+    if (!station) return 0;
+    const cleanStation = window.normalizeVehicleText(station);
+    for (const [key, val] of Object.entries(MONTHLY_KM_BY_STATION)) {
+        if (cleanStation === key || cleanStation.includes(key)) {
+            return val;
+        }
+    }
+    return 0;
+};
+
+// Conversione mese testuale (es. AGOSTO, SETTEMBRE) o numerico in indice 1..12
+window.parseMonthIndex = function (monthStr) {
+    if (!monthStr) return null;
+    const s = window.normalizeVehicleText(monthStr);
+    const months = [
+        'GENNAIO', 'FEBBRAIO', 'MARZO', 'APRILE',
+        'MAGGIO', 'GIUGNO', 'LUGLIO', 'AGOSTO',
+        'SETTEMBRE', 'OTTOBRE', 'NOVEMBRE', 'DICEMBRE'
+    ];
+    for (let i = 0; i < months.length; i++) {
+        if (s.includes(months[i])) {
+            return i + 1; // 1 (Gennaio) a 12 (Dicembre)
+        }
+    }
+    const num = parseInt(s.replace(/[^0-9]/g, ''), 10);
+    if (!isNaN(num) && num >= 1 && num <= 12) {
+        return num;
+    }
+    return null;
+};
+
+// Calcolo previsione Km a fine Dicembre in base a km attuali, mese rilevamento e sede
+window.calculateForecastKmAtYearEnd = function (currentKm, mileageMonth, station) {
+    const km = parseInt(currentKm) || 0;
+    if (km <= 0) return null;
+
+    const monthlyRate = window.getMonthlyKmForStation(station);
+    if (!monthlyRate || monthlyRate <= 0) return null;
+
+    let monthIdx = window.parseMonthIndex(mileageMonth);
+    if (!monthIdx) {
+        monthIdx = new Date().getMonth() + 1;
+    }
+
+    const remainingMonths = Math.max(0, 12 - monthIdx);
+    const forecastKm = km + (remainingMonths * monthlyRate);
+
+    return {
+        forecastKm,
+        monthlyRate,
+        remainingMonths,
+        startMonthIdx: monthIdx
+    };
 };
 
 // Helper per generare il nome del file Word: "richiesta riparazione <SIGLA> <TARGA>.docx"
@@ -2586,16 +2658,23 @@ window.exportCurrentTableToCSV = async function () {
                     if (item.km && parseInt(item.km) > maxKm) maxKm = parseInt(item.km);
                 });
 
+                let forecastDec = '-';
+                const forecastObj = window.calculateForecastKmAtYearEnd(maxKm || v.mileage, v.mileage_month, v.station);
+                if (forecastObj && forecastObj.forecastKm) {
+                    forecastDec = `${forecastObj.forecastKm.toLocaleString()} km`;
+                }
+
                 data.push({
                     sigla: v.sigla,
                     plate: v.plate,
                     model: v.model,
-                    station: v.station,
+                    station: v.station || '-',
                     status: statusLabel,
                     total_days: totalDays,
                     count: count,
                     mileage: maxKm > 0 ? `${maxKm.toLocaleString()} km` : '-',
-                    mileage_month: v.mileage_month || '-'
+                    mileage_month: v.mileage_month || '-',
+                    forecast_december: forecastDec
                 });
             }
 
@@ -2640,8 +2719,8 @@ window.exportCurrentTableToCSV = async function () {
             const italianHeaders = ['Sigla', 'Targa', 'Modello', 'Data Richiesta', 'Tipologia', 'Descrizione', 'Driver / Richiedente', 'Dipartimento', 'Telefono', 'Ubicazione', 'Email'];
             csvRows.push(italianHeaders.join(';'));
         } else if (type === 'report_officina') {
-            headers = ['sigla', 'plate', 'model', 'mileage', 'mileage_month', 'total_days', 'count'];
-            const italianHeaders = ['Mezzo (Sigla)', 'Targa', 'Modello', 'Ultimi Km Rilevati', 'Mese Riferimento Km', 'Totale Giorni in Officina', 'Numero Ricoveri'];
+            headers = ['sigla', 'plate', 'model', 'station', 'mileage', 'mileage_month', 'forecast_december', 'total_days', 'count'];
+            const italianHeaders = ['Mezzo (Sigla)', 'Targa', 'Modello', 'Sede Attuale', 'Ultimi Km Rilevati', 'Mese Riferimento Km', 'Previsione Km a Fine Dicembre', 'Totale Giorni in Officina', 'Numero Ricoveri'];
             csvRows.push(italianHeaders.join(';'));
         } else {
             headers = Object.keys(data[0]);
@@ -3564,6 +3643,8 @@ window.switchDataTable = async function (type) {
                     if (item.km && parseInt(item.km) > maxKm) maxKm = parseInt(item.km);
                 });
 
+                const forecastObj = window.calculateForecastKmAtYearEnd(maxKm || v.mileage, v.mileage_month, v.station);
+
                 reportRows.push({
                     ...v,
                     totalDays,
@@ -3571,7 +3652,8 @@ window.switchDataTable = async function (type) {
                     hasOngoing,
                     lastStay,
                     mileage: maxKm || v.mileage || 0,
-                    mileage_month: v.mileage_month || ''
+                    mileage_month: v.mileage_month || '',
+                    forecast: forecastObj
                 });
             }
 
@@ -3587,7 +3669,7 @@ window.switchDataTable = async function (type) {
                             <i class="fa-solid fa-clock-rotate-left"></i> Report Tempo di Permanenza in Officina
                         </h3>
                         <div style="font-size: 0.85rem; opacity: 0.9; margin-top: 0.35rem;">
-                            Monitoraggio dettagliato dei giorni di fermo macchina e storico ricoveri per singola ambulanza
+                            Monitoraggio dettagliato dei giorni di fermo macchina, chilometraggi e stima percorrenze a fine anno per singola ambulanza
                         </div>
                     </div>
                     <div style="display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;">
@@ -3635,7 +3717,7 @@ window.switchDataTable = async function (type) {
                 <div style="margin-bottom: 1rem; background: #f8fafc; padding: 0.75rem 1rem; border-radius: 0.75rem; border: 1px solid var(--border-color); display: flex; gap: 1rem; align-items: center; justify-content: space-between; flex-wrap: wrap;">
                     <div style="flex-grow: 1; position: relative; min-width: 240px;">
                         <i class="fa-solid fa-search" style="position: absolute; left: 1rem; top: 50%; transform: translateY(-50%); color: var(--text-secondary);"></i>
-                        <input type="text" id="workshop-report-search" placeholder="Cerca mezzo (Sigla, Targa, Officina, Sede)..." 
+                        <input type="text" id="workshop-report-search" placeholder="Cerca mezzo (Sigla, Targa, Sede, Officina)..." 
                                oninput="window.filterWorkshopReport(this.value)"
                                style="width: 100%; padding: 0.5rem 1rem 0.5rem 2.5rem; border-radius: 0.5rem; border: 1px solid var(--border-color); outline: none; font-size: 0.9rem;">
                     </div>
@@ -3660,13 +3742,15 @@ window.switchDataTable = async function (type) {
                             <tr>
                                 <th class="col-shrink">Mezzo</th>
                                 <th class="col-shrink">Modello</th>
+                                <th class="col-shrink">Sede Attuale</th>
                                 <th class="col-shrink" style="text-align: right;">Ultimi Km Rilevati</th>
+                                <th class="col-shrink" style="text-align: right;">Previsione Km (31 Dic)</th>
                                 <th class="col-shrink" style="text-align: center;">Giorni in Officina</th>
                                 <th class="col-shrink" style="text-align: center;">N° Ricoveri</th>
                             </tr>
                         </thead>
                         <tbody>
-                            ${reportRows.length === 0 ? '<tr><td colspan="5" style="text-align:center; padding: 2rem; color: var(--text-secondary);">Nessun dato trovato per i criteri selezionati.</td></tr>' : ''}
+                            ${reportRows.length === 0 ? '<tr><td colspan="7" style="text-align:center; padding: 2rem; color: var(--text-secondary);">Nessun dato trovato per i criteri selezionati.</td></tr>' : ''}
                             ${reportRows.map(row => {
                                 let badgeClass = 'badge-days-zero';
                                 if (row.hasOngoing) badgeClass = 'badge-days-ongoing';
@@ -3683,17 +3767,38 @@ window.switchDataTable = async function (type) {
                                 const kmText = kmVal > 0 ? `${kmVal.toLocaleString()} km` : '-';
                                 const monthText = row.mileage_month ? `<div style="font-size: 0.75rem; color: #64748b; font-weight: 500;">${row.mileage_month}</div>` : '';
 
+                                const monthlyRate = window.getMonthlyKmForStation(row.station);
+                                const stationSub = monthlyRate > 0 ? `<div style="font-size: 0.72rem; color: #64748b; font-weight: 500;">~${monthlyRate.toLocaleString()} km/m</div>` : '';
+
+                                let forecastHtml = '<span style="color: var(--text-secondary); font-size: 0.85rem;">-</span>';
+                                if (row.forecast && row.forecast.forecastKm) {
+                                    const addKm = row.forecast.remainingMonths * row.forecast.monthlyRate;
+                                    forecastHtml = `
+                                        <div style="font-weight: 700; color: #047857; font-size: 0.95rem;">${row.forecast.forecastKm.toLocaleString()} km</div>
+                                        <div style="font-size: 0.72rem; color: #059669; font-weight: 500;" title="Stima: ${kmVal.toLocaleString()} km + (${row.forecast.remainingMonths} mesi × ${row.forecast.monthlyRate.toLocaleString()} km)">
+                                            +${addKm.toLocaleString()} km (${row.forecast.remainingMonths} ${row.forecast.remainingMonths === 1 ? 'mese' : 'mesi'})
+                                        </div>
+                                    `;
+                                }
+
                                 return `
-                                    <tr ${trStyle} id="w-row-${row.id}" data-search="${(row.sigla + ' ' + row.plate + ' ' + row.model + ' ' + (row.lastStay ? row.lastStay.workshop : '')).toLowerCase()}">
+                                    <tr ${trStyle} id="w-row-${row.id}" data-search="${(row.sigla + ' ' + row.plate + ' ' + row.model + ' ' + (row.station || '') + ' ' + (row.lastStay ? row.lastStay.workshop : '')).toLowerCase()}">
                                         <td class="col-shrink text-bold text-primary">
                                             <span style="font-size: 1rem;">${row.sigla}</span>
                                             ${row.is_alea ? '<span style="background: #fef3c7; color: #92400e; font-size: 0.7rem; font-weight: 700; padding: 0.15rem 0.4rem; border-radius: 4px; margin-left: 0.35rem; vertical-align: middle;">Alea</span>' : ''}
                                             <div style="font-size: 0.75rem; color: #64748b; font-weight: 500;">${row.plate}</div>
                                         </td>
                                         <td class="col-shrink" style="font-size: 0.85rem;">${row.model}</td>
+                                        <td class="col-shrink" style="white-space: nowrap;">
+                                            <span style="font-weight: 600; color: #1e293b; font-size: 0.9rem;">${row.station || '-'}</span>
+                                            ${stationSub}
+                                        </td>
                                         <td class="col-shrink" style="text-align: right; white-space: nowrap;">
                                             <div style="font-weight: 700; color: var(--primary-color); font-size: 0.95rem;">${kmText}</div>
                                             ${monthText}
+                                        </td>
+                                        <td class="col-shrink" style="text-align: right; white-space: nowrap;">
+                                            ${forecastHtml}
                                         </td>
                                         <td class="col-shrink" style="text-align: center;">
                                             <span class="badge-days ${badgeClass}">
