@@ -1,4 +1,4 @@
-const APP_VERSION = "3.3.11";
+const APP_VERSION = "3.3.12";
 let isAdmin = false;
 let cachedVehicles = null;
 let cachedLocations = null;
@@ -3756,11 +3756,8 @@ window.switchDataTable = async function (type) {
                         </div>
                     </div>
                     <div style="display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;">
-                        <button class="btn btn-export" onclick="exportCurrentTableToCSV()" style="background: rgba(255,255,255,0.2); color: white; border: 1px solid rgba(255,255,255,0.4); display: flex; align-items: center; gap: 0.4rem; white-space: nowrap; backdrop-filter: blur(4px);">
+                        <button class="btn btn-export" onclick="exportCurrentTableToCSV()" style="background: white; color: #6d28d9; border: none; font-weight: 600; display: flex; align-items: center; gap: 0.4rem; white-space: nowrap; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
                             <i class="fa-solid fa-file-excel"></i> Esporta Riepilogo Excel
-                        </button>
-                        <button class="btn btn-export" onclick="window.exportDetailedWorkshopReportToCSV()" style="background: white; color: #6d28d9; border: none; font-weight: 600; display: flex; align-items: center; gap: 0.4rem; white-space: nowrap; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
-                            <i class="fa-solid fa-list-check"></i> Esporta Dettaglio Singoli Ricoveri
                         </button>
                     </div>
                 </div>

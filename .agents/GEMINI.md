@@ -1,16 +1,16 @@
-# Regole e Contesto del Progetto (v3.3.11)
+# Regole e Contesto del Progetto (v3.3.12)
 
-Questo file definisce le linee guida e lo stato di salvataggio del progetto per garantire la coerenza con la versione **3.3.11**.
+Questo file definisce le linee guida e lo stato di salvataggio del progetto per garantire la coerenza con la versione **3.3.12**.
 
-## Stato di Riferimento (v3.3.11)
+## Stato di Riferimento (v3.3.12)
 
 1. **Gestione Versioni**:
-   - La versione attuale di riferimento è **3.3.11**.
-   - Qualsiasi modifica futura richiede l'avanzamento della versione (es. `3.3.12` o successive) in `app.js` (`const APP_VERSION = "X.Y.Z";`) e in `index.html` (header).
+   - La versione attuale di riferimento è **3.3.12**.
+   - Qualsiasi modifica futura richiede l'avanzamento della versione (es. `3.3.13` o successive) in `app.js` (`const APP_VERSION = "X.Y.Z";`) e in `index.html` (header).
 
 2. **Bypass della Cache (Cache-Busting)**:
    - I file `app.js` e `style.css` sono importati in `index.html` con il parametro di versione `?v=X.Y.Z` per forzare il caricamento immediato degli aggiornamenti sui dispositivi client (specialmente mobili).
-   - Esempio: `<link rel="stylesheet" href="style.css?v=3.3.11">` e `<script src="app.js?v=3.3.11"></script>`.
+   - Esempio: `<link rel="stylesheet" href="style.css?v=3.3.12">` e `<script src="app.js?v=3.3.12"></script>`.
    - Ad ogni cambio di codice, aggiornare questa stringa con la nuova versione dell'applicazione.
 
 3. **Integrazione Git e GitHub**:
@@ -79,7 +79,8 @@ Questo file definisce le linee guida e lo stato di salvataggio del progetto per 
       - Filtro dinamico per Anno (solo anni specifici disponibili, senza opzione "Tutti gli anni"). Al primo caricamento viene selezionato automaticamente l'anno più recente con dati.
       - Selettore "Mostra solo con ricoveri" per escludere i mezzi senza passaggi in officina.
     - **Esportazione Excel (CSV con BOM UTF-8)**:
-      - *Esporta Riepilogo Excel*: Scarica il foglio aggregato con Sigla, Targa, Modello, Ultimi Km Rilevati, Mese Riferimento Km, Totale Giorni, Numero Ricoveri.
+      - *Esporta Riepilogo Excel*: Scarica il foglio aggregato con Sigla, Targa, Modello, Sede, Km Mensili Sede, Ultimi Km Rilevati, Mese Riferimento Km, Stima Km Fine Dicembre, Totale Giorni, Numero Ricoveri.
+      - (v3.3.12) Rimosso il pulsante "Esporta Dettaglio Singoli Ricoveri" per mantenere la barra degli strumenti essenziale e focalizzata sul riepilogo flotta.
 
 11. **Correzione Eliminazione Richieste di Lavaggio dalla Tabella Riparazioni (v3.2.7)**:
     - Risolto il bug per cui le richieste di lavaggio esterno (tipologia `Autolavaggio`) non potevano essere eliminate dalla scheda **Riparazioni** della Gestione Database né dallo storico del singolo mezzo.
