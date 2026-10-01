@@ -1,16 +1,16 @@
-# Regole e Contesto del Progetto (v3.3.12)
+# Regole e Contesto del Progetto (v3.3.13)
 
-Questo file definisce le linee guida e lo stato di salvataggio del progetto per garantire la coerenza con la versione **3.3.12**.
+Questo file definisce le linee guida e lo stato di salvataggio del progetto per garantire la coerenza con la versione **3.3.13**.
 
-## Stato di Riferimento (v3.3.12)
+## Stato di Riferimento (v3.3.13)
 
 1. **Gestione Versioni**:
-   - La versione attuale di riferimento è **3.3.12**.
-   - Qualsiasi modifica futura richiede l'avanzamento della versione (es. `3.3.13` o successive) in `app.js` (`const APP_VERSION = "X.Y.Z";`) e in `index.html` (header).
+   - La versione attuale di riferimento è **3.3.13**.
+   - Qualsiasi modifica futura richiede l'avanzamento della versione (es. `3.3.14` o successive) in `app.js` (`const APP_VERSION = "X.Y.Z";`) e in `index.html` (header).
 
 2. **Bypass della Cache (Cache-Busting)**:
    - I file `app.js` e `style.css` sono importati in `index.html` con il parametro di versione `?v=X.Y.Z` per forzare il caricamento immediato degli aggiornamenti sui dispositivi client (specialmente mobili).
-   - Esempio: `<link rel="stylesheet" href="style.css?v=3.3.12">` e `<script src="app.js?v=3.3.12"></script>`.
+   - Esempio: `<link rel="stylesheet" href="style.css?v=3.3.13">` e `<script src="app.js?v=3.3.13"></script>`.
    - Ad ogni cambio di codice, aggiornare questa stringa con la nuova versione dell'applicazione.
 
 3. **Integrazione Git e GitHub**:
@@ -102,14 +102,14 @@ Questo file definisce le linee guida e lo stato di salvataggio del progetto per 
     - I chilometri mensili sono salvati su Firestore nel campo `monthly_km` di ciascun documento della collection `locations`.
     - La colonna è completamente integrata nelle funzioni di **Esporta Excel** e **Importa Excel** (con mappatura per le intestazioni `Km Mensili`, `monthly_km`, `km_mensili`).
 
-14. **Opzioni di Autolavaggio nella Richiesta di Riparazione Standard (v3.3.6)**:
+14. **Opzioni di Autolavaggio nella Richiesta di Riparazione Standard (v3.3.13)**:
     - Nella finestra modale della richiesta di riparazione standard (`#repair-request-modal`), sono presenti le due opzioni dedicate di autolavaggio:
       1. **Autolavaggio Esterno** (`#repair-chk-lavaggio-esterno`)
-      2. **Autolavaggio Interno ed Esterno + Sanificazione** (`#repair-chk-lavaggio-completo`)
+      2. **Autolavaggio Interno ed Esterno** (`#repair-chk-lavaggio-completo`)
     - **Comportamento nel Modulo Word**: Nel documento Word generato, se viene selezionata una delle due opzioni, viene spuntata unicamente la casella originale di **Autolavaggio** (riga 3 della tabella tipologie).
     - **Testo nella Descrizione con Indicazione Sede IP Via Canapa**: La selezione inserisce e aggiorna automaticamente nella descrizione dei lavori da eseguire l'indicazione con officina convenzionata:
       - `AUTOLAVAGGIO ESTERNO IP VIA CANAPA`
-      - `AUTOLAVAGGIO INTERNO ED ESTERNO PIÙ SANIFICAZIONE IP VIA CANAPA`
+      - `AUTOLAVAGGIO INTERNO ED ESTERNO IP VIA CANAPA`
       garantendo che il testo sia chiaramente riportato sia nel file Word generato che nello storico del veicolo.
 
 15. **Sede e Proiezione Km a Fine Dicembre nel Report Officina (v3.3.9)**:

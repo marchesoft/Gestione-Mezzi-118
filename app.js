@@ -1,4 +1,4 @@
-const APP_VERSION = "3.3.12";
+const APP_VERSION = "3.3.13";
 let isAdmin = false;
 let cachedVehicles = null;
 let cachedLocations = null;
@@ -4193,11 +4193,13 @@ window.handleWashOptionChange = function (type) {
     if (!descEl) return;
 
     const textEsterno = "AUTOLAVAGGIO ESTERNO IP VIA CANAPA";
-    const textCompleto = "AUTOLAVAGGIO INTERNO ED ESTERNO PIÙ SANIFICAZIONE IP VIA CANAPA";
+    const textCompleto = "AUTOLAVAGGIO INTERNO ED ESTERNO IP VIA CANAPA";
     const allWashTexts = [
         textEsterno,
         textCompleto,
         "AUTOLAVAGGIO ESTERNO",
+        "AUTOLAVAGGIO INTERNO ED ESTERNO",
+        "AUTOLAVAGGIO INTERNO ED ESTERNO PIÙ SANIFICAZIONE IP VIA CANAPA",
         "AUTOLAVAGGIO INTERNO ED ESTERNO PIÙ SANIFICAZIONE"
     ];
 
@@ -4693,15 +4695,15 @@ window.generateAndDownloadRepairDocx = async function () {
         if (chkGommista) selectedTypes.push('Gommista');
         if (chkCarrozzeria) selectedTypes.push('Carrozzeria');
         if (chkLavaggioEsterno) selectedTypes.push('Autolavaggio Esterno');
-        if (chkLavaggioCompleto) selectedTypes.push('Autolavaggio Interno ed Esterno + Sanificazione');
+        if (chkLavaggioCompleto) selectedTypes.push('Autolavaggio Interno ed Esterno');
         if (chkSinistro) selectedTypes.push('Sinistro');
         if (chkSoccorso) selectedTypes.push('Soccorso Stradale');
 
         let descRaw = document.getElementById('repair-description').value.trim();
         if (chkLavaggioEsterno && !descRaw.toUpperCase().includes('AUTOLAVAGGIO ESTERNO') && !descRaw.toUpperCase().includes('LAVAGGIO ESTERNO')) {
             descRaw = 'AUTOLAVAGGIO ESTERNO IP VIA CANAPA' + (descRaw ? '\n' + descRaw : '');
-        } else if (chkLavaggioCompleto && !descRaw.toUpperCase().includes('SANIFICAZIONE')) {
-            descRaw = 'AUTOLAVAGGIO INTERNO ED ESTERNO PIÙ SANIFICAZIONE IP VIA CANAPA' + (descRaw ? '\n' + descRaw : '');
+        } else if (chkLavaggioCompleto && !descRaw.toUpperCase().includes('AUTOLAVAGGIO INTERNO') && !descRaw.toUpperCase().includes('LAVAGGIO INTERNO') && !descRaw.toUpperCase().includes('INTERNO ED ESTERNO')) {
+            descRaw = 'AUTOLAVAGGIO INTERNO ED ESTERNO IP VIA CANAPA' + (descRaw ? '\n' + descRaw : '');
         }
 
         let filenameInput = (document.getElementById('repair-filename').value || '').trim();
