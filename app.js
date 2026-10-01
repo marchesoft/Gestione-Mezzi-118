@@ -1,4 +1,4 @@
-const APP_VERSION = "3.3.10";
+const APP_VERSION = "3.3.11";
 let isAdmin = false;
 let cachedVehicles = null;
 let cachedLocations = null;
@@ -4734,20 +4734,7 @@ window.generateAndDownloadRepairDocx = async function () {
             filename: filename
         };
 
-        // Genera Blob e scarica in base al modello (Alea o Standard 118)
-        const blob = isAlea
-            ? await window.createAleaRepairDocxBlob(reqData)
-            : await window.createRepairDocxBlob(reqData);
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement("a");
-        a.href = url;
-        a.download = filename;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
-
-        // Salva la richiesta nello storico del veicolo su Firestore
+        // Salva la richiesta nello storico del veicolo su Firestore (senza forzare il download automatico del file Word)
         if (vehicleId) {
             const targetVehicle = (cachedVehicles && cachedVehicles.find(v => v.id === vehicleId)) || await store.getVehicleById(vehicleId);
             if (targetVehicle) {
@@ -4779,8 +4766,8 @@ window.generateAndDownloadRepairDocx = async function () {
 
         closeRepairRequestModal();
     } catch (err) {
-        console.error("Errore nella generazione del file Word:", err);
-        alert("Si è verificato un errore durante la creazione del documento Word: " + err.message);
+        console.error("Errore nel salvataggio della richiesta riparazione:", err);
+        alert("Si è verificato un errore durante il salvataggio della richiesta: " + err.message);
     }
 };
 
