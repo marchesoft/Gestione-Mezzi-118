@@ -1,16 +1,16 @@
-# Regole e Contesto del Progetto (v3.3.9)
+# Regole e Contesto del Progetto (v3.3.10)
 
-Questo file definisce le linee guida e lo stato di salvataggio del progetto per garantire la coerenza con la versione **3.3.9**.
+Questo file definisce le linee guida e lo stato di salvataggio del progetto per garantire la coerenza con la versione **3.3.10**.
 
-## Stato di Riferimento (v3.3.9)
+## Stato di Riferimento (v3.3.10)
 
 1. **Gestione Versioni**:
-   - La versione attuale di riferimento è **3.3.9**.
-   - Qualsiasi modifica futura richiede l'avanzamento della versione (es. `3.3.10` o successive) in `app.js` (`const APP_VERSION = "X.Y.Z";`) e in `index.html` (header).
+   - La versione attuale di riferimento è **3.3.10**.
+   - Qualsiasi modifica futura richiede l'avanzamento della versione (es. `3.3.11` o successive) in `app.js` (`const APP_VERSION = "X.Y.Z";`) e in `index.html` (header).
 
 2. **Bypass della Cache (Cache-Busting)**:
    - I file `app.js` e `style.css` sono importati in `index.html` con il parametro di versione `?v=X.Y.Z` per forzare il caricamento immediato degli aggiornamenti sui dispositivi client (specialmente mobili).
-   - Esempio: `<link rel="stylesheet" href="style.css?v=3.3.9">` e `<script src="app.js?v=3.3.9"></script>`.
+   - Esempio: `<link rel="stylesheet" href="style.css?v=3.3.10">` e `<script src="app.js?v=3.3.10"></script>`.
    - Ad ogni cambio di codice, aggiornare questa stringa con la nuova versione dell'applicazione.
 
 3. **Integrazione Git e GitHub**:
@@ -53,12 +53,12 @@ Questo file definisce le linee guida e lo stato di salvataggio del progetto per 
    - Registrata ed inserita nello storico richieste di riparazione dell'ambulanza Alea **ECHO 22 (targa FF 837 RS)** la richiesta di modulo lavaggio esterno per ricovero veicolo presso officina **CAVAGION** con data **29/01/2026**.
    - La richiesta è visibile sia nello storico richieste del singolo mezzo che nella tabella globale "Riparazioni" del database, ed è scaricabile in formato Word con il modello dedicato Alea.
 
-9. **Modulo Lavaggio Esterno - Stampato Ufficiale Parts & Services e Stampa Diretta (v3.3.3)**:
+9. **Modulo Lavaggio Esterno - Stampato Ufficiale Parts & Services e Stampa Diretta (v3.3.10)**:
    - Nella scheda dettagli veicolo (`openVehicleModal`) è presente un pulsante dedicato **Modulo Lavaggio** (`.btn-wash-request`, colore azzurrino acqua / cyan `#06b6d4`, hover `#0891b2`), cromaticamente distinto dal pulsante verde prato "Richiesta Riparazione" (`#16a34a`) e dall'azzurro "Storico Richieste" (`#0284c7`).
    - Apre una finestra modale compilabile dedicata (`#wash-modal`) per verificare e modificare i dati prima di inviare lo stampato direttamente alla stampante (o salvare come PDF dal dialogo di stampa).
    - **Campi Compilabili e Precompilati Dinamici**:
      - *Dati Veicolo*: Veicolo (es. `AMBULANZA FF 837 RS ECHO 22`), Km rilevati, Data modulo (preimpostata alla data odierna), Officina convenzionata (*IP VIA CANAPA* di default, oppure *CAVAGION*).
-     - *Tipologia di Intervento Esclusiva*: Selezione radio tra `LAVAGGIO ESTERNO` (predefinita) e `LAVAGGIO ESTERNO E INTERNO PIÙ SANIFICAZIONE`.
+     - *Tipologia di Intervento Esclusiva*: Selezione radio tra `LAVAGGIO ESTERNO` (predefinita) e `LAVAGGIO ESTERNO E INTERNO`.
      - *Dati Richiedente / Consegna e Ritiro*: Nominativi incaricati (`MARSILI PAOLO – GAMBERONI FEDERICO – MARCHESINI LUCA`), Email istituzionale (`logistica118fe@ausl.fe.it`), Cellulare (`3209229345`).
    - **Invio Diretto alla Stampante (`printWashModule`)**:
      - Cliccando sul pulsante **Stampa** (`.btn-wash-request` con icona `fa-print`), il sistema genera ed invia direttamente alla stampante di sistema il layout A4 ufficiale Parts & Services (*Ricovero Veicolo per manutenzione - consegna/Ritiro*).

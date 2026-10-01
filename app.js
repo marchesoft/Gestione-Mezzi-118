@@ -1,4 +1,4 @@
-const APP_VERSION = "3.3.9";
+const APP_VERSION = "3.3.10";
 let isAdmin = false;
 let cachedVehicles = null;
 let cachedLocations = null;
@@ -5110,7 +5110,7 @@ window.createWashDocxBlob = async function (data) {
         }
     }
 
-    // 5. Popola Intervento (LAVAGGIO ESTERNO oppure LAVAGGIO ESTERNO E INTERNO PIÙ SANIFICAZIONE)
+    // 5. Popola Intervento (LAVAGGIO ESTERNO oppure LAVAGGIO ESTERNO E INTERNO)
     const washDesc = (data.description || 'LAVAGGIO ESTERNO').trim();
     for (let i = 0; i < paragraphs.length; i++) {
         const p = paragraphs[i];
@@ -5122,7 +5122,7 @@ window.createWashDocxBlob = async function (data) {
                 if (tNodes[j].textContent.includes("LAVAGGIO ESTERNO") || tNodes[j].textContent.includes("LAVAGGIO")) {
                     tNodes[j].textContent = washDesc;
                     for (let k = j + 1; k < tNodes.length; k++) {
-                        if (tNodes[k].textContent.trim().startsWith("ESTERNO") || tNodes[k].textContent.trim().startsWith("SANIFICAZIONE")) {
+                        if (tNodes[k].textContent.trim().startsWith("ESTERNO") || tNodes[k].textContent.trim().startsWith("SANIFICAZIONE") || tNodes[k].textContent.trim().startsWith("INTERNO")) {
                             tNodes[k].textContent = "";
                         }
                     }
@@ -5332,7 +5332,7 @@ window.printWashModule = async function () {
         const email = (emailElem && emailElem.value ? emailElem.value.trim() : 'logistica118fe@ausl.fe.it');
 
         const isCompleto = document.getElementById('wash-type-completo') && document.getElementById('wash-type-completo').checked;
-        const description = isCompleto ? 'LAVAGGIO ESTERNO E INTERNO PIÙ SANIFICAZIONE' : 'LAVAGGIO ESTERNO';
+        const description = isCompleto ? 'LAVAGGIO ESTERNO E INTERNO' : 'LAVAGGIO ESTERNO';
 
         const dParts = dateVal.split('/');
         const day = (dParts[0] || '29').padStart(2, '0');
@@ -5593,7 +5593,7 @@ window.generateAndDownloadWashDocx = async function () {
 
         // Tipologia di intervento: esclusivamente l'opzione selezionata tra le 2 disponibili
         const isCompleto = document.getElementById('wash-type-completo') && document.getElementById('wash-type-completo').checked;
-        const description = isCompleto ? 'LAVAGGIO ESTERNO E INTERNO PIÙ SANIFICAZIONE' : 'LAVAGGIO ESTERNO';
+        const description = isCompleto ? 'LAVAGGIO ESTERNO E INTERNO' : 'LAVAGGIO ESTERNO';
 
         let filenameInput = (document.getElementById('wash-filename').value || '').trim();
         let filename = filenameInput || ('modulo lavaggio ' + (vehicle ? `${vehicle.sigla || ''} ${vehicle.plate || ''}`.trim() : '')).trim();
