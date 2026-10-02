@@ -1,4 +1,4 @@
-const APP_VERSION = "3.4.0";
+const APP_VERSION = "3.4.1";
 let isAdmin = false;
 let cachedVehicles = null;
 let cachedLocations = null;
@@ -4657,6 +4657,72 @@ window.copyTextToClipboard = async function (text) {
     }
 };
 
+// Banner di notifica/conferma per il salvataggio della richiesta di riparazione
+window.showRepairSaveConfirmationBanner = function (filename, targetFolder = "Cartella Download") {
+    const existing = document.getElementById('repair-save-banner-toast');
+    if (existing) {
+        existing.remove();
+    }
+
+    const banner = document.createElement('div');
+    banner.id = 'repair-save-banner-toast';
+    banner.className = 'repair-save-banner';
+    banner.innerHTML = `
+        <div class="repair-banner-card">
+            <div class="repair-banner-icon">
+                <i class="fa-solid fa-circle-check"></i>
+            </div>
+            <div class="repair-banner-content">
+                <div class="repair-banner-header">
+                    <span class="repair-banner-title">Richiesta Salvata con Successo!</span>
+                    <button type="button" class="repair-banner-close" onclick="closeRepairSaveBanner()">&times;</button>
+                </div>
+                <div class="repair-banner-body">
+                    <div class="repair-banner-item">
+                        <i class="fa-solid fa-file-word file-icon"></i>
+                        <span class="file-name">${filename}</span>
+                    </div>
+                    <div class="repair-banner-item location-item">
+                        <i class="fa-solid fa-folder-open folder-icon"></i>
+                        <span>Salvata in: <strong>${targetFolder}</strong></span>
+                    </div>
+                    <div class="repair-banner-item clip-item">
+                        <i class="fa-solid fa-clipboard-check clip-icon"></i>
+                        <span>Dati veicolo copiati negli appunti</span>
+                    </div>
+                </div>
+            </div>
+            <div class="repair-banner-progress"></div>
+        </div>
+    `;
+
+    document.body.appendChild(banner);
+
+    requestAnimationFrame(() => {
+        banner.classList.add('show');
+    });
+
+    if (window._repairBannerTimeout) {
+        clearTimeout(window._repairBannerTimeout);
+    }
+    window._repairBannerTimeout = setTimeout(() => {
+        closeRepairSaveBanner();
+    }, 6500);
+};
+
+window.closeRepairSaveBanner = function () {
+    const banner = document.getElementById('repair-save-banner-toast');
+    if (banner) {
+        banner.classList.remove('show');
+        banner.classList.add('hide');
+        setTimeout(() => {
+            if (banner && banner.parentNode) {
+                banner.parentNode.removeChild(banner);
+            }
+        }, 300);
+    }
+};
+
 window.generateAndDownloadRepairDocx = async function () {
     try {
         // Veicolo della card corrente
@@ -4812,6 +4878,9 @@ window.generateAndDownloadRepairDocx = async function () {
         URL.revokeObjectURL(url);
 
         closeRepairRequestModal();
+
+        // Mostra banner di conferma salvataggio e cartella di destinazione
+        window.showRepairSaveConfirmationBanner(filename, "Cartella Download");
     } catch (err) {
         console.error("Errore nel salvataggio della richiesta riparazione:", err);
         alert("Si è verificato un errore durante il salvataggio della richiesta: " + err.message);
@@ -4899,6 +4968,9 @@ window.downloadSavedRepairDocx = async function (vehicleId, reqIdOrIndex, fallba
         a.click();
         document.body.removeChild(a);
         URL.revokeObjectURL(url);
+
+        // Mostra banner di conferma salvataggio e cartella di destinazione
+        window.showRepairSaveConfirmationBanner(filename, "Cartella Download");
     } catch (err) {
         console.error("Errore nel download del file Word salvato:", err);
         alert("Si è verificato un errore durante il download del documento Word: " + err.message);

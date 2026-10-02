@@ -2392,4 +2392,188 @@ body.is-admin #admin-hint-text {
     border-bottom: 2px solid #e2e8f0;
 }
 
+/* ==========================================
+   BANNER CONFERMA SALVATAGGIO RICHIESTA RIPARAZIONE (v3.4.1)
+   ========================================== */
+.repair-save-banner {
+    position: fixed;
+    top: 24px;
+    right: 24px;
+    z-index: 9999;
+    max-width: 480px;
+    width: calc(100% - 48px);
+    pointer-events: auto;
+    transform: translateY(-30px);
+    opacity: 0;
+    transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.35s ease;
+}
+
+.repair-save-banner.show {
+    transform: translateY(0);
+    opacity: 1;
+}
+
+.repair-save-banner.hide {
+    transform: translateY(-20px);
+    opacity: 0;
+}
+
+.repair-banner-card {
+    position: relative;
+    overflow: hidden;
+    background: #ffffff;
+    border-radius: 12px;
+    box-shadow: 0 12px 36px -4px rgba(16, 24, 40, 0.18), 0 4px 12px -2px rgba(16, 24, 40, 0.08);
+    border: 1px solid #e2e8f0;
+    border-left: 6px solid #10b981;
+    display: flex;
+    padding: 1.1rem 1.25rem 1.25rem 1.1rem;
+    gap: 1rem;
+    align-items: flex-start;
+}
+
+.repair-banner-icon {
+    flex-shrink: 0;
+    width: 42px;
+    height: 42px;
+    border-radius: 50%;
+    background: #ecfdf5;
+    color: #10b981;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.4rem;
+}
+
+.repair-banner-content {
+    flex: 1;
+    min-width: 0;
+}
+
+.repair-banner-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 0.5rem;
+}
+
+.repair-banner-title {
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: #0f172a;
+    letter-spacing: -0.01em;
+}
+
+.repair-banner-close {
+    background: none;
+    border: none;
+    color: #94a3b8;
+    font-size: 1.5rem;
+    line-height: 1;
+    cursor: pointer;
+    padding: 0 0.25rem;
+    transition: color 0.15s ease;
+}
+
+.repair-banner-close:hover {
+    color: #0f172a;
+}
+
+.repair-banner-body {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+    font-size: 0.88rem;
+    color: #334155;
+}
+
+.repair-banner-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    word-break: break-word;
+}
+
+.repair-banner-item .file-icon {
+    color: #2563eb;
+    font-size: 1rem;
+    flex-shrink: 0;
+}
+
+.repair-banner-item .file-name {
+    font-weight: 600;
+    color: #1e293b;
+}
+
+.repair-banner-item .folder-icon {
+    color: #d97706;
+    font-size: 1rem;
+    flex-shrink: 0;
+}
+
+.repair-banner-item.location-item {
+    background: #f8fafc;
+    padding: 0.35rem 0.6rem;
+    border-radius: 6px;
+    border: 1px solid #e2e8f0;
+    color: #1e293b;
+}
+
+.repair-banner-item.location-item strong {
+    color: #047857;
+}
+
+.repair-banner-item.clip-item {
+    font-size: 0.8rem;
+    color: #64748b;
+}
+
+.repair-banner-item .clip-icon {
+    color: #10b981;
+    font-size: 0.9rem;
+    flex-shrink: 0;
+}
+
+.repair-banner-progress {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    height: 3px;
+    width: 100%;
+    background: #10b981;
+    animation: bannerProgressBar 6.5s linear forwards;
+}
+
+@keyframes bannerProgressBar {
+    from {
+        width: 100%;
+    }
+    to {
+        width: 0%;
+    }
+}
+
+@media (max-width: 640px) {
+    .repair-save-banner {
+        top: 12px;
+        right: 12px;
+        left: 12px;
+        width: auto;
+        max-width: none;
+    }
+    .repair-banner-card {
+        padding: 0.9rem 1rem;
+        gap: 0.75rem;
+    }
+    .repair-banner-icon {
+        width: 36px;
+        height: 36px;
+        font-size: 1.2rem;
+    }
+    .repair-banner-title {
+        font-size: 0.95rem;
+    }
+}
+
+
 
