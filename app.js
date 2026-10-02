@@ -1,4 +1,4 @@
-const APP_VERSION = "3.3.14";
+const APP_VERSION = "3.3.15";
 let isAdmin = false;
 let cachedVehicles = null;
 let cachedLocations = null;
@@ -4629,6 +4629,34 @@ window.createAleaRepairDocxBlob = async function (data) {
     });
 };
 
+window.copyTextToClipboard = async function (text) {
+    if (!text) return false;
+    try {
+        if (navigator.clipboard && window.isSecureContext) {
+            await navigator.clipboard.writeText(text);
+            return true;
+        }
+    } catch (e) {
+        console.warn("navigator.clipboard non disponibile, uso fallback execCommand:", e);
+    }
+    try {
+        const textArea = document.createElement("textarea");
+        textArea.value = text;
+        textArea.style.position = "fixed";
+        textArea.style.left = "-999999px";
+        textArea.style.top = "-999999px";
+        document.body.appendChild(textArea);
+        textArea.focus();
+        textArea.select();
+        const successful = document.execCommand('copy');
+        document.body.removeChild(textArea);
+        return successful;
+    } catch (err) {
+        console.error("Errore durante la copia negli appunti:", err);
+        return false;
+    }
+};
+
 window.generateAndDownloadRepairDocx = async function () {
     try {
         // Veicolo della card corrente
@@ -4647,6 +4675,13 @@ window.generateAndDownloadRepairDocx = async function () {
         } else {
             const displayElem = document.getElementById('repair-vehicle-display');
             if (displayElem) targa = displayElem.value.trim();
+        }
+
+        // Copia nella clipboard il testo della cella con i dati del mezzo
+        const vehicleDisplayElem = document.getElementById('repair-vehicle-display');
+        const vehicleTextToCopy = vehicleDisplayElem ? vehicleDisplayElem.value.trim() : (targa || '');
+        if (vehicleTextToCopy) {
+            await window.copyTextToClipboard(vehicleTextToCopy);
         }
 
         // Valori campi informativi
