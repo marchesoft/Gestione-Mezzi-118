@@ -1,16 +1,16 @@
-# Regole e Contesto del Progetto (v3.4.2)
+# Regole e Contesto del Progetto (v3.4.3)
 
-Questo file definisce le linee guida e lo stato di salvataggio del progetto per garantire la coerenza con la versione **3.4.2**.
+Questo file definisce le linee guida e lo stato di salvataggio del progetto per garantire la coerenza con la versione **3.4.3**.
 
-## Stato di Riferimento (v3.4.2)
+## Stato di Riferimento (v3.4.3)
 
 1. **Gestione Versioni**:
-   - La versione attuale di riferimento è **3.4.2**.
-   - Qualsiasi modifica futura richiede l'avanzamento della versione (es. `3.4.3` o successive) in `app.js` (`const APP_VERSION = "X.Y.Z";`) e in `index.html` (header).
+   - La versione attuale di riferimento è **3.4.3**.
+   - Qualsiasi modifica futura richiede l'avanzamento della versione (es. `3.4.4` o successive) in `app.js` (`const APP_VERSION = "X.Y.Z";`) e in `index.html` (header).
 
 2. **Bypass della Cache (Cache-Busting)**:
    - I file `app.js` e `style.css` sono importati in `index.html` con il parametro di versione `?v=X.Y.Z` per forzare il caricamento immediato degli aggiornamenti sui dispositivi client (specialmente mobili).
-   - Esempio: `<link rel="stylesheet" href="style.css?v=3.4.2">` e `<script src="app.js?v=3.4.2"></script>`.
+   - Esempio: `<link rel="stylesheet" href="style.css?v=3.4.3">` e `<script src="app.js?v=3.4.3"></script>`.
    - Ad ogni cambio di codice, aggiornare questa stringa con la nuova versione dell'applicazione.
 
 3. **Integrazione Git e GitHub**:
@@ -127,8 +127,8 @@ Questo file definisce le linee guida e lo stato di salvataggio del progetto per 
       - Integrazione completa nell'esportazione Excel (*Esporta Riepilogo Excel*) con le nuove colonne `Sede`, `Km Mensili Sede` e `Stima Km Fine Dicembre`.
       - La barra di ricerca istantanea (`filterWorkshopReport`) supporta anche il filtro per nome della sede.
 
-16. **Intestazione Dashboard Responsive (v3.4.0)**:
-    - **Desktop (> 768px)**: L'intestazione della sezione riporta la dicitura estesa **VEICOLI IN GESTIONE ALLA LOGISTICA DEL 118 DI FERRARA**, seguita dal badge con la versione del software (`v3.4.0`).
+16. **Intestazione Dashboard Responsive (v3.4.0, v3.4.3)**:
+    - **Desktop (> 768px)**: L'intestazione della sezione riporta la dicitura estesa **VEICOLI IN GESTIONE 118 DI FERRARA**, seguita dal badge con la versione del software (`v3.4.3`).
     - **Mobile (<= 768px)**: Mantiene la dicitura compatta **VEICOLI IN GESTIONE**, seguita dal badge della versione del software, ottimizzando lo spazio sui dispositivi mobili.
     - La gestione è implementata tramite le classi utility responsive `.desktop-text` e `.mobile-text` in `index.html` e `style.css`.
 
