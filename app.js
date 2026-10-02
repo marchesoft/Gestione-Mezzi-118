@@ -1,4 +1,4 @@
-const APP_VERSION = "3.3.13";
+const APP_VERSION = "3.3.14";
 let isAdmin = false;
 let cachedVehicles = null;
 let cachedLocations = null;
@@ -4762,6 +4762,19 @@ window.generateAndDownloadRepairDocx = async function () {
                 }
             }
         }
+
+        // Genera e scarica il documento Word (.docx) salvato
+        const blob = isAlea
+            ? await window.createAleaRepairDocxBlob(reqData)
+            : await window.createRepairDocxBlob(reqData);
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
 
         closeRepairRequestModal();
     } catch (err) {
