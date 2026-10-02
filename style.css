@@ -2049,9 +2049,23 @@ body.is-admin #admin-hint-text {
 }
 
 /* Desktop only visibility */
+.mobile-text {
+    display: none !important;
+}
+
+.desktop-text {
+    display: inline !important;
+}
+
 @media (max-width: 768px) {
     .desktop-only {
         display: none !important;
+    }
+    .desktop-text {
+        display: none !important;
+    }
+    .mobile-text {
+        display: inline !important;
     }
 }
 
