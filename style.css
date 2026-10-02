@@ -71,7 +71,7 @@ input[type="date"] {
 .monthly-check-dot {
     position: absolute;
     top: 50%;
-    left: 1.2rem;
+    left: 0.45rem;
     transform: translateY(-50%);
     width: 14px;
     height: 14px;

@@ -1,16 +1,16 @@
-# Regole e Contesto del Progetto (v3.4.1)
+# Regole e Contesto del Progetto (v3.4.2)
 
-Questo file definisce le linee guida e lo stato di salvataggio del progetto per garantire la coerenza con la versione **3.4.1**.
+Questo file definisce le linee guida e lo stato di salvataggio del progetto per garantire la coerenza con la versione **3.4.2**.
 
-## Stato di Riferimento (v3.4.1)
+## Stato di Riferimento (v3.4.2)
 
 1. **Gestione Versioni**:
-   - La versione attuale di riferimento è **3.4.1**.
-   - Qualsiasi modifica futura richiede l'avanzamento della versione (es. `3.4.2` o successive) in `app.js` (`const APP_VERSION = "X.Y.Z";`) e in `index.html` (header).
+   - La versione attuale di riferimento è **3.4.2**.
+   - Qualsiasi modifica futura richiede l'avanzamento della versione (es. `3.4.3` o successive) in `app.js` (`const APP_VERSION = "X.Y.Z";`) e in `index.html` (header).
 
 2. **Bypass della Cache (Cache-Busting)**:
    - I file `app.js` e `style.css` sono importati in `index.html` con il parametro di versione `?v=X.Y.Z` per forzare il caricamento immediato degli aggiornamenti sui dispositivi client (specialmente mobili).
-   - Esempio: `<link rel="stylesheet" href="style.css?v=3.4.1">` e `<script src="app.js?v=3.4.1"></script>`.
+   - Esempio: `<link rel="stylesheet" href="style.css?v=3.4.2">` e `<script src="app.js?v=3.4.2"></script>`.
    - Ad ogni cambio di codice, aggiornare questa stringa con la nuova versione dell'applicazione.
 
 3. **Integrazione Git e GitHub**:
@@ -34,7 +34,7 @@ Questo file definisce le linee guida e lo stato di salvataggio del progetto per 
    - **Dettagli Veicolo (Mobile)**: Le sezioni si impilano verticalmente per adattarsi allo schermo.
    - **Badge Flotta Alea**: Nei dettagli del veicolo (`openVehicleModal`), se il mezzo appartiene alla flotta Alea compare un badge dorato `ALEA` ben visibile accanto alla sigla e alla targa.
    - **Segna le cose da fare**: Il testo inserito dall'amministratore (nella textarea diviso da invio) viene convertito in array per riga ed inserito in singoli blocchi con bordo grigio ardesia nella cornice griglia.
-   - **Pallino Controllo**: L'indicatore di controllo mensile sulla card è giallo fluo (#ffff00) con contorno bianco solido di 2px (classe .monthly-check-dot in style.css), per essere visibile anche sullo sfondo verde dello stato "disponibile" (#008000).
+   - **Pallino Controllo**: L'indicatore di controllo mensile sulla card è giallo fluo (#ffff00) con contorno bianco solido di 2px (classe .monthly-check-dot in style.css, posizionato a `left: 0.45rem` per distanziarlo dal testo dello stato), per essere visibile anche sullo sfondo verde dello stato "disponibile" (#008000).
    - **Gestione Database**: Lo storico di tutti i controlli mensili è visibile, modificabile ed eliminabile esclusivamente nella scheda tab "Controlli" del modal "Gestione Database", provvisto di esportazione in formato Excel/CSV. I controlli sono visualizzati raggruppati cronologicamente per mese ed anno con divisori colorati e mostrano le colonne Esecutore e Posizione Attuale.
 
 7. **Richiesta di Riparazione Word (.docx) ed Esclusività dei Modelli (v3.3.15)**:
@@ -140,3 +140,8 @@ Questo file definisce le linee guida e lo stato di salvataggio del progetto per 
       - Percorso di salvataggio: *Salvata in: Cartella Download* (o cartella predefinita impostata nel browser).
       - Notifica di copia automatica dei dati del veicolo negli appunti di sistema.
     - Dotato di barra di avanzamento animata e chiusura automatica dopo 6,5 secondi, con pulsante per la chiusura immediata.
+
+18. **Posizionamento Distanziato Pallino Controllo Mensile (v3.4.2)**:
+    - Il pallino giallo fluo del controllo mensile (`.monthly-check-dot`) posizionato sulla barra di stato della card veicolo è stato spostato maggiormente a sinistra verso il bordo (`left: 0.45rem` anziché `1.2rem`).
+    - Questo garantisce una netta separazione visiva rispetto al testo centrato dello stato (es. "IN SERVIZIO", "DISPONIBILE"), evitando qualsiasi sovrapposizione o eccessiva vicinanza sia su desktop che su dispositivi mobili.
+
