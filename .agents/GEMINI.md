@@ -146,9 +146,11 @@ Questo file definisce le linee guida e lo stato di salvataggio del progetto per 
     - Questo garantisce una netta separazione visiva rispetto al testo centrato dello stato (es. "IN SERVIZIO", "DISPONIBILE"), evitando qualsiasi sovrapposizione o eccessiva vicinanza sia su desktop che su dispositivi mobili.
 
 19. **Sincronizzazione Richieste di Riparazione con File Excel Locale (v3.4.4)**:
-    - File di destinazione sul desktop: ORGANIZZAZIONE RICHIESTE MEZZI.xlsx.
-    - Implementato il modulo excel_sync.js (tramite File System Access API di Chrome/Edge e JSZip).
-    - L'utente collega il file una sola volta tramite il pulsante **Collega Excel** presente nel footer del modale Richiesta Riparazione (#repair-request-modal). L'handle del file viene salvato permanentemente in IndexedDB.
-    - **Aggiunta automatica**: ogni volta che viene salvata una nuova richiesta di riparazione (generateAndDownloadRepairDocx), una nuova riga con Sigla, Tipo Intervento, Data Richiesta viene accodata in fondo al foglio Excel preservando stili, bordi, altezze riga e formattazione nativa.
-    - **Eliminazione sincronizzata**: quando una richiesta di riparazione viene eliminata da dentro una card (deleteRepairRequest), la corrispondente riga viene individuata ed eliminata dal foglio Excel con compattazione e scalamento degli indici delle righe successive.
-    - **Gestione file bloccato / coda**: se il file Excel risulta aperto in sola lettura/bloccato dall'applicazione Excel, le operazioni restano in sospeso (in localStorage) e possono essere applicate alla chiusura del file premendo il pulsante Excel o al salvataggio successivo.
+    - File di destinazione sul desktop: `ORGANIZZAZIONE RICHIESTE MEZZI.xlsx`.
+    - Implementato il modulo `excel_sync.js` (tramite File System Access API di Chrome/Edge e JSZip).
+    - **Indipendenza da account/percorso PC**: il file viene selezionato e collegato liberamente dall'utente sul desktop di qualsiasi computer (`startIn: 'desktop'`). L'handle del file viene salvato permanentemente nell'IndexedDB del browser di quello specifico PC, senza percorsi hardcoded legati all'account Windows.
+    - **Esclusione Dispositivi Mobile**: la sincronizzazione con il file Excel è attiva **esclusivamente su PC Desktop**. Da smartphone e tablet (`isMobileDevice()`) la sincronizzazione Excel è completamente disabilitata: non compare il pulsante di collegamento e le operazioni di aggiunta/eliminazione richiesta seguono unicamente il normale flusso mobile esistente (salvataggio su Firestore, generazione e download file Word).
+    - **Aggiunta automatica**: ogni volta che viene salvata una nuova richiesta di riparazione (`generateAndDownloadRepairDocx`), una nuova riga con Sigla, Tipo Intervento, Data Richiesta viene accodata in fondo al foglio Excel preservando stili, bordi, altezze riga e formattazione nativa.
+    - **Eliminazione sincronizzata**: quando una richiesta di riparazione viene eliminata da dentro una card (`deleteRepairRequest`), la corrispondente riga viene individuata ed eliminata dal foglio Excel con compattazione e scalamento degli indici delle righe successive.
+    - **Gestione file bloccato / coda**: se il file Excel risulta aperto in sola lettura/bloccato dall'applicazione Excel, le operazioni restano in sospeso (in `localStorage`) e possono essere applicate alla chiusura del file premendo il pulsante Excel o al salvataggio successivo.
+

@@ -20,7 +20,17 @@
     const REL_NS = 'http://schemas.openxmlformats.org/officeDocument/2006/relationships';
     const COLS = ['A', 'B', 'C', 'D', 'E', 'F', 'G'];
 
+    // Rileva se il dispositivo è mobile / tablet (la sincronizzazione Excel è attiva SOLO su PC Desktop)
+    window.isMobileDevice = function () {
+        const ua = (navigator.userAgent || navigator.vendor || window.opera || '').toLowerCase();
+        const isMobileUA = /android|webos|iphone|ipad|ipod|blackberry|iemobile|opera mini|mobile|tablet/i.test(ua);
+        const isTouchScreen = ('ontouchstart' in window) && (window.innerWidth <= 1024 || navigator.maxTouchPoints > 1);
+        return isMobileUA || isTouchScreen;
+    };
+
     window.excelSyncSupported = function () {
+        // Solo per PC (non mobile) e browser con File System Access API
+        if (window.isMobileDevice()) return false;
         return typeof window.showOpenFilePicker === 'function' && typeof indexedDB !== 'undefined';
     };
 
