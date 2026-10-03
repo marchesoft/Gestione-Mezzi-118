@@ -1,16 +1,16 @@
-# Regole e Contesto del Progetto (v3.4.5)
+# Regole e Contesto del Progetto (v3.4.6)
 
-Questo file definisce le linee guida e lo stato di salvataggio del progetto per garantire la coerenza con la versione **3.4.5**.
+Questo file definisce le linee guida e lo stato di salvataggio del progetto per garantire la coerenza con la versione **3.4.6**.
 
-## Stato di Riferimento (v3.4.5)
+## Stato di Riferimento (v3.4.6)
 
 1. **Gestione Versioni**:
-   - La versione attuale di riferimento è **3.4.5**.
-   - Qualsiasi modifica futura richiede l'avanzamento della versione (es. `3.4.6` o successive) in `app.js` (`const APP_VERSION = "X.Y.Z";`) e in `index.html` (header).
+   - La versione attuale di riferimento è **3.4.6**.
+   - Qualsiasi modifica futura richiede l'avanzamento della versione (es. `3.4.7` o successive) in `app.js` (`const APP_VERSION = "X.Y.Z";`) e in `index.html` (header).
 
 2. **Bypass della Cache (Cache-Busting)**:
    - I file `app.js` e `style.css` sono importati in `index.html` con il parametro di versione `?v=X.Y.Z` per forzare il caricamento immediato degli aggiornamenti sui dispositivi client (specialmente mobili).
-   - Esempio: `<link rel="stylesheet" href="style.css?v=3.4.5">` e `<script src="app.js?v=3.4.5"></script>`.
+   - Esempio: `<link rel="stylesheet" href="style.css?v=3.4.6">` e `<script src="app.js?v=3.4.6"></script>`.
    - Ad ogni cambio di codice, aggiornare questa stringa con la nuova versione dell'applicazione.
 
 3. **Integrazione Git e GitHub**:
@@ -145,13 +145,13 @@ Questo file definisce le linee guida e lo stato di salvataggio del progetto per 
     - Il pallino giallo fluo del controllo mensile (`.monthly-check-dot`) posizionato sulla barra di stato della card veicolo è stato spostato maggiormente a sinistra verso il bordo (`left: 0.45rem` anziché `1.2rem`).
     - Questo garantisce una netta separazione visiva rispetto al testo centrato dello stato (es. "IN SERVIZIO", "DISPONIBILE"), evitando qualsiasi sovrapposizione o eccessiva vicinanza sia su desktop che su dispositivi mobili.
 
-19. **Sincronizzazione Richieste di Riparazione con File Excel Locale (v3.4.4, v3.4.5)**:
+19. **Sincronizzazione Richieste di Riparazione con File Excel Locale (v3.4.4, v3.4.5, v3.4.6)**:
     - File di destinazione sul desktop: `ORGANIZZAZIONE RICHIESTE MEZZI.xlsx`.
     - Implementato il modulo `excel_sync.js` (tramite File System Access API di Chrome/Edge e JSZip).
-    - **Collegamento Automatico su PC (v3.4.5)**: L'utente non deve cliccare preventivamente nessun tasto "Collega Excel". Quando su computer desktop si clicca "Salva" per inserire una richiesta (o l'icona elimina per rimuoverla), il sistema verifica se il file è già collegato; se non lo è ancora su quel computer, apre automaticamente la finestra di dialogo posizionata direttamente sul Desktop (`startIn: 'desktop'`) per selezionare `ORGANIZZAZIONE RICHIESTE MEZZI.xlsx`. Una volta selezionato, l'handle viene salvato permanentemente nell'IndexedDB del browser di quella specifica postazione e da quel momento in avanti tutte le operazioni si sincronizzano in automatico e in background.
+    - **Collegamento Automatico su PC (v3.4.5, v3.4.6)**: Rimosso completamente qualsiasi pulsante manuale "Collega Excel" dalla finestra di richiesta riparazione (v3.4.6). Il footer del modale presenta unicamente i pulsanti essenziali **Annulla** e **Salva**. Quando su computer desktop si clicca "Salva" per inserire una richiesta (o l'icona elimina per rimuoverla), il sistema verifica se il file è già collegato; se non lo è ancora su quel computer, apre automaticamente la finestra di dialogo posizionata direttamente sul Desktop (`startIn: 'desktop'`) per selezionare `ORGANIZZAZIONE RICHIESTE MEZZI.xlsx`. Una volta selezionato, l'handle viene salvato permanentemente nell'IndexedDB del browser di quella specifica postazione e da quel momento in avanti tutte le operazioni si sincronizzano in automatico e in background.
     - **Indipendenza da account/percorso PC**: il file risiede sul desktop generico di qualsiasi postazione/account Windows (`startIn: 'desktop'`), senza percorsi assoluti hardcoded o vincoli di username.
-    - **Esclusione Dispositivi Mobile**: la sincronizzazione con il file Excel è attiva **esclusivamente su PC Desktop**. Da smartphone e tablet (`isMobileDevice()`) la sincronizzazione Excel è completamente disabilitata: non compare il pulsante di collegamento e le operazioni di aggiunta/eliminazione richiesta seguono unicamente il normale flusso mobile esistente (salvataggio su Firestore, generazione e download file Word).
+    - **Esclusione Dispositivi Mobile**: la sincronizzazione con il file Excel è attiva **esclusivamente su PC Desktop**. Da smartphone e tablet (`isMobileDevice()`) la sincronizzazione Excel è completamente disabilitata: le operazioni di aggiunta/eliminazione richiesta seguono unicamente il normale flusso mobile esistente (salvataggio su Firestore, generazione e download file Word).
     - **Aggiunta automatica**: ogni volta che viene salvata una nuova richiesta di riparazione (`generateAndDownloadRepairDocx`), una nuova riga con Sigla, Tipo Intervento, Data Richiesta viene accodata in fondo al foglio Excel preservando stili, bordi, altezze riga e formattazione nativa.
     - **Eliminazione sincronizzata**: quando una richiesta di riparazione viene eliminata da dentro una card (`deleteRepairRequest`), la corrispondente riga viene individuata ed eliminata dal foglio Excel con compattazione e scalamento degli indici delle righe successive.
-    - **Gestione file bloccato / coda**: se il file Excel risulta aperto in sola lettura/bloccato dall'applicazione Excel, le operazioni restano in sospeso (in `localStorage`) e possono essere applicate alla chiusura del file premendo il pulsante Excel o al salvataggio successivo.
+    - **Gestione file bloccato / coda**: se il file Excel risulta aperto in sola lettura/bloccato dall'applicazione Excel, le operazioni restano in sospeso (in `localStorage`) e vengono applicate alla chiusura del file al salvataggio successivo.
 
