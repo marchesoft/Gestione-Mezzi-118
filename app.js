@@ -1,4 +1,4 @@
-const APP_VERSION = "3.4.3";
+const APP_VERSION = "3.4.4";
 let isAdmin = false;
 let cachedVehicles = null;
 let cachedLocations = null;
@@ -87,6 +87,22 @@ window.calculateDecemberKmEstimate = function (currentKm, monthStr, stationMonth
         fullMonths,
         label
     };
+};
+
+// Sedi operative per cui calcolare la stima km a fine Dicembre nel Report Officina (v3.4.4).
+// Le officine (e qualsiasi altro luogo non elencato) sono escluse dalla stima.
+window.ESTIMATE_STATIONS = [
+    'COPPARO', 'FERRARA', 'PORTOMAGGIORE', 'CENTO', 'BONDENO', 'DELTA',
+    'COMACCHIO', 'ARGENTA', 'CONA', 'CASUMARO', 'LAGOSANTO'
+];
+
+window.isEstimateEligibleStation = function (station) {
+    const s = window.normalizeVehicleText(station);
+    if (!s) return false;
+    if (s.includes('OFFICINA')) return false;
+    const words = s.split(/[^A-Z0-9]+/).filter(Boolean);
+    const compact = words.join('');
+    return window.ESTIMATE_STATIONS.some(name => s === name || compact === name || words.includes(name));
 };
 
 // Helper per generare il nome del file Word: "richiesta riparazione <SIGLA> <TARGA>.docx"
@@ -2715,6 +2731,7 @@ window.exportCurrentTableToCSV = async function () {
                 const loc = locMap.get((v.station || '').trim().toUpperCase());
                 const stationMonthlyKm = (loc && loc.monthly_km) ? Number(loc.monthly_km) : 0;
                 const est = window.calculateDecemberKmEstimate(maxKm || v.mileage, v.mileage_month, stationMonthlyKm);
+                const isSedeEligible = window.isEstimateEligibleStation(v.station);
 
                 data.push({
                     sigla: v.sigla,
@@ -2727,7 +2744,7 @@ window.exportCurrentTableToCSV = async function () {
                     mileage: maxKm > 0 ? `${maxKm.toLocaleString('it-IT')} km` : '-',
                     mileage_month: v.mileage_month || '-',
                     station_monthly_km: stationMonthlyKm > 0 ? `${stationMonthlyKm.toLocaleString('it-IT')} km` : '-',
-                    estimated_december_km: est.estimatedKm > 0 ? `${est.estimatedKm.toLocaleString('it-IT')} km` : '-'
+                    estimated_december_km: (isSedeEligible && est.estimatedKm > 0) ? `${est.estimatedKm.toLocaleString('it-IT')} km` : '-'
                 });
             }
 
@@ -3722,6 +3739,7 @@ window.switchDataTable = async function (type) {
                 const loc = locMap.get((v.station || '').trim().toUpperCase());
                 const stationMonthlyKm = (loc && loc.monthly_km) ? Number(loc.monthly_km) : 0;
                 const est = window.calculateDecemberKmEstimate(maxKm || v.mileage, v.mileage_month, stationMonthlyKm);
+                const isSedeEligible = window.isEstimateEligibleStation(v.station);
 
                 reportRows.push({
                     ...v,
@@ -3732,9 +3750,10 @@ window.switchDataTable = async function (type) {
                     mileage: maxKm || v.mileage || 0,
                     mileage_month: v.mileage_month || '',
                     stationMonthlyKm,
+                    isSedeEligible,
                     stationColor: loc ? loc.colore : '#3b82f6',
-                    estimatedKm: est.estimatedKm,
-                    deltaKm: est.deltaKm,
+                    estimatedKm: isSedeEligible ? est.estimatedKm : 0,
+                    deltaKm: isSedeEligible ? est.deltaKm : 0,
                     remainingMonths: est.remainingMonths,
                     estimateLabel: est.label
                 });
@@ -3857,7 +3876,9 @@ window.switchDataTable = async function (type) {
                                         <td class="col-shrink" style="font-size: 0.85rem;">${row.model}</td>
                                         <td class="col-shrink" style="font-size: 0.85rem;">
                                             <div style="font-weight: 700; color: #1e293b;">${row.station || '-'}</div>
-                                            ${row.stationMonthlyKm > 0 
+                                            ${!row.isSedeEligible
+                                                ? ''
+                                                : row.stationMonthlyKm > 0 
                                                 ? `<div style="font-size: 0.75rem; color: #0284c7; font-weight: 600;"><i class="fa-solid fa-gauge-high" style="font-size: 0.65rem;"></i> ${row.stationMonthlyKm.toLocaleString('it-IT')} km/m</div>` 
                                                 : '<div style="font-size: 0.75rem; color: #94a3b8;">0 km/m</div>'}
                                         </td>
