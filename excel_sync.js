@@ -1,10 +1,11 @@
 // =====================================================================
-// Sincronizzazione Richieste di Riparazione -> file Excel locale (v3.4.4)
+// Sincronizzazione Richieste di Riparazione -> file Excel locale (v3.4.5)
 // File di destinazione: "ORGANIZZAZIONE RICHIESTE MEZZI.xlsx" (Desktop)
 //
-// Usa la File System Access API (Chrome / Edge desktop): l'utente collega
-// il file una sola volta, l'handle viene memorizzato in IndexedDB e ad ogni
-// nuova richiesta di riparazione viene aggiunta una riga in fondo al foglio.
+// Usa la File System Access API (Chrome / Edge desktop): al primo salvataggio
+// su PC il file viene selezionato automaticamente sul Desktop, l'handle
+// viene memorizzato permanentemente in IndexedDB per quel computer e da allora
+// in poi ogni nuova richiesta di riparazione viene sincronizzata in automatico.
 // Il file viene modificato direttamente a livello XML (JSZip) per preservare
 // formattazione, larghezze colonne, stili e impostazioni di stampa.
 // Se il file non è scrivibile (es. aperto in Excel) la riga resta in coda
@@ -111,26 +112,74 @@
         };
     };
 
-    // ---------- Permessi ----------
+    // ---------- Permessi e Acquisizione Automatica Handle ----------
     async function ensurePermission(handle, interactive) {
+        if (!handle) return false;
         const opts = { mode: 'readwrite' };
-        if ((await handle.queryPermission(opts)) === 'granted') return true;
-        if (!interactive) return false;
         try {
+            if ((await handle.queryPermission(opts)) === 'granted') return true;
+            if (!interactive) return false;
             return (await handle.requestPermission(opts)) === 'granted';
         } catch (e) {
             return false;
         }
     }
 
-    // Da chiamare come PRIMA istruzione nel click (serve il gesto utente)
-    window.excelSyncPrepare = async function () {
-        const handle = await window.excelSyncGetHandle();
-        if (!handle) return false;
-        return ensurePermission(handle, true);
+    // Assicura l'acquisizione dell'handle: se già presente lo valida,
+    // altrimenti apre automaticamente il selettore file puntando al Desktop.
+    window.excelSyncEnsureHandle = async function (interactive = true) {
+        if (!window.excelSyncSupported()) return null;
+        let handle = await window.excelSyncGetHandle();
+
+        if (handle) {
+            try {
+                await handle.getFile();
+                const hasPerm = await ensurePermission(handle, interactive);
+                if (hasPerm) return handle;
+                if (!interactive) return null;
+            } catch (err) {
+                console.warn('Handle Excel non più accessibile, verrà richiesto nuovamente:', err);
+                handle = null;
+                try { await idbSet(HANDLE_KEY, null); } catch (e) {}
+            }
+        }
+
+        if (!handle && interactive) {
+            try {
+                const [newHandle] = await window.showOpenFilePicker({
+                    id: 'gm118-excel',
+                    startIn: 'desktop',
+                    multiple: false,
+                    types: [{
+                        description: 'Cartella di lavoro Excel (ORGANIZZAZIONE RICHIESTE MEZZI.xlsx)',
+                        accept: { 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': ['.xlsx'] }
+                    }]
+                });
+                if (newHandle) {
+                    if (await ensurePermission(newHandle, true)) {
+                        await idbSet(HANDLE_KEY, newHandle);
+                        if (window.excelSyncRefreshButton) window.excelSyncRefreshButton();
+                        return newHandle;
+                    }
+                }
+            } catch (e) {
+                if (e && e.name === 'AbortError') {
+                    console.log('Selezione file Excel annullata dall\'utente.');
+                } else {
+                    console.warn('Errore apertura selettore file Excel:', e);
+                }
+            }
+        }
+
+        return null;
     };
 
-    // ---------- Collegamento del file ----------
+    // Da chiamare come PRIMA istruzione nel click di salvataggio (sfrutta il gesto utente per collegamento o permessi)
+    window.excelSyncPrepare = async function () {
+        return await window.excelSyncEnsureHandle(true);
+    };
+
+    // ---------- Collegamento manuale o flush manuale del file ----------
     window.linkExcelSyncFile = async function () {
         if (!window.excelSyncSupported()) {
             alert('La sincronizzazione con il file Excel è disponibile solo su computer con Google Chrome o Microsoft Edge.');
@@ -139,7 +188,6 @@
         try {
             const existing = await window.excelSyncGetHandle();
             if (existing && getPending().length > 0) {
-                // File già collegato: prova a scrivere le righe in sospeso
                 if (await ensurePermission(existing, true)) {
                     const res = await window.excelSyncFlush();
                     window.excelSyncNotify(res);
@@ -147,21 +195,8 @@
                     return;
                 }
             }
-            const [handle] = await window.showOpenFilePicker({
-                id: 'gm118-excel',
-                startIn: 'desktop',
-                multiple: false,
-                types: [{
-                    description: 'Cartella di lavoro Excel',
-                    accept: { 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': ['.xlsx'] }
-                }]
-            });
+            const handle = await window.excelSyncEnsureHandle(true);
             if (!handle) return;
-            if (!(await ensurePermission(handle, true))) {
-                alert('Permesso di scrittura sul file non concesso.');
-                return;
-            }
-            await idbSet(HANDLE_KEY, handle);
             let msg = `File collegato: ${handle.name}\nDa ora ogni nuova richiesta di riparazione verrà aggiunta in fondo al foglio.`;
             if (getPending().length > 0) {
                 const res = await window.excelSyncFlush();
@@ -180,7 +215,10 @@
     // ---------- Accodamento + scrittura ----------
     window.excelSyncAppendRequest = async function (vehicle, req) {
         if (!window.excelSyncSupported()) return { ok: false, skipped: true };
-        const handle = await window.excelSyncGetHandle();
+        let handle = await window.excelSyncGetHandle();
+        if (!handle) {
+            handle = await window.excelSyncEnsureHandle(false);
+        }
         if (!handle) return { ok: false, notLinked: true };
         const pending = getPending();
         if (!pending.some(p => p.id === req.id)) {
@@ -455,7 +493,10 @@
     // ---------- Eliminazione richiesta dal file Excel ----------
     window.excelSyncDeleteRequest = async function (vehicle, req) {
         if (!window.excelSyncSupported()) return { ok: false, skipped: true };
-        const handle = await window.excelSyncGetHandle();
+        let handle = await window.excelSyncGetHandle();
+        if (!handle) {
+            handle = await window.excelSyncEnsureHandle(true);
+        }
         if (!handle) return { ok: false, notLinked: true };
 
         // 1. Rimuovi da eventuali pending locali
@@ -467,7 +508,7 @@
         }
 
         // 2. Se non abbiamo il permesso o il file non è modificabile
-        if (!(await ensurePermission(handle, false))) {
+        if (!(await ensurePermission(handle, true))) {
             return { ok: false, error: 'permesso di scrittura non concesso' };
         }
 
@@ -520,20 +561,23 @@
         const handle = await window.excelSyncGetHandle();
         const pending = getPending().length;
         if (!handle) {
-            btn.innerHTML = '<i class="fa-solid fa-file-excel"></i> Collega Excel';
-            btn.title = 'Collega il file ORGANIZZAZIONE RICHIESTE MEZZI.xlsx per aggiungere automaticamente ogni richiesta';
-            btn.style.background = '#f1f5f9';
-            btn.style.color = '#166534';
+            btn.innerHTML = '<i class="fa-solid fa-file-excel"></i> Excel Desktop (auto al salvataggio)';
+            btn.title = 'ORGANIZZAZIONE RICHIESTE MEZZI.xlsx sul Desktop verrà collegato automaticamente al salvataggio (oppure clicca qui per collegarlo subito)';
+            btn.style.background = '#f8fafc';
+            btn.style.color = '#047857';
+            btn.style.borderColor = '#cbd5e1';
         } else if (pending > 0) {
             btn.innerHTML = `<i class="fa-solid fa-triangle-exclamation"></i> Excel (${pending} in sospeso)`;
             btn.title = 'Clicca per scrivere le righe in sospeso nel file ' + handle.name;
             btn.style.background = '#fef3c7';
             btn.style.color = '#92400e';
+            btn.style.borderColor = '#fde68a';
         } else {
-            btn.innerHTML = '<i class="fa-solid fa-file-excel"></i> Excel collegato';
-            btn.title = 'Sincronizzato con ' + handle.name + ' (clicca per cambiare file)';
+            btn.innerHTML = '<i class="fa-solid fa-circle-check"></i> ' + handle.name;
+            btn.title = 'Sincronizzazione attiva con ' + handle.name + ' sul Desktop. Clicca per verificare o ricollegare.';
             btn.style.background = '#dcfce7';
             btn.style.color = '#166534';
+            btn.style.borderColor = '#86efac';
         }
     };
 

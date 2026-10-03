@@ -1,4 +1,4 @@
-const APP_VERSION = "3.4.4";
+const APP_VERSION = "3.4.5";
 let isAdmin = false;
 let cachedVehicles = null;
 let cachedLocations = null;
@@ -5006,92 +5006,90 @@ window.downloadSavedRepairDocx = async function (vehicleId, reqIdOrIndex, fallba
 };
 
 window.deleteRepairRequest = async function (vehicleId, reqIdOrIndex, fallbackIndex) {
-    setTimeout(async () => {
-        if (!confirm("Sei sicuro di voler eliminare questa richiesta di riparazione dallo storico?")) return;
-        try {
-            const vehicle = await store.getVehicleById(vehicleId);
-            if (!vehicle || !vehicle.repair_requests || !Array.isArray(vehicle.repair_requests)) {
-                alert("Dati veicolo non trovati.");
-                return;
-            }
-
-            let targetIdx = -1;
-
-            // 1. Se fornito fallbackIndex valido, verifica se corrisponde all'ID o all'indice
-            if (fallbackIndex !== undefined && fallbackIndex !== null) {
-                const fIdx = parseInt(fallbackIndex, 10);
-                if (!isNaN(fIdx) && fIdx >= 0 && fIdx < vehicle.repair_requests.length) {
-                    if (!reqIdOrIndex || vehicle.repair_requests[fIdx].id === reqIdOrIndex) {
-                        targetIdx = fIdx;
-                    }
-                }
-            }
-
-            // 2. Se non ancora trovato, cerca per ID univoco (es. req_...)
-            if (targetIdx === -1 && typeof reqIdOrIndex === 'string' && reqIdOrIndex.startsWith('req_')) {
-                targetIdx = vehicle.repair_requests.findIndex(r => r.id === reqIdOrIndex);
-            }
-
-            // 3. Se non ancora trovato, prova reqIdOrIndex come indice numerico
-            if (targetIdx === -1 && reqIdOrIndex !== undefined && reqIdOrIndex !== null) {
-                const numIdx = parseInt(reqIdOrIndex, 10);
-                if (!isNaN(numIdx) && numIdx >= 0 && numIdx < vehicle.repair_requests.length) {
-                    targetIdx = numIdx;
-                }
-            }
-
-            // 4. Ultimo fallback: cerca corrispondenza su qualsiasi ID stringa
-            if (targetIdx === -1 && typeof reqIdOrIndex === 'string' && reqIdOrIndex.length > 0) {
-                targetIdx = vehicle.repair_requests.findIndex(r => r.id === reqIdOrIndex);
-            }
-
-            if (targetIdx !== -1) {
-                const reqToDelete = vehicle.repair_requests[targetIdx];
-                vehicle.repair_requests.splice(targetIdx, 1);
-                await store.updateVehicle(vehicle);
-
-                // Sincronizza l'eliminazione con il foglio Excel locale (se collegato)
-                let excelDelMsg = '';
-                if (window.excelSyncDeleteRequest && reqToDelete) {
-                    try {
-                        const delRes = await window.excelSyncDeleteRequest(vehicle, reqToDelete);
-                        if (delRes && delRes.ok) {
-                            if (delRes.removed) {
-                                excelDelMsg = `\n(Riga ${delRes.rowNumber} rimossa da ${delRes.fileName})`;
-                            }
-                        } else if (delRes && !delRes.notLinked && !delRes.skipped) {
-                            excelDelMsg = `\n(Attenzione: non è stato possibile aggiornare il file Excel: ${delRes.error})`;
-                        }
-                    } catch (e) {
-                        console.error('Errore sincronizzazione eliminazione Excel:', e);
-                    }
-                }
-
-                alert("Richiesta eliminata con successo." + excelDelMsg);
-
-                if (cachedVehicles) {
-                    const cv = cachedVehicles.find(v => v.id === vehicleId);
-                    if (cv) cv.repair_requests = vehicle.repair_requests;
-                }
-
-                if (currentOpenedVehicleId === vehicleId) {
-                    await openVehicleModal(vehicleId);
-                }
-                const histModal = document.getElementById('vehicle-repair-history-modal');
-                if (histModal && !histModal.classList.contains('hidden')) {
-                    await openVehicleRepairHistoryModal(vehicleId);
-                }
-                if (window.lastDataManagerTab === 'riparazioni') {
-                    switchDataTable('riparazioni');
-                }
-            } else {
-                alert("Richiesta non trovata o già eliminata.");
-            }
-        } catch (err) {
-            console.error("Errore nell'eliminazione della richiesta:", err);
-            alert("Errore durante l'eliminazione della richiesta: " + err.message);
+    if (!confirm("Sei sicuro di voler eliminare questa richiesta di riparazione dallo storico?")) return;
+    try {
+        const vehicle = await store.getVehicleById(vehicleId);
+        if (!vehicle || !vehicle.repair_requests || !Array.isArray(vehicle.repair_requests)) {
+            alert("Dati veicolo non trovati.");
+            return;
         }
-    }, 50);
+
+        let targetIdx = -1;
+
+        // 1. Se fornito fallbackIndex valido, verifica se corrisponde all'ID o all'indice
+        if (fallbackIndex !== undefined && fallbackIndex !== null) {
+            const fIdx = parseInt(fallbackIndex, 10);
+            if (!isNaN(fIdx) && fIdx >= 0 && fIdx < vehicle.repair_requests.length) {
+                if (!reqIdOrIndex || vehicle.repair_requests[fIdx].id === reqIdOrIndex) {
+                    targetIdx = fIdx;
+                }
+            }
+        }
+
+        // 2. Se non ancora trovato, cerca per ID univoco (es. req_...)
+        if (targetIdx === -1 && typeof reqIdOrIndex === 'string' && reqIdOrIndex.startsWith('req_')) {
+            targetIdx = vehicle.repair_requests.findIndex(r => r.id === reqIdOrIndex);
+        }
+
+        // 3. Se non ancora trovato, prova reqIdOrIndex come indice numerico
+        if (targetIdx === -1 && reqIdOrIndex !== undefined && reqIdOrIndex !== null) {
+            const numIdx = parseInt(reqIdOrIndex, 10);
+            if (!isNaN(numIdx) && numIdx >= 0 && numIdx < vehicle.repair_requests.length) {
+                targetIdx = numIdx;
+            }
+        }
+
+        // 4. Ultimo fallback: cerca corrispondenza su qualsiasi ID stringa
+        if (targetIdx === -1 && typeof reqIdOrIndex === 'string' && reqIdOrIndex.length > 0) {
+            targetIdx = vehicle.repair_requests.findIndex(r => r.id === reqIdOrIndex);
+        }
+
+        if (targetIdx !== -1) {
+            const reqToDelete = vehicle.repair_requests[targetIdx];
+            vehicle.repair_requests.splice(targetIdx, 1);
+            await store.updateVehicle(vehicle);
+
+            // Sincronizza l'eliminazione con il foglio Excel locale (se su PC)
+            let excelDelMsg = '';
+            if (window.excelSyncDeleteRequest && reqToDelete) {
+                try {
+                    const delRes = await window.excelSyncDeleteRequest(vehicle, reqToDelete);
+                    if (delRes && delRes.ok) {
+                        if (delRes.removed) {
+                            excelDelMsg = `\n(Riga ${delRes.rowNumber} rimossa da ${delRes.fileName})`;
+                        }
+                    } else if (delRes && !delRes.notLinked && !delRes.skipped) {
+                        excelDelMsg = `\n(Attenzione: non è stato possibile aggiornare il file Excel: ${delRes.error})`;
+                    }
+                } catch (e) {
+                    console.error('Errore sincronizzazione eliminazione Excel:', e);
+                }
+            }
+
+            alert("Richiesta eliminata con successo." + excelDelMsg);
+
+            if (cachedVehicles) {
+                const cv = cachedVehicles.find(v => v.id === vehicleId);
+                if (cv) cv.repair_requests = vehicle.repair_requests;
+            }
+
+            if (currentOpenedVehicleId === vehicleId) {
+                await openVehicleModal(vehicleId);
+            }
+            const histModal = document.getElementById('vehicle-repair-history-modal');
+            if (histModal && !histModal.classList.contains('hidden')) {
+                await openVehicleRepairHistoryModal(vehicleId);
+            }
+            if (window.lastDataManagerTab === 'riparazioni') {
+                switchDataTable('riparazioni');
+            }
+        } else {
+            alert("Richiesta non trovata o già eliminata.");
+        }
+    } catch (err) {
+        console.error("Errore nell'eliminazione della richiesta:", err);
+        alert("Errore durante l'eliminazione della richiesta: " + err.message);
+    }
 };
 
 window.openVehicleRepairHistoryModal = async function (vehicleId) {
