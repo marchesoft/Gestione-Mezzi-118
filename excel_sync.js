@@ -1,16 +1,15 @@
 // =====================================================================
-// Sincronizzazione Richieste di Riparazione -> file Excel locale (v3.4.6)
+// Sincronizzazione Richieste di Riparazione -> file Excel locale (v3.4.7)
 // File di destinazione: "ORGANIZZAZIONE RICHIESTE MEZZI.xlsx" (Desktop)
 //
-// Usa la File System Access API (Chrome / Edge desktop): al primo salvataggio
-// su PC il file viene selezionato automaticamente sul Desktop, l'handle
-// viene memorizzato permanentemente in IndexedDB per quel computer e da allora
-// in poi ogni nuova richiesta di riparazione viene sincronizzata in automatico.
+// Usa la File System Access API (Chrome / Edge desktop): al salvataggio
+// su PC il file viene selezionato automaticamente sul Desktop se non ancora
+// collegato, l'handle viene memorizzato permanentemente in IndexedDB per
+// quel computer e ogni nuova richiesta di riparazione viene sincronizzata.
 // Il file viene modificato direttamente a livello XML (JSZip) per preservare
 // formattazione, larghezze colonne, stili e impostazioni di stampa.
 // Se il file non è scrivibile (es. aperto in Excel) la riga resta in coda
-// (localStorage) e viene scritta al salvataggio successivo o premendo
-// il pulsante "Excel" nella finestra della richiesta.
+// (localStorage) e viene scritta al salvataggio successivo.
 // =====================================================================
 (function () {
     const DB_NAME = 'gm118_excel_sync';
@@ -57,7 +56,11 @@
         const db = await openDb();
         return new Promise((resolve, reject) => {
             const tx = db.transaction(STORE_NAME, 'readwrite');
-            tx.objectStore(STORE_NAME).put(value, key);
+            if (value === null || value === undefined) {
+                tx.objectStore(STORE_NAME).delete(key);
+            } else {
+                tx.objectStore(STORE_NAME).put(value, key);
+            }
             tx.oncomplete = () => resolve();
             tx.onerror = () => reject(tx.error);
         });
@@ -66,6 +69,16 @@
     window.excelSyncGetHandle = async function () {
         if (!window.excelSyncSupported()) return null;
         try { return await idbGet(HANDLE_KEY); } catch (e) { return null; }
+    };
+
+    // Helper per resettare completamente il collegamento al file Excel (utile da console o recovery)
+    window.excelSyncReset = async function () {
+        try {
+            await idbSet(HANDLE_KEY, null);
+            console.log('Collegamento Excel rimosso da IndexedDB');
+        } catch (e) {
+            console.warn('Errore reset collegamento Excel:', e);
+        }
     };
 
     // ---------- Coda righe in attesa ----------
@@ -85,11 +98,10 @@
         return s;
     }
     function excelDate(dateStr) {
-        // DD/MM/YYYY -> "DD MM YY" (formato usato nel foglio)
         const p = (dateStr || '').split(/[\/\-.]/);
         if (p.length === 3) {
             let [d, m, y] = p;
-            if (d.length === 4) { const t = d; d = y; y = t; } // YYYY-MM-DD
+            if (d.length === 4) { const t = d; d = y; y = t; }
             return `${d.padStart(2, '0')} ${m.padStart(2, '0')} ${y.slice(-2)}`;
         }
         return dateStr || '';
@@ -113,20 +125,23 @@
     };
 
     // ---------- Permessi e Acquisizione Automatica Handle ----------
-    async function ensurePermission(handle, interactive) {
+    async function requestWritePermission(handle) {
         if (!handle) return false;
-        const opts = { mode: 'readwrite' };
         try {
-            if ((await handle.queryPermission(opts)) === 'granted') return true;
-            if (!interactive) return false;
-            return (await handle.requestPermission(opts)) === 'granted';
+            const status = await handle.queryPermission({ mode: 'readwrite' });
+            if (status === 'granted') return true;
+            if (status === 'denied') return false;
+            const req = await handle.requestPermission({ mode: 'readwrite' });
+            return req === 'granted';
         } catch (e) {
+            console.warn('Errore richiesta permessi scrittura:', e);
             return false;
         }
     }
 
-    // Assicura l'acquisizione dell'handle: se già presente lo valida,
-    // altrimenti apre automaticamente il selettore file puntando al Desktop.
+    // Assicura l'acquisizione di un handle valido con permesso di scrittura.
+    // Se l'handle precedente era negato o non valido, viene rimosso e viene
+    // riaperto automaticamente il selettore del file puntando al Desktop.
     window.excelSyncEnsureHandle = async function (interactive = true) {
         if (!window.excelSyncSupported()) return null;
         let handle = await window.excelSyncGetHandle();
@@ -134,16 +149,34 @@
         if (handle) {
             try {
                 await handle.getFile();
-                const hasPerm = await ensurePermission(handle, interactive);
-                if (hasPerm) return handle;
-                if (!interactive) return null;
+                const q = await handle.queryPermission({ mode: 'readwrite' });
+                if (q === 'granted') {
+                    return handle;
+                }
+                if (q === 'denied') {
+                    console.warn('Permesso Excel precedentemente negato su questo handle: resetto IndexedDB per richiederlo di nuovo.');
+                    await idbSet(HANDLE_KEY, null);
+                    handle = null;
+                } else if (interactive) {
+                    const req = await handle.requestPermission({ mode: 'readwrite' });
+                    if (req === 'granted') {
+                        return handle;
+                    } else {
+                        console.warn('Permesso di scrittura non concesso dall\'utente sull\'handle esistente: resetto handle.');
+                        await idbSet(HANDLE_KEY, null);
+                        handle = null;
+                    }
+                } else {
+                    return null;
+                }
             } catch (err) {
-                console.warn('Handle Excel non più accessibile, verrà richiesto nuovamente:', err);
+                console.warn('Handle Excel non più accessibile o file spostato:', err);
                 handle = null;
                 try { await idbSet(HANDLE_KEY, null); } catch (e) {}
             }
         }
 
+        // Se non abbiamo un handle valido e possiamo interagire (gesto utente attivo):
         if (!handle && interactive) {
             try {
                 const [newHandle] = await window.showOpenFilePicker({
@@ -156,11 +189,22 @@
                     }]
                 });
                 if (newHandle) {
-                    if (await ensurePermission(newHandle, true)) {
-                        await idbSet(HANDLE_KEY, newHandle);
-                        if (window.excelSyncRefreshButton) window.excelSyncRefreshButton();
-                        return newHandle;
+                    let hasPerm = false;
+                    try {
+                        const q = await newHandle.queryPermission({ mode: 'readwrite' });
+                        if (q === 'granted') {
+                            hasPerm = true;
+                        } else {
+                            const r = await newHandle.requestPermission({ mode: 'readwrite' });
+                            hasPerm = (r === 'granted');
+                        }
+                    } catch (pErr) {
+                        console.warn('Richiesta permessi su nuovo handle:', pErr);
                     }
+
+                    // Memorizziamo l'handle selezionato dall'utente
+                    await idbSet(HANDLE_KEY, newHandle);
+                    return newHandle;
                 }
             } catch (e) {
                 if (e && e.name === 'AbortError') {
@@ -174,68 +218,32 @@
         return null;
     };
 
-    // Da chiamare come PRIMA istruzione nel click di salvataggio (sfrutta il gesto utente per collegamento o permessi)
     window.excelSyncPrepare = async function () {
         return await window.excelSyncEnsureHandle(true);
-    };
-
-    // ---------- Collegamento manuale o flush manuale del file ----------
-    window.linkExcelSyncFile = async function () {
-        if (!window.excelSyncSupported()) {
-            alert('La sincronizzazione con il file Excel è disponibile solo su computer con Google Chrome o Microsoft Edge.');
-            return;
-        }
-        try {
-            const existing = await window.excelSyncGetHandle();
-            if (existing && getPending().length > 0) {
-                if (await ensurePermission(existing, true)) {
-                    const res = await window.excelSyncFlush();
-                    window.excelSyncNotify(res);
-                    window.excelSyncRefreshButton();
-                    return;
-                }
-            }
-            const handle = await window.excelSyncEnsureHandle(true);
-            if (!handle) return;
-            let msg = `File collegato: ${handle.name}\nDa ora ogni nuova richiesta di riparazione verrà aggiunta in fondo al foglio.`;
-            if (getPending().length > 0) {
-                const res = await window.excelSyncFlush();
-                if (res.ok) msg += `\n\nScritte ${res.written} righe in sospeso.`;
-                else msg += `\n\nRighe in sospeso non scritte: ${res.error}`;
-            }
-            alert(msg);
-        } catch (e) {
-            if (e && e.name === 'AbortError') return;
-            console.error('Errore collegamento file Excel:', e);
-            alert('Impossibile collegare il file Excel: ' + (e && e.message ? e.message : e));
-        }
-        window.excelSyncRefreshButton();
     };
 
     // ---------- Accodamento + scrittura ----------
     window.excelSyncAppendRequest = async function (vehicle, req) {
         if (!window.excelSyncSupported()) return { ok: false, skipped: true };
-        let handle = await window.excelSyncGetHandle();
-        if (!handle) {
-            handle = await window.excelSyncEnsureHandle(false);
-        }
+        let handle = await window.excelSyncEnsureHandle(true);
         if (!handle) return { ok: false, notLinked: true };
         const pending = getPending();
         if (!pending.some(p => p.id === req.id)) {
             pending.push(window.buildExcelRowFromRepairRequest(vehicle, req));
             setPending(pending);
         }
-        return window.excelSyncFlush();
+        return window.excelSyncFlush(handle);
     };
 
-    window.excelSyncFlush = async function () {
+    window.excelSyncFlush = async function (handleOpt) {
         const pending = getPending();
         if (pending.length === 0) return { ok: true, written: 0 };
-        const handle = await window.excelSyncGetHandle();
-        if (!handle) return { ok: false, notLinked: true, pending: pending.length };
-        if (!(await ensurePermission(handle, false))) {
-            return { ok: false, error: 'permesso di scrittura non concesso', pending: pending.length };
+        let handle = handleOpt || (await window.excelSyncGetHandle());
+        if (!handle) {
+            handle = await window.excelSyncEnsureHandle(true);
         }
+        if (!handle) return { ok: false, notLinked: true, pending: pending.length };
+
         try {
             const file = await handle.getFile();
             const zip = await JSZip.loadAsync(await file.arrayBuffer());
@@ -248,7 +256,25 @@
                 compression: 'DEFLATE',
                 mimeType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
             });
-            const writable = await handle.createWritable();
+
+            // Scrittura diretta tramite createWritable (gestisce autorizzazione nativa del browser)
+            let writable;
+            try {
+                writable = await handle.createWritable();
+            } catch (wErr) {
+                if (wErr && (wErr.name === 'NotAllowedError' || wErr.name === 'SecurityError')) {
+                    const r = await handle.requestPermission({ mode: 'readwrite' });
+                    if (r === 'granted') {
+                        writable = await handle.createWritable();
+                    } else {
+                        await idbSet(HANDLE_KEY, null);
+                        throw new Error('permesso di scrittura non autorizzato dal browser (autorizza la modifica quando richiesto)');
+                    }
+                } else {
+                    throw wErr;
+                }
+            }
+
             await writable.write(blob);
             await writable.close();
             setPending([]);
@@ -258,7 +284,7 @@
             const locked = e && (e.name === 'NoModificationAllowedError' || e.name === 'InvalidStateError' || /lock|in use|utilizzo/i.test(e.message || ''));
             return {
                 ok: false,
-                error: locked ? 'il file è aperto in Excel: chiudilo e premi il pulsante "Excel"' : (e && e.message ? e.message : String(e)),
+                error: locked ? 'il file è aperto in Microsoft Excel: chiudilo per completare la scrittura' : (e && e.message ? e.message : String(e)),
                 pending: pending.length
             };
         }
@@ -507,11 +533,6 @@
             setPending(filteredPending);
         }
 
-        // 2. Se non abbiamo il permesso o il file non è modificabile
-        if (!(await ensurePermission(handle, true))) {
-            return { ok: false, error: 'permesso di scrittura non concesso' };
-        }
-
         try {
             const file = await handle.getFile();
             const zip = await JSZip.loadAsync(await file.arrayBuffer());
@@ -536,7 +557,24 @@
                 compression: 'DEFLATE',
                 mimeType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
             });
-            const writable = await handle.createWritable();
+
+            let writable;
+            try {
+                writable = await handle.createWritable();
+            } catch (wErr) {
+                if (wErr && (wErr.name === 'NotAllowedError' || wErr.name === 'SecurityError')) {
+                    const r = await handle.requestPermission({ mode: 'readwrite' });
+                    if (r === 'granted') {
+                        writable = await handle.createWritable();
+                    } else {
+                        await idbSet(HANDLE_KEY, null);
+                        throw new Error('permesso di scrittura non concesso');
+                    }
+                } else {
+                    throw wErr;
+                }
+            }
+
             await writable.write(blob);
             await writable.close();
             return { ok: true, removed: true, rowNumber: delRes.removedRowNumber, fileName: handle.name };
@@ -545,8 +583,7 @@
             const locked = e && (e.name === 'NoModificationAllowedError' || e.name === 'InvalidStateError' || /lock|in use|utilizzo/i.test(e.message || ''));
             return {
                 ok: false,
-                error: locked ? 'il file è aperto in Excel: chiudilo per aggiornarlo' : (e && e.message ? e.message : String(e))
-            };
+                error: locked ? 'il file è aperto in Microsoft Excel: chiudilo per aggiornarlo' : (e && e.message ? e.message : String(e))
         }
     };
 

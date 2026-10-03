@@ -1,4 +1,4 @@
-const APP_VERSION = "3.4.6";
+const APP_VERSION = "3.4.7";
 let isAdmin = false;
 let cachedVehicles = null;
 let cachedLocations = null;
@@ -4850,6 +4850,17 @@ window.generateAndDownloadRepairDocx = async function () {
             filename: filename
         };
 
+        // Sincronizza subito con il foglio Excel locale sul Desktop (finché il gesto utente è fresco)
+        let excelRes = null;
+        if (window.excelSyncAppendRequest) {
+            try {
+                excelRes = await window.excelSyncAppendRequest(vehicle, reqData);
+            } catch (e) {
+                console.error('Errore sincronizzazione Excel:', e);
+                excelRes = { ok: false, error: e.message };
+            }
+        }
+
         // Salva la richiesta nello storico del veicolo su Firestore (senza forzare il download automatico del file Word)
         if (vehicleId) {
             const targetVehicle = (cachedVehicles && cachedVehicles.find(v => v.id === vehicleId)) || await store.getVehicleById(vehicleId);
@@ -4894,17 +4905,6 @@ window.generateAndDownloadRepairDocx = async function () {
         URL.revokeObjectURL(url);
 
         closeRepairRequestModal();
-
-        // Aggiunge la riga al file Excel "ORGANIZZAZIONE RICHIESTE MEZZI.xlsx" collegato (se presente)
-        let excelRes = null;
-        if (window.excelSyncAppendRequest) {
-            try {
-                excelRes = await window.excelSyncAppendRequest(vehicle, reqData);
-            } catch (e) {
-                console.error('Errore sincronizzazione Excel:', e);
-                excelRes = { ok: false, error: e.message };
-            }
-        }
 
         // Mostra banner di conferma salvataggio e cartella di destinazione
         window.showRepairSaveConfirmationBanner(filename, "Cartella Download", excelRes);
