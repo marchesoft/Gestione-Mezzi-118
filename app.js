@@ -1,4 +1,4 @@
-const APP_VERSION = "3.4.3";
+const APP_VERSION = "3.4.4";
 let isAdmin = false;
 let cachedVehicles = null;
 let cachedLocations = null;
@@ -4147,6 +4147,9 @@ window.openRepairRequestModal = async function (vehicleId) {
             return;
         }
 
+        // Stato del collegamento al file Excel delle richieste
+        if (window.excelSyncRefreshButton) window.excelSyncRefreshButton();
+
         // Salva ID veicolo per la richiesta corrente
         window.currentRepairVehicleId = vehicle.id;
 
@@ -4658,10 +4661,17 @@ window.copyTextToClipboard = async function (text) {
 };
 
 // Banner di notifica/conferma per il salvataggio della richiesta di riparazione
-window.showRepairSaveConfirmationBanner = function (filename, targetFolder = "Cartella Download") {
+window.showRepairSaveConfirmationBanner = function (filename, targetFolder = "Cartella Download", excelRes = null) {
     const existing = document.getElementById('repair-save-banner-toast');
     if (existing) {
         existing.remove();
+    }
+
+    let excelLine = '';
+    if (excelRes && !excelRes.skipped && !excelRes.notLinked) {
+        excelLine = excelRes.ok
+            ? `<div class="repair-banner-item"><i class="fa-solid fa-file-excel" style="color: #16a34a;"></i><span>Riga aggiunta a <strong>${excelRes.fileName || 'Excel'}</strong></span></div>`
+            : `<div class="repair-banner-item"><i class="fa-solid fa-triangle-exclamation" style="color: #d97706;"></i><span>Excel non aggiornato (riga in sospeso)</span></div>`;
     }
 
     const banner = document.createElement('div');
@@ -4690,6 +4700,7 @@ window.showRepairSaveConfirmationBanner = function (filename, targetFolder = "Ca
                         <i class="fa-solid fa-clipboard-check clip-icon"></i>
                         <span>Dati veicolo copiati negli appunti</span>
                     </div>
+                    ${excelLine}
                 </div>
             </div>
             <div class="repair-banner-progress"></div>
@@ -4725,6 +4736,11 @@ window.closeRepairSaveBanner = function () {
 
 window.generateAndDownloadRepairDocx = async function () {
     try {
+        // Permesso di scrittura sul file Excel collegato: va richiesto subito, finché il click è "attivo"
+        if (window.excelSyncPrepare) {
+            try { await window.excelSyncPrepare(); } catch (e) { console.warn('Excel sync prepare:', e); }
+        }
+
         // Veicolo della card corrente
         const vehicleId = window.currentRepairVehicleId || currentOpenedVehicleId;
         const vehicle = (cachedVehicles && cachedVehicles.find(v => v.id === vehicleId)) || (vehicleId ? await store.getVehicleById(vehicleId) : null);
@@ -4879,8 +4895,20 @@ window.generateAndDownloadRepairDocx = async function () {
 
         closeRepairRequestModal();
 
+        // Aggiunge la riga al file Excel "ORGANIZZAZIONE RICHIESTE MEZZI.xlsx" collegato (se presente)
+        let excelRes = null;
+        if (window.excelSyncAppendRequest) {
+            try {
+                excelRes = await window.excelSyncAppendRequest(vehicle, reqData);
+            } catch (e) {
+                console.error('Errore sincronizzazione Excel:', e);
+                excelRes = { ok: false, error: e.message };
+            }
+        }
+
         // Mostra banner di conferma salvataggio e cartella di destinazione
-        window.showRepairSaveConfirmationBanner(filename, "Cartella Download");
+        window.showRepairSaveConfirmationBanner(filename, "Cartella Download", excelRes);
+        if (excelRes && !excelRes.ok && window.excelSyncNotify) window.excelSyncNotify(excelRes);
     } catch (err) {
         console.error("Errore nel salvataggio della richiesta riparazione:", err);
         alert("Si è verificato un errore durante il salvataggio della richiesta: " + err.message);
@@ -5018,9 +5046,28 @@ window.deleteRepairRequest = async function (vehicleId, reqIdOrIndex, fallbackIn
             }
 
             if (targetIdx !== -1) {
+                const reqToDelete = vehicle.repair_requests[targetIdx];
                 vehicle.repair_requests.splice(targetIdx, 1);
                 await store.updateVehicle(vehicle);
-                alert("Richiesta eliminata con successo.");
+
+                // Sincronizza l'eliminazione con il foglio Excel locale (se collegato)
+                let excelDelMsg = '';
+                if (window.excelSyncDeleteRequest && reqToDelete) {
+                    try {
+                        const delRes = await window.excelSyncDeleteRequest(vehicle, reqToDelete);
+                        if (delRes && delRes.ok) {
+                            if (delRes.removed) {
+                                excelDelMsg = `\n(Riga ${delRes.rowNumber} rimossa da ${delRes.fileName})`;
+                            }
+                        } else if (delRes && !delRes.notLinked && !delRes.skipped) {
+                            excelDelMsg = `\n(Attenzione: non è stato possibile aggiornare il file Excel: ${delRes.error})`;
+                        }
+                    } catch (e) {
+                        console.error('Errore sincronizzazione eliminazione Excel:', e);
+                    }
+                }
+
+                alert("Richiesta eliminata con successo." + excelDelMsg);
 
                 if (cachedVehicles) {
                     const cv = cachedVehicles.find(v => v.id === vehicleId);

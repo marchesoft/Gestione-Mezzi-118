@@ -1,16 +1,16 @@
-# Regole e Contesto del Progetto (v3.4.3)
+# Regole e Contesto del Progetto (v3.4.4)
 
-Questo file definisce le linee guida e lo stato di salvataggio del progetto per garantire la coerenza con la versione **3.4.3**.
+Questo file definisce le linee guida e lo stato di salvataggio del progetto per garantire la coerenza con la versione **3.4.4**.
 
-## Stato di Riferimento (v3.4.3)
+## Stato di Riferimento (v3.4.4)
 
 1. **Gestione Versioni**:
-   - La versione attuale di riferimento è **3.4.3**.
-   - Qualsiasi modifica futura richiede l'avanzamento della versione (es. `3.4.4` o successive) in `app.js` (`const APP_VERSION = "X.Y.Z";`) e in `index.html` (header).
+   - La versione attuale di riferimento è **3.4.4**.
+   - Qualsiasi modifica futura richiede l'avanzamento della versione (es. `3.4.5` o successive) in `app.js` (`const APP_VERSION = "X.Y.Z";`) e in `index.html` (header).
 
 2. **Bypass della Cache (Cache-Busting)**:
    - I file `app.js` e `style.css` sono importati in `index.html` con il parametro di versione `?v=X.Y.Z` per forzare il caricamento immediato degli aggiornamenti sui dispositivi client (specialmente mobili).
-   - Esempio: `<link rel="stylesheet" href="style.css?v=3.4.3">` e `<script src="app.js?v=3.4.3"></script>`.
+   - Esempio: `<link rel="stylesheet" href="style.css?v=3.4.4">` e `<script src="app.js?v=3.4.4"></script>`.
    - Ad ogni cambio di codice, aggiornare questa stringa con la nuova versione dell'applicazione.
 
 3. **Integrazione Git e GitHub**:
@@ -128,7 +128,7 @@ Questo file definisce le linee guida e lo stato di salvataggio del progetto per 
       - La barra di ricerca istantanea (`filterWorkshopReport`) supporta anche il filtro per nome della sede.
 
 16. **Intestazione Dashboard Responsive (v3.4.0, v3.4.3)**:
-    - **Desktop (> 768px)**: L'intestazione della sezione riporta la dicitura estesa **VEICOLI IN GESTIONE 118 DI FERRARA**, seguita dal badge con la versione del software (`v3.4.3`).
+    - **Desktop (> 768px)**: L'intestazione della sezione riporta la dicitura estesa **VEICOLI IN GESTIONE 118 DI FERRARA**, seguita dal badge con la versione del software (`v3.4.4`).
     - **Mobile (<= 768px)**: Mantiene la dicitura compatta **VEICOLI IN GESTIONE**, seguita dal badge della versione del software, ottimizzando lo spazio sui dispositivi mobili.
     - La gestione è implementata tramite le classi utility responsive `.desktop-text` e `.mobile-text` in `index.html` e `style.css`.
 
@@ -145,3 +145,10 @@ Questo file definisce le linee guida e lo stato di salvataggio del progetto per 
     - Il pallino giallo fluo del controllo mensile (`.monthly-check-dot`) posizionato sulla barra di stato della card veicolo è stato spostato maggiormente a sinistra verso il bordo (`left: 0.45rem` anziché `1.2rem`).
     - Questo garantisce una netta separazione visiva rispetto al testo centrato dello stato (es. "IN SERVIZIO", "DISPONIBILE"), evitando qualsiasi sovrapposizione o eccessiva vicinanza sia su desktop che su dispositivi mobili.
 
+19. **Sincronizzazione Richieste di Riparazione con File Excel Locale (v3.4.4)**:
+    - File di destinazione sul desktop: ORGANIZZAZIONE RICHIESTE MEZZI.xlsx.
+    - Implementato il modulo excel_sync.js (tramite File System Access API di Chrome/Edge e JSZip).
+    - L'utente collega il file una sola volta tramite il pulsante **Collega Excel** presente nel footer del modale Richiesta Riparazione (#repair-request-modal). L'handle del file viene salvato permanentemente in IndexedDB.
+    - **Aggiunta automatica**: ogni volta che viene salvata una nuova richiesta di riparazione (generateAndDownloadRepairDocx), una nuova riga con Sigla, Tipo Intervento, Data Richiesta viene accodata in fondo al foglio Excel preservando stili, bordi, altezze riga e formattazione nativa.
+    - **Eliminazione sincronizzata**: quando una richiesta di riparazione viene eliminata da dentro una card (deleteRepairRequest), la corrispondente riga viene individuata ed eliminata dal foglio Excel con compattazione e scalamento degli indici delle righe successive.
+    - **Gestione file bloccato / coda**: se il file Excel risulta aperto in sola lettura/bloccato dall'applicazione Excel, le operazioni restano in sospeso (in localStorage) e possono essere applicate alla chiusura del file premendo il pulsante Excel o al salvataggio successivo.
