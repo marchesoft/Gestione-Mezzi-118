@@ -1,5 +1,5 @@
 // =====================================================================
-// Sincronizzazione Richieste di Riparazione -> file Excel locale (v3.4.9)
+// Sincronizzazione Richieste di Riparazione -> file Excel locale (v3.5.0)
 // File di destinazione: "ORGANIZZAZIONE RICHIESTE MEZZI.xlsx" (Desktop)
 //
 // Usa la File System Access API (Chrome / Edge desktop): al salvataggio
@@ -144,41 +144,58 @@
     }
 
     // Assicura l'acquisizione di un handle valido con permesso di scrittura.
-    // L'handle memorizzato in IndexedDB viene mantenuto e MAI cancellato
-    // salvo il caso in cui il file sia stato eliminato/spostato dal disco (NotFoundError).
+    // L'handle memorizzato in IndexedDB viene verificato chiedendo prima i permessi
+    // prima di qualsiasi chiamata a getFile(), evitando l'errore NotAllowedError del browser.
     window.excelSyncEnsureHandle = async function (interactive = true) {
         if (!window.excelSyncSupported()) return null;
         let handle = await window.excelSyncGetHandle();
 
         if (handle) {
             try {
-                // Verifichiamo se il file esiste ancora sul disco
-                await handle.getFile();
-                // Verifichiamo il permesso di lettura/scrittura
-                let q = await handle.queryPermission({ mode: 'readwrite' });
-                if (q === 'granted') {
-                    return handle;
+                // 1. Verifichiamo prima lo stato dei permessi readwrite
+                let q = 'prompt';
+                try {
+                    q = await handle.queryPermission({ mode: 'readwrite' });
+                } catch (qpErr) {
+                    console.warn('Errore queryPermission su handle salvato:', qpErr);
                 }
-                if (interactive) {
-                    const req = await handle.requestPermission({ mode: 'readwrite' });
-                    if (req === 'granted') {
-                        return handle;
+
+                // 2. Se siamo in interazione utente (click) e il permesso non è ancora granted, lo richiediamo subito
+                if (q !== 'granted' && interactive) {
+                    try {
+                        q = await handle.requestPermission({ mode: 'readwrite' });
+                    } catch (rpErr) {
+                        console.warn('Errore requestPermission su handle salvato:', rpErr);
                     }
-                    // Non cancelliamo l'handle se l'utente non ha acconsentito al prompt:
-                    // l'handle resta in IDB e potrà essere riautorizzato al prossimo salvataggio.
-                    return null;
+                }
+
+                // 3. Se il permesso è concesso, verifichiamo che il file esista ancora sul disco
+                if (q === 'granted') {
+                    try {
+                        await handle.getFile();
+                        return handle;
+                    } catch (fErr) {
+                        if (fErr && (fErr.name === 'NotFoundError' || /not found/i.test(fErr.message || ''))) {
+                            console.warn('File Excel non trovato o spostato sul disco: resetto handle memorizzato.', fErr);
+                            try { await idbSet(HANDLE_KEY, null); } catch (e) {}
+                            handle = null;
+                        } else {
+                            throw fErr;
+                        }
+                    }
                 } else {
-                    return null;
+                    // Se il permesso non è stato accordato o l'handle è obsoleto/invalido,
+                    // consentiamo il fallback a showOpenFilePicker
+                    console.warn('Handle esistente non autorizzato (stato: ' + q + ')');
+                    if (q === 'denied') {
+                        try { await idbSet(HANDLE_KEY, null); } catch (e) {}
+                    }
+                    handle = null;
                 }
             } catch (err) {
-                // Solo se il file è stato eliminato o spostato resettiamo l'handle da IndexedDB
-                if (err && (err.name === 'NotFoundError' || /not found/i.test(err.message || ''))) {
-                    console.warn('File Excel non trovato o spostato sul disco: resetto handle memorizzato.', err);
-                    try { await idbSet(HANDLE_KEY, null); } catch (e) {}
-                    handle = null;
-                } else {
-                    console.warn('Errore verifica handle esistente:', err);
-                }
+                console.warn('Errore verifica handle salvato:', err);
+                try { await idbSet(HANDLE_KEY, null); } catch (e) {}
+                handle = null;
             }
         }
 
@@ -197,7 +214,7 @@
                 });
                 if (newHandle) {
                     try {
-                        const q = await newHandle.queryPermission({ mode: 'readwrite' });
+                        let q = await newHandle.queryPermission({ mode: 'readwrite' });
                         if (q !== 'granted') {
                             await newHandle.requestPermission({ mode: 'readwrite' });
                         }
@@ -248,6 +265,15 @@
         if (!handle) return { ok: false, notLinked: true, pending: pending.length };
 
         try {
+            // Verifichiamo i permessi prima di accedere al file
+            let q = await handle.queryPermission({ mode: 'readwrite' });
+            if (q !== 'granted') {
+                q = await handle.requestPermission({ mode: 'readwrite' });
+                if (q !== 'granted') {
+                    throw new Error('permesso di lettura/scrittura non autorizzato dal browser (autorizza la modifica quando richiesto)');
+                }
+            }
+
             const file = await handle.getFile();
             const zip = await JSZip.loadAsync(await file.arrayBuffer());
             const sheetPath = await resolveFirstSheetPath(zip);
@@ -260,23 +286,8 @@
                 mimeType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
             });
 
-            // Scrittura diretta tramite createWritable (gestisce autorizzazione nativa del browser)
-            let writable;
-            try {
-                writable = await handle.createWritable();
-            } catch (wErr) {
-                if (wErr && (wErr.name === 'NotAllowedError' || wErr.name === 'SecurityError')) {
-                    const r = await handle.requestPermission({ mode: 'readwrite' });
-                    if (r === 'granted') {
-                        writable = await handle.createWritable();
-                    } else {
-                        throw new Error('permesso di scrittura non autorizzato dal browser (autorizza la modifica quando richiesto)');
-                    }
-                } else {
-                    throw wErr;
-                }
-            }
-
+            // Scrittura diretta tramite createWritable
+            const writable = await handle.createWritable();
             await writable.write(blob);
             await writable.close();
             setPending([]);
@@ -536,6 +547,15 @@
         }
 
         try {
+            // Verifichiamo i permessi prima di accedere al file
+            let q = await handle.queryPermission({ mode: 'readwrite' });
+            if (q !== 'granted') {
+                q = await handle.requestPermission({ mode: 'readwrite' });
+                if (q !== 'granted') {
+                    throw new Error('permesso di lettura/scrittura non autorizzato dal browser');
+                }
+            }
+
             const file = await handle.getFile();
             const zip = await JSZip.loadAsync(await file.arrayBuffer());
             const sheetPath = await resolveFirstSheetPath(zip);
@@ -560,22 +580,7 @@
                 mimeType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
             });
 
-            let writable;
-            try {
-                writable = await handle.createWritable();
-            } catch (wErr) {
-                if (wErr && (wErr.name === 'NotAllowedError' || wErr.name === 'SecurityError')) {
-                    const r = await handle.requestPermission({ mode: 'readwrite' });
-                    if (r === 'granted') {
-                        writable = await handle.createWritable();
-                    } else {
-                        throw new Error('permesso di scrittura non concesso');
-                    }
-                } else {
-                    throw wErr;
-                }
-            }
-
+            const writable = await handle.createWritable();
             await writable.write(blob);
             await writable.close();
             return { ok: true, removed: true, rowNumber: delRes.removedRowNumber, fileName: handle.name };
