@@ -1,4 +1,4 @@
-const APP_VERSION = "3.5.3";
+const APP_VERSION = "3.5.4";
 let isAdmin = false;
 let cachedVehicles = null;
 let cachedLocations = null;
@@ -5134,13 +5134,12 @@ window.openVehicleRepairHistoryModal = async function (vehicleId) {
         } else {
             bodyElem.innerHTML = `
                 <div style="background: white; border: 1px solid var(--border-color); border-radius: 0.75rem; overflow-x: auto; box-shadow: 0 1px 3px rgba(0,0,0,0.04);">
-                    <table style="width: 100%; border-collapse: collapse; min-width: 750px;">
+                    <table style="width: 100%; border-collapse: collapse; min-width: 650px;">
                         <thead style="background: #f1f5f9; border-bottom: 2px solid var(--border-color); position: sticky; top: 0; z-index: 1;">
                             <tr>
                                 <th style="text-align: left; padding: 0.85rem 1rem; font-size: 0.8rem; color: #475569; text-transform: uppercase; font-weight: 700; letter-spacing: 0.03em;">Data</th>
                                 <th style="text-align: left; padding: 0.85rem 1rem; font-size: 0.8rem; color: #475569; text-transform: uppercase; font-weight: 700; letter-spacing: 0.03em;">Tipologia</th>
                                 <th style="text-align: left; padding: 0.85rem 1rem; font-size: 0.8rem; color: #475569; text-transform: uppercase; font-weight: 700; letter-spacing: 0.03em;">Descrizione Lavori</th>
-                                <th style="text-align: left; padding: 0.85rem 1rem; font-size: 0.8rem; color: #475569; text-transform: uppercase; font-weight: 700; letter-spacing: 0.03em;">Richiedente / Driver</th>
                                 <th style="text-align: right; padding: 0.85rem 1rem; font-size: 0.8rem; color: #475569; text-transform: uppercase; font-weight: 700; letter-spacing: 0.03em;">Azioni</th>
                             </tr>
                         </thead>
@@ -5155,10 +5154,6 @@ window.openVehicleRepairHistoryModal = async function (vehicleId) {
                                         ${(req.types && req.types.length > 0) ? req.types.map(t => `<span style="background: #dbeafe; color: #1e40af; font-size: 0.75rem; font-weight: 600; padding: 0.2rem 0.5rem; border-radius: 4px; display: inline-block; margin: 0.1rem;">${t}</span>`).join('') : '<span style="color: var(--text-secondary); font-size: 0.8rem;">Non specificata</span>'}
                                     </td>
                                     <td style="padding: 0.85rem 1rem; font-size: 0.88rem; color: #334155; line-height: 1.45; white-space: pre-wrap;">${req.description || '-'}</td>
-                                    <td style="padding: 0.85rem 1rem; font-size: 0.85rem; color: #475569; white-space: nowrap;">
-                                        <strong>${req.driver || '-'}</strong>
-                                        ${(req.dept || req.phone) ? `<div style="font-size: 0.75rem; color: #64748b; margin-top: 0.15rem;">${[req.dept, req.phone].filter(Boolean).join(' • ')}</div>` : ''}
-                                    </td>
                                     <td style="padding: 0.85rem 1rem; text-align: right; white-space: nowrap;">
                                         <button class="btn" style="background: #2563eb; color: white; padding: 0.4rem 0.8rem; font-size: 0.82rem; margin-right: 0.35rem; border: none; border-radius: 0.375rem; cursor: pointer; font-weight: 600;" onclick="downloadSavedRepairDocx('${vehicle.id}', '${req.id || ''}', ${reqIdx})" title="Riscarica il file Word precompilato">
                                             <i class="fa-solid fa-download"></i> Word

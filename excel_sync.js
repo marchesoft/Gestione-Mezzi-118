@@ -1,5 +1,5 @@
 // =====================================================================
-// Sincronizzazione Richieste di Riparazione -> file Excel locale (v3.5.3)
+// Sincronizzazione Richieste di Riparazione -> file Excel locale (v3.5.4)
 // File di destinazione: "ORGANIZZAZIONE RICHIESTE MEZZI.xlsx" (Desktop)
 //
 // Usa la File System Access API (Chrome / Edge desktop): al salvataggio
