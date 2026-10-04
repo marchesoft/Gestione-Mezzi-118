@@ -1,5 +1,5 @@
 // =====================================================================
-// Sincronizzazione Richieste di Riparazione -> file Excel locale (v3.4.7)
+// Sincronizzazione Richieste di Riparazione -> file Excel locale (v3.4.8)
 // File di destinazione: "ORGANIZZAZIONE RICHIESTE MEZZI.xlsx" (Desktop)
 //
 // Usa la File System Access API (Chrome / Edge desktop): al salvataggio
@@ -23,9 +23,13 @@
     // Rileva se il dispositivo è mobile / tablet (la sincronizzazione Excel è attiva SOLO su PC Desktop)
     window.isMobileDevice = function () {
         const ua = (navigator.userAgent || navigator.vendor || window.opera || '').toLowerCase();
+        // Dispositivi desktop certi (Windows, Mac non-iPad, Linux PC): MAI considerare mobile anche se con touchscreen!
+        if (ua.includes('windows') || ua.includes('win32') || ua.includes('win64')) return false;
+        if (ua.includes('macintosh') && !('ontouchend' in document)) return false;
+        if ((ua.includes('x11') || ua.includes('linux')) && !ua.includes('android')) return false;
+
         const isMobileUA = /android|webos|iphone|ipad|ipod|blackberry|iemobile|opera mini|mobile|tablet/i.test(ua);
-        const isTouchScreen = ('ontouchstart' in window) && (window.innerWidth <= 1024 || navigator.maxTouchPoints > 1);
-        return isMobileUA || isTouchScreen;
+        return Boolean(isMobileUA);
     };
 
     window.excelSyncSupported = function () {
@@ -140,43 +144,45 @@
     }
 
     // Assicura l'acquisizione di un handle valido con permesso di scrittura.
-    // Se l'handle precedente era negato o non valido, viene rimosso e viene
-    // riaperto automaticamente il selettore del file puntando al Desktop.
+    // L'handle memorizzato in IndexedDB viene mantenuto e MAI cancellato
+    // salvo il caso in cui il file sia stato eliminato/spostato dal disco (NotFoundError).
     window.excelSyncEnsureHandle = async function (interactive = true) {
         if (!window.excelSyncSupported()) return null;
         let handle = await window.excelSyncGetHandle();
 
         if (handle) {
             try {
+                // Verifichiamo se il file esiste ancora sul disco
                 await handle.getFile();
-                const q = await handle.queryPermission({ mode: 'readwrite' });
+                // Verifichiamo il permesso di lettura/scrittura
+                let q = await handle.queryPermission({ mode: 'readwrite' });
                 if (q === 'granted') {
                     return handle;
                 }
-                if (q === 'denied') {
-                    console.warn('Permesso Excel precedentemente negato su questo handle: resetto IndexedDB per richiederlo di nuovo.');
-                    await idbSet(HANDLE_KEY, null);
-                    handle = null;
-                } else if (interactive) {
+                if (interactive) {
                     const req = await handle.requestPermission({ mode: 'readwrite' });
                     if (req === 'granted') {
                         return handle;
-                    } else {
-                        console.warn('Permesso di scrittura non concesso dall\'utente sull\'handle esistente: resetto handle.');
-                        await idbSet(HANDLE_KEY, null);
-                        handle = null;
                     }
+                    // Non cancelliamo l'handle se l'utente non ha acconsentito al prompt:
+                    // l'handle resta in IDB e potrà essere riautorizzato al prossimo salvataggio.
+                    return null;
                 } else {
                     return null;
                 }
             } catch (err) {
-                console.warn('Handle Excel non più accessibile o file spostato:', err);
-                handle = null;
-                try { await idbSet(HANDLE_KEY, null); } catch (e) {}
+                // Solo se il file è stato eliminato o spostato resettiamo l'handle da IndexedDB
+                if (err && (err.name === 'NotFoundError' || /not found/i.test(err.message || ''))) {
+                    console.warn('File Excel non trovato o spostato sul disco: resetto handle memorizzato.', err);
+                    try { await idbSet(HANDLE_KEY, null); } catch (e) {}
+                    handle = null;
+                } else {
+                    console.warn('Errore verifica handle esistente:', err);
+                }
             }
         }
 
-        // Se non abbiamo un handle valido e possiamo interagire (gesto utente attivo):
+        // Se non abbiamo un handle memorizzato e siamo in modalità interattiva (click utente):
         if (!handle && interactive) {
             try {
                 const [newHandle] = await window.showOpenFilePicker({
@@ -189,14 +195,10 @@
                     }]
                 });
                 if (newHandle) {
-                    let hasPerm = false;
                     try {
                         const q = await newHandle.queryPermission({ mode: 'readwrite' });
-                        if (q === 'granted') {
-                            hasPerm = true;
-                        } else {
-                            const r = await newHandle.requestPermission({ mode: 'readwrite' });
-                            hasPerm = (r === 'granted');
+                        if (q !== 'granted') {
+                            await newHandle.requestPermission({ mode: 'readwrite' });
                         }
                     } catch (pErr) {
                         console.warn('Richiesta permessi su nuovo handle:', pErr);
@@ -215,7 +217,7 @@
             }
         }
 
-        return null;
+        return handle || null;
     };
 
     window.excelSyncPrepare = async function () {
@@ -267,7 +269,6 @@
                     if (r === 'granted') {
                         writable = await handle.createWritable();
                     } else {
-                        await idbSet(HANDLE_KEY, null);
                         throw new Error('permesso di scrittura non autorizzato dal browser (autorizza la modifica quando richiesto)');
                     }
                 } else {
@@ -567,7 +568,6 @@
                     if (r === 'granted') {
                         writable = await handle.createWritable();
                     } else {
-                        await idbSet(HANDLE_KEY, null);
                         throw new Error('permesso di scrittura non concesso');
                     }
                 } else {
@@ -584,6 +584,7 @@
             return {
                 ok: false,
                 error: locked ? 'il file è aperto in Microsoft Excel: chiudilo per aggiornarlo' : (e && e.message ? e.message : String(e))
+            };
         }
     };
 
@@ -623,7 +624,7 @@
         if (res.ok) {
             if (res.written > 0) console.log(`Excel: aggiunte ${res.written} righe a ${res.fileName}`);
         } else {
-            alert(`Richiesta salvata, ma NON ancora aggiunta al file Excel: ${res.error}.\nLa riga resta in sospeso e verrà scritta al prossimo salvataggio o premendo il pulsante "Excel".`);
+            console.warn(`Excel non aggiornato: ${res.error}. La riga resta in sospeso.`);
         }
     };
 })();

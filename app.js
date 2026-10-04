@@ -1,4 +1,4 @@
-const APP_VERSION = "3.4.7";
+const APP_VERSION = "3.4.8";
 let isAdmin = false;
 let cachedVehicles = null;
 let cachedLocations = null;
@@ -4668,10 +4668,14 @@ window.showRepairSaveConfirmationBanner = function (filename, targetFolder = "Ca
     }
 
     let excelLine = '';
-    if (excelRes && !excelRes.skipped && !excelRes.notLinked) {
-        excelLine = excelRes.ok
-            ? `<div class="repair-banner-item"><i class="fa-solid fa-file-excel" style="color: #16a34a;"></i><span>Riga aggiunta a <strong>${excelRes.fileName || 'Excel'}</strong></span></div>`
-            : `<div class="repair-banner-item"><i class="fa-solid fa-triangle-exclamation" style="color: #d97706;"></i><span>Excel non aggiornato (riga in sospeso)</span></div>`;
+    if (excelRes && !excelRes.skipped) {
+        if (excelRes.ok) {
+            excelLine = `<div class="repair-banner-item"><i class="fa-solid fa-file-excel" style="color: #16a34a;"></i><span>Riga aggiunta a <strong>${excelRes.fileName || 'ORGANIZZAZIONE RICHIESTE MEZZI.xlsx'}</strong></span></div>`;
+        } else if (excelRes.notLinked) {
+            excelLine = `<div class="repair-banner-item"><i class="fa-solid fa-triangle-exclamation" style="color: #d97706;"></i><span>File Excel non selezionato</span></div>`;
+        } else {
+            excelLine = `<div class="repair-banner-item"><i class="fa-solid fa-triangle-exclamation" style="color: #d97706;"></i><span>Excel: ${excelRes.error || 'non aggiornato (in sospeso)'}</span></div>`;
+        }
     }
 
     const banner = document.createElement('div');
@@ -4736,11 +4740,6 @@ window.closeRepairSaveBanner = function () {
 
 window.generateAndDownloadRepairDocx = async function () {
     try {
-        // Permesso di scrittura sul file Excel collegato: va richiesto subito, finché il click è "attivo"
-        if (window.excelSyncPrepare) {
-            try { await window.excelSyncPrepare(); } catch (e) { console.warn('Excel sync prepare:', e); }
-        }
-
         // Veicolo della card corrente
         const vehicleId = window.currentRepairVehicleId || currentOpenedVehicleId;
         const vehicle = (cachedVehicles && cachedVehicles.find(v => v.id === vehicleId)) || (vehicleId ? await store.getVehicleById(vehicleId) : null);
@@ -4757,13 +4756,6 @@ window.generateAndDownloadRepairDocx = async function () {
         } else {
             const displayElem = document.getElementById('repair-vehicle-display');
             if (displayElem) targa = displayElem.value.trim();
-        }
-
-        // Copia nella clipboard il testo della cella con i dati del mezzo
-        const vehicleDisplayElem = document.getElementById('repair-vehicle-display');
-        const vehicleTextToCopy = vehicleDisplayElem ? vehicleDisplayElem.value.trim() : (targa || '');
-        if (vehicleTextToCopy) {
-            await window.copyTextToClipboard(vehicleTextToCopy);
         }
 
         // Valori campi informativi
@@ -4850,7 +4842,7 @@ window.generateAndDownloadRepairDocx = async function () {
             filename: filename
         };
 
-        // Sincronizza subito con il foglio Excel locale sul Desktop (finché il gesto utente è fresco)
+        // 1. Sincronizzazione immediata con il foglio Excel locale sul Desktop (nel contesto del click utente)
         let excelRes = null;
         if (window.excelSyncAppendRequest) {
             try {
@@ -4859,6 +4851,13 @@ window.generateAndDownloadRepairDocx = async function () {
                 console.error('Errore sincronizzazione Excel:', e);
                 excelRes = { ok: false, error: e.message };
             }
+        }
+
+        // 2. Copia nella clipboard il testo della cella con i dati del mezzo
+        const vehicleDisplayElem = document.getElementById('repair-vehicle-display');
+        const vehicleTextToCopy = vehicleDisplayElem ? vehicleDisplayElem.value.trim() : (targa || '');
+        if (vehicleTextToCopy) {
+            try { await window.copyTextToClipboard(vehicleTextToCopy); } catch (e) {}
         }
 
         // Salva la richiesta nello storico del veicolo su Firestore (senza forzare il download automatico del file Word)
