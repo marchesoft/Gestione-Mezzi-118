@@ -1,16 +1,16 @@
-# Regole e Contesto del Progetto (v3.5.1)
+# Regole e Contesto del Progetto (v3.5.2)
 
-Questo file definisce le linee guida e lo stato di salvataggio del progetto per garantire la coerenza con la versione **3.5.1**.
+Questo file definisce le linee guida e lo stato di salvataggio del progetto per garantire la coerenza con la versione **3.5.2**.
 
-## Stato di Riferimento (v3.5.1)
+## Stato di Riferimento (v3.5.2)
 
 1. **Gestione Versioni**:
-   - La versione attuale di riferimento è **3.5.1**.
-   - Qualsiasi modifica futura richiede l'avanzamento della versione (es. `3.5.2` o successive) in `app.js` (`const APP_VERSION = "X.Y.Z";`) e in `index.html` (header).
+   - La versione attuale di riferimento è **3.5.2**.
+   - Qualsiasi modifica futura richiede l'avanzamento della versione (es. `3.5.3` o successive) in `app.js` (`const APP_VERSION = "X.Y.Z";`) e in `index.html` (header).
 
 2. **Bypass della Cache (Cache-Busting)**:
    - I file `app.js` e `style.css` sono importati in `index.html` con il parametro di versione `?v=X.Y.Z` per forzare il caricamento immediato degli aggiornamenti sui dispositivi client (specialmente mobili).
-   - Esempio: `<link rel="stylesheet" href="style.css?v=3.5.1">` e `<script src="app.js?v=3.5.1"></script>`.
+   - Esempio: `<link rel="stylesheet" href="style.css?v=3.5.2">` e `<script src="app.js?v=3.5.2"></script>`.
    - Ad ogni cambio di codice, aggiornare questa stringa con la nuova versione dell'applicazione.
 
 3. **Integrazione Git e GitHub**:
@@ -50,7 +50,7 @@ Questo file definisce le linee guida e lo stato di salvataggio del progetto per 
      - In tutti gli altri mezzi non Alea è presente **ESCLUSIVAMENTE lo stampato standard 118** (banner blu dedicato, pulsante *Salva*, nessun selettore Alea consentito).
    - **Nome del File Scaricato**: Il file generato viene salvato includendo **prima la sigla del mezzo e poi la targa** (es. `richiesta riparazione <SIGLA> <TARGA>.docx`), sia al momento della creazione che nei successivi download dallo storico.
    - La generazione avviene interamente client-side tramite `JSZip` e il template incorporato in `repair_template_base64.js` o `alea_template_base64.js`.
-   - **Storico Flotta nel Database**: Nella schermata "Gestione Database" è presente la scheda **Riparazioni** che elenca tutte le richieste dell'intera flotta con ricerca, download Word ed esportazione completa in formato Excel/CSV.
+   - **Storico Flotta nel Database**: Nella schermata "Gestione Database" è presente la scheda **Riparazioni** che elenca tutte le richieste dell'intera flotta con ricerca, download Word ed esportazione completa in formato Excel/CSV. (v3.5.2: Rimossa la colonna *Richiedente* dalla tabella per dare maggiore respiro alla colonna *Descrizione* dei lavori).
 
 8. **Richiesta Modulo Lavaggio ECHO 22 (FF 837 RS)**:
    - Registrata ed inserita nello storico richieste di riparazione dell'ambulanza Alea **ECHO 22 (targa FF 837 RS)** la richiesta di modulo lavaggio esterno per ricovero veicolo presso officina **CAVAGION** con data **29/01/2026**.

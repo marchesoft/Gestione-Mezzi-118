@@ -1,4 +1,4 @@
-const APP_VERSION = "3.5.1";
+const APP_VERSION = "3.5.2";
 let isAdmin = false;
 let cachedVehicles = null;
 let cachedLocations = null;
@@ -3538,12 +3538,11 @@ window.switchDataTable = async function (type) {
                                 <th class="col-shrink">Data</th>
                                 <th class="col-shrink">Tipologia</th>
                                 <th class="col-expand">Descrizione</th>
-                                <th class="col-shrink">Richiedente</th>
                                 <th class="col-actions">Azioni</th>
                             </tr>
                         </thead>
                         <tbody>
-                            ${data.length === 0 ? '<tr><td colspan="7" style="text-align:center; padding: 2rem; color: var(--text-secondary);">Nessuna richiesta di riparazione registrata.</td></tr>' : ''}
+                            ${data.length === 0 ? '<tr><td colspan="6" style="text-align:center; padding: 2rem; color: var(--text-secondary);">Nessuna richiesta di riparazione registrata.</td></tr>' : ''}
                             ${data.map(item => `
                                 <tr>
                                     <td class="col-shrink text-bold text-primary">
@@ -3554,7 +3553,6 @@ window.switchDataTable = async function (type) {
                                     <td class="col-shrink" style="white-space: nowrap; font-weight: 600;">${item.date || '-'}</td>
                                     <td class="col-shrink">${(item.types && item.types.length > 0) ? item.types.map(t => `<span style="background: #dbeafe; color: #1e40af; font-size: 0.75rem; font-weight: 600; padding: 0.2rem 0.5rem; border-radius: 4px; display: inline-block; margin: 0.1rem;">${t}</span>`).join('') : '-'}</td>
                                     <td class="col-expand" style="font-size: 0.85rem; white-space: pre-wrap;">${item.description || '-'}</td>
-                                    <td class="col-shrink" style="font-size: 0.85rem;"><strong>${item.driver || '-'}</strong><div style="font-size: 0.75rem; color: #64748b;">${[item.dept, item.phone].filter(Boolean).join(' • ')}</div></td>
                                     <td class="col-actions" style="white-space: nowrap;">
                                         <button onclick="downloadSavedRepairDocx('${item.vehicle_id}', '${item.id || ''}', ${item.req_index})" style="cursor:pointer; background:none; border:none; color:#2563eb; margin-right:0.5rem; font-size:1.1rem;" title="Scarica Word (.docx)"><i class="fa-solid fa-download"></i></button>
                                         ${isAdmin ? `<button onclick="deleteRepairRequest('${item.vehicle_id}', '${item.id || ''}', ${item.req_index})" style="cursor:pointer; background:none; border:none; color:var(--status-to-repair); font-size:1.1rem;" title="Elimina"><i class="fa-solid fa-trash"></i></button>` : ''}
