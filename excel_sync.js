@@ -1,5 +1,5 @@
 // =====================================================================
-// Sincronizzazione Richieste di Riparazione -> file Excel locale (v3.4.8)
+// Sincronizzazione Richieste di Riparazione -> file Excel locale (v3.4.9)
 // File di destinazione: "ORGANIZZAZIONE RICHIESTE MEZZI.xlsx" (Desktop)
 //
 // Usa la File System Access API (Chrome / Edge desktop): al salvataggio
@@ -188,6 +188,7 @@
                 const [newHandle] = await window.showOpenFilePicker({
                     id: 'gm118-excel',
                     startIn: 'desktop',
+                    suggestedName: 'ORGANIZZAZIONE RICHIESTE MEZZI.xlsx',
                     multiple: false,
                     types: [{
                         description: 'Cartella di lavoro Excel (ORGANIZZAZIONE RICHIESTE MEZZI.xlsx)',
