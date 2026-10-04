@@ -6,7 +6,7 @@ Questo file definisce le linee guida e lo stato di salvataggio del progetto per 
 
 1. **Gestione Versioni**:
    - La versione attuale di riferimento è **3.5.4**.
-   - Qualsiasi modifica futura richiede l'avanzamento della versione (es. `3.5.4` o successive) in `app.js` (`const APP_VERSION = "X.Y.Z";`) e in `index.html` (header).
+   - Qualsiasi modifica futura richiede l'avanzamento della versione (es. `3.5.5` o successive) in `app.js` (`const APP_VERSION = "X.Y.Z";`) e in `index.html` (header).
 
 2. **Bypass della Cache (Cache-Busting)**:
    - I file `app.js` e `style.css` sono importati in `index.html` con il parametro di versione `?v=X.Y.Z` per forzare il caricamento immediato degli aggiornamenti sui dispositivi client (specialmente mobili).
