@@ -1,16 +1,16 @@
-# Regole e Contesto del Progetto (v3.5.0)
+# Regole e Contesto del Progetto (v3.5.1)
 
-Questo file definisce le linee guida e lo stato di salvataggio del progetto per garantire la coerenza con la versione **3.5.0**.
+Questo file definisce le linee guida e lo stato di salvataggio del progetto per garantire la coerenza con la versione **3.5.1**.
 
-## Stato di Riferimento (v3.5.0)
+## Stato di Riferimento (v3.5.1)
 
 1. **Gestione Versioni**:
-   - La versione attuale di riferimento è **3.5.0**.
-   - Qualsiasi modifica futura richiede l'avanzamento della versione (es. `3.5.1` o successive) in `app.js` (`const APP_VERSION = "X.Y.Z";`) e in `index.html` (header).
+   - La versione attuale di riferimento è **3.5.1**.
+   - Qualsiasi modifica futura richiede l'avanzamento della versione (es. `3.5.2` o successive) in `app.js` (`const APP_VERSION = "X.Y.Z";`) e in `index.html` (header).
 
 2. **Bypass della Cache (Cache-Busting)**:
    - I file `app.js` e `style.css` sono importati in `index.html` con il parametro di versione `?v=X.Y.Z` per forzare il caricamento immediato degli aggiornamenti sui dispositivi client (specialmente mobili).
-   - Esempio: `<link rel="stylesheet" href="style.css?v=3.5.0">` e `<script src="app.js?v=3.5.0"></script>`.
+   - Esempio: `<link rel="stylesheet" href="style.css?v=3.5.1">` e `<script src="app.js?v=3.5.1"></script>`.
    - Ad ogni cambio di codice, aggiornare questa stringa con la nuova versione dell'applicazione.
 
 3. **Integrazione Git e GitHub**:
@@ -145,11 +145,18 @@ Questo file definisce le linee guida e lo stato di salvataggio del progetto per 
     - Il pallino giallo fluo del controllo mensile (`.monthly-check-dot`) posizionato sulla barra di stato della card veicolo è stato spostato maggiormente a sinistra verso il bordo (`left: 0.45rem` anziché `1.2rem`).
     - Questo garantisce una netta separazione visiva rispetto al testo centrato dello stato (es. "IN SERVIZIO", "DISPONIBILE"), evitando qualsiasi sovrapposizione o eccessiva vicinanza sia su desktop che su dispositivi mobili.
 
-19. **Sincronizzazione Richieste di Riparazione con File Excel Locale (v3.4.4 - v3.5.0)**:
+19. **Sincronizzazione Richieste di Riparazione con File Excel Locale (v3.4.4 - v3.5.1)**:
     - File di destinazione sul desktop: `ORGANIZZAZIONE RICHIESTE MEZZI.xlsx`.
     - Implementato il modulo `excel_sync.js` (tramite File System Access API di Chrome/Edge e JSZip).
-    - **Risoluzione `getFile` NotAllowedError (v3.5.0)**: Nel browser Chromium, qualsiasi chiamata a `handle.getFile()` su un handle memorizzato in IndexedDB fallisce con `NotAllowedError ("The request is not allowed by the user agent...")` se eseguita prima di aver verificato e richiesto i permessi di lettura/scrittura con gesto utente. In v3.5.0, la sequenza in `excelSyncEnsureHandle`, `excelSyncFlush` ed `excelSyncDeleteRequest` verifica e richiede preventivamente i permessi `readwrite` all'inizio del click, invocando `handle.getFile()` unicamente quando l'autorizzazione è stata effettivamente concessa. Se un vecchio handle memorizzato non è più autorizzabile, il sistema esegue un fallback pulito riaprendo `showOpenFilePicker`.
-    - **Funzionamento su qualsiasi PC Desktop (v3.4.9, v3.5.0)**: il sistema è completamente indipendente dal computer, dall'utente Windows e dal percorso su disco (`startIn: 'desktop'`). Quando l'applicazione web viene aperta su un altro computer PC:
+    - **Pannello di Controllo in Gestione Database (v3.5.1)**: Nella scheda **Riparazioni** del modale "Gestione Database" è integrato un pannello completo di stato e monitoraggio della sincronizzazione locale Desktop:
+      - Visualizza lo stato del collegamento (`Collegato e Attivo`, `Non collegato su questo PC` o `In attesa`), il nome del file e il numero di richieste pendenti in coda.
+      - Pulsante **Scrivi in Coda**: compare automaticamente se vi sono richieste in sospeso (es. salvate mentre il file era aperto in Excel) per forzare la sincronizzazione manuale immediata.
+      - Pulsante **Collega / Cambia File**: permette di collegare o cambiare il file Excel puntando al Desktop con un click preventivo senza dover emettere una nuova richiesta.
+      - Pulsante **Verifica Accesso**: esegue un test immediato di lettura e scrittura, visualizzando dimensione del file e data di ultima modifica.
+      - Pulsante **Scollega**: rimuove in modo pulito l'handle da IndexedDB con conferma dell'utente.
+      - Su dispositivi mobile/tablet mostra un messaggio discreto per chiarire che la sincronizzazione locale è riservata ai PC.
+    - **Risoluzione `getFile` NotAllowedError (v3.5.0)**: Nel browser Chromium, qualsiasi chiamata a `handle.getFile()` su un handle memorizzato in IndexedDB fallisce con `NotAllowedError` se eseguita prima di aver verificato e richiesto i permessi di lettura/scrittura con gesto utente. La sequenza verifica e richiede preventivamente i permessi `readwrite` all'inizio del click, invocando `handle.getFile()` unicamente quando l'autorizzazione è stata effettivamente concessa. Se un vecchio handle memorizzato non è più autorizzabile, il sistema esegue un fallback pulito riaprendo `showOpenFilePicker`.
+    - **Funzionamento su qualsiasi PC Desktop (v3.4.9, v3.5.0, v3.5.1)**: il sistema è completamente indipendente dal computer, dall'utente Windows e dal percorso su disco (`startIn: 'desktop'`). Quando l'applicazione web viene aperta su un altro computer PC:
       - Al primo salvataggio di una richiesta di riparazione, Windows apre automaticamente la finestra di dialogo posizionata direttamente sulla cartella **Desktop** di quella specifica macchina con pre-evidenziato il file `ORGANIZZAZIONE RICHIESTE MEZZI.xlsx` (`suggestedName`).
       - L'utente seleziona il file e autorizza la modifica una sola volta.
       - L'handle viene memorizzato permanentemente in IndexedDB nel browser di quel computer, rendendo tutte le future aggiunte ed eliminazioni totalmente trasparenti e automatiche su quel desktop.

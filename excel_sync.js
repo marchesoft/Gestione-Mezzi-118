@@ -1,5 +1,5 @@
 // =====================================================================
-// Sincronizzazione Richieste di Riparazione -> file Excel locale (v3.5.0)
+// Sincronizzazione Richieste di Riparazione -> file Excel locale (v3.5.1)
 // File di destinazione: "ORGANIZZAZIONE RICHIESTE MEZZI.xlsx" (Desktop)
 //
 // Usa la File System Access API (Chrome / Edge desktop): al salvataggio
@@ -631,6 +631,144 @@
             if (res.written > 0) console.log(`Excel: aggiunte ${res.written} righe a ${res.fileName}`);
         } else {
             console.warn(`Excel non aggiornato: ${res.error}. La riga resta in sospeso.`);
+        }
+    };
+
+    // ---------- Pannello di Gestione Sincronizzazione in Gestione Database (v3.5.1) ----------
+    window.renderExcelSyncPanel = async function () {
+        const box = document.getElementById('excel-sync-mgmt-container');
+        if (!box) return;
+
+        if (!window.excelSyncSupported || !window.excelSyncSupported()) {
+            const isMob = window.isMobileDevice && window.isMobileDevice();
+            box.innerHTML = `
+                <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 0.65rem; padding: 0.75rem 1rem; display: flex; align-items: center; gap: 0.75rem; font-size: 0.82rem; color: #64748b;">
+                    <i class="fa-solid fa-laptop" style="color: #94a3b8; font-size: 1.1rem;"></i>
+                    <span>${isMob ? 'Sincronizzazione Excel: attiva esclusivamente su computer PC Desktop (File System Access API). Da smartphone e tablet le richieste vengono salvate normalmente sul database cloud Firestore e scaricabili in Word.' : 'Browser non compatibile con la File System Access API: usa Chrome o Edge su PC per la sincronizzazione diretta con il file Excel sul Desktop.'}</span>
+                </div>
+            `;
+            return;
+        }
+
+        const handle = await window.excelSyncGetHandle();
+        const pendingCount = window.excelSyncPendingCount ? window.excelSyncPendingCount() : 0;
+
+        let statusBadge = '';
+        let statusDesc = '';
+        let statusBorder = '#cbd5e1';
+        let statusBg = '#ffffff';
+
+        if (handle) {
+            statusBorder = pendingCount > 0 ? '#fde68a' : '#86efac';
+            statusBg = pendingCount > 0 ? '#fffbeb' : '#f0fdf4';
+            statusBadge = pendingCount > 0
+                ? `<span style="background: #fef3c7; color: #92400e; font-size: 0.75rem; font-weight: 700; padding: 0.2rem 0.6rem; border-radius: 9999px; border: 1px solid #fde68a; display: inline-flex; align-items: center; gap: 0.35rem;"><i class="fa-solid fa-triangle-exclamation"></i> ${pendingCount} in attesa</span>`
+                : `<span style="background: #dcfce7; color: #166534; font-size: 0.75rem; font-weight: 700; padding: 0.2rem 0.6rem; border-radius: 9999px; border: 1px solid #86efac; display: inline-flex; align-items: center; gap: 0.35rem;"><i class="fa-solid fa-circle-check"></i> Collegato e Attivo</span>`;
+            statusDesc = `File collegato: <strong style="color: #0f172a;">${handle.name}</strong> sul Desktop di questo PC. ${pendingCount > 0 ? `<span style="color: #b45309; font-weight: 600;">(${pendingCount} richiesta/e salvate non ancora scritte nel file Excel).</span>` : 'Tutte le richieste sono allineate regolarmente.'}`;
+        } else {
+            statusBorder = '#e2e8f0';
+            statusBg = '#f8fafc';
+            statusBadge = `<span style="background: #f1f5f9; color: #475569; font-size: 0.75rem; font-weight: 700; padding: 0.2rem 0.6rem; border-radius: 9999px; border: 1px solid #cbd5e1; display: inline-flex; align-items: center; gap: 0.35rem;"><i class="fa-solid fa-link-slash"></i> Non collegato su questo PC</span>`;
+            statusDesc = `Nessun file Excel collegato sul Desktop di questa postazione. Verrà collegato in automatico al primo salvataggio di una riparazione, oppure puoi collegarlo subito qui a fianco.`;
+        }
+
+        box.innerHTML = `
+            <div style="background: ${statusBg}; border: 1px solid ${statusBorder}; border-radius: 0.75rem; padding: 0.85rem 1.15rem; display: flex; justify-content: space-between; align-items: center; gap: 1rem; flex-wrap: wrap;">
+                <div style="display: flex; align-items: center; gap: 0.85rem; min-width: 260px; flex: 1;">
+                    <div style="width: 40px; height: 40px; border-radius: 8px; background: #ecfdf5; border: 1px solid #a7f3d0; display: flex; align-items: center; justify-content: center; color: #059669; font-size: 1.3rem; flex-shrink: 0;">
+                        <i class="fa-solid fa-file-excel"></i>
+                    </div>
+                    <div>
+                        <div style="display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;">
+                            <span style="font-weight: 700; font-size: 0.92rem; color: #1e293b;">Sincronizzazione Desktop: ORGANIZZAZIONE RICHIESTE MEZZI.xlsx</span>
+                            ${statusBadge}
+                        </div>
+                        <div style="font-size: 0.8rem; color: #64748b; margin-top: 0.2rem;">
+                            ${statusDesc}
+                        </div>
+                    </div>
+                </div>
+                <div style="display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;">
+                    ${pendingCount > 0 ? `
+                    <button type="button" class="btn" onclick="excelSyncFlushManual()" style="background: #d97706; color: white; padding: 0.45rem 0.85rem; font-size: 0.82rem; border: none; border-radius: 0.4rem; cursor: pointer; display: flex; align-items: center; gap: 0.4rem; font-weight: 600;" title="Scrive le righe in coda nel foglio Excel">
+                        <i class="fa-solid fa-rotate"></i> Scrivi ${pendingCount} in Coda
+                    </button>` : ''}
+                    <button type="button" class="btn" onclick="excelSyncConnectManual()" style="background: #059669; color: white; padding: 0.45rem 0.85rem; font-size: 0.82rem; border: none; border-radius: 0.4rem; cursor: pointer; display: flex; align-items: center; gap: 0.4rem; font-weight: 600;">
+                        <i class="fa-solid fa-folder-open"></i> ${handle ? 'Cambia / Ricollega File' : 'Collega File Excel'}
+                    </button>
+                    ${handle ? `
+                    <button type="button" class="btn" onclick="excelSyncTestAccess()" style="background: #ffffff; color: #334155; border: 1px solid #cbd5e1; padding: 0.45rem 0.8rem; font-size: 0.82rem; border-radius: 0.4rem; cursor: pointer; display: flex; align-items: center; gap: 0.4rem;" title="Verifica permessi e accessibilità del file">
+                        <i class="fa-solid fa-check-double"></i> Verifica Accesso
+                    </button>
+                    <button type="button" class="btn" onclick="excelSyncDisconnectManual()" style="background: #fff1f2; color: #be123c; border: 1px solid #fecdd3; padding: 0.45rem 0.8rem; font-size: 0.82rem; border-radius: 0.4rem; cursor: pointer; display: flex; align-items: center; gap: 0.4rem;" title="Rimuove il collegamento memorizzato in questo browser">
+                        <i class="fa-solid fa-link-slash"></i> Scollega
+                    </button>` : ''}
+                </div>
+            </div>
+        `;
+    };
+
+    window.excelSyncConnectManual = async function () {
+        try {
+            const handle = await window.excelSyncEnsureHandle(true);
+            if (handle) {
+                if (window.renderExcelSyncPanel) await window.renderExcelSyncPanel();
+                alert(`File "${handle.name}" collegato con successo su questo computer!`);
+            }
+        } catch (e) {
+            console.error('Errore collegamento manuale Excel:', e);
+            alert('Errore durante il collegamento: ' + (e && e.message ? e.message : e));
+        }
+    };
+
+    window.excelSyncFlushManual = async function () {
+        try {
+            const res = await window.excelSyncFlush();
+            if (window.renderExcelSyncPanel) await window.renderExcelSyncPanel();
+            if (res && res.ok) {
+                alert(`Sincronizzazione completata! Scritte ${res.written} richiesta/e nel file ${res.fileName || 'Excel'}.`);
+            } else if (res) {
+                alert(`Attenzione: ${res.error || 'impossibile aggiornare il file'}`);
+            }
+        } catch (e) {
+            console.error('Errore sincronizzazione manuale:', e);
+            alert('Errore sincronizzazione: ' + (e && e.message ? e.message : e));
+        }
+    };
+
+    window.excelSyncTestAccess = async function () {
+        try {
+            const handle = await window.excelSyncGetHandle();
+            if (!handle) {
+                alert('Nessun file Excel collegato.');
+                return;
+            }
+            let q = await handle.queryPermission({ mode: 'readwrite' });
+            if (q !== 'granted') {
+                q = await handle.requestPermission({ mode: 'readwrite' });
+            }
+            if (q === 'granted') {
+                const file = await handle.getFile();
+                alert(`Collegamento funzionante!\n\nFile: ${handle.name}\nDimensione: ${(file.size / 1024).toFixed(1)} KB\nUltima modifica: ${new Date(file.lastModified).toLocaleString('it-IT')}\nPermesso scrittura: Concesso.`);
+            } else {
+                alert(`Permesso di scrittura non concesso (stato: ${q}).`);
+            }
+            if (window.renderExcelSyncPanel) await window.renderExcelSyncPanel();
+        } catch (e) {
+            console.error('Errore test accesso Excel:', e);
+            alert('Errore durante la verifica del file: ' + (e && e.message ? e.message : e));
+        }
+    };
+
+    window.excelSyncDisconnectManual = async function () {
+        if (!confirm('Sei sicuro di voler scollegare il file Excel da questo computer? Potrai ricollegarlo in qualsiasi momento.')) return;
+        try {
+            await window.excelSyncReset();
+            if (window.renderExcelSyncPanel) await window.renderExcelSyncPanel();
+            alert('Collegamento rimosso. Il file sul disco non è stato modificato.');
+        } catch (e) {
+            console.error('Errore scollegamento Excel:', e);
+            alert('Errore durante lo scollegamento: ' + e.message);
         }
     };
 })();

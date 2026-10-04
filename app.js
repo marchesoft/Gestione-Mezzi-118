@@ -1,4 +1,4 @@
-const APP_VERSION = "3.5.0";
+const APP_VERSION = "3.5.1";
 let isAdmin = false;
 let cachedVehicles = null;
 let cachedLocations = null;
@@ -3528,6 +3528,7 @@ window.switchDataTable = async function (type) {
                         <i class="fa-solid fa-file-excel"></i> Esporta Excel
                     </button>
                 </div>
+                <div id="excel-sync-mgmt-container" style="margin-bottom: 1.25rem;"></div>
                 <div style="overflow-x: auto;">
                     <table class="mgmt-table">
                         <thead>
@@ -3899,6 +3900,10 @@ window.switchDataTable = async function (type) {
     }
 
     container.innerHTML = html;
+
+    if (type === 'riparazioni' && window.renderExcelSyncPanel) {
+        window.renderExcelSyncPanel();
+    }
 }
 
 window.toggleWorkshopRow = function (vehicleId) {
