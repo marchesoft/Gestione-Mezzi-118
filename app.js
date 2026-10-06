@@ -1,4 +1,4 @@
-const APP_VERSION = "3.5.5";
+const APP_VERSION = "3.5.6";
 let isAdmin = false;
 let cachedVehicles = null;
 let cachedLocations = null;
@@ -4194,15 +4194,13 @@ window.openRepairRequestModal = async function (vehicleId) {
 
 window.handleWashOptionChange = function (type) {
     const chkEsterno = document.getElementById('repair-chk-lavaggio-esterno');
-    const chkCompleto = document.getElementById('repair-chk-lavaggio-completo');
     const descEl = document.getElementById('repair-description');
     if (!descEl) return;
 
     const textEsterno = "AUTOLAVAGGIO ESTERNO IP VIA CANAPA";
-    const textCompleto = "AUTOLAVAGGIO INTERNO ED ESTERNO IP VIA CANAPA";
     const allWashTexts = [
         textEsterno,
-        textCompleto,
+        "AUTOLAVAGGIO INTERNO ED ESTERNO IP VIA CANAPA",
         "AUTOLAVAGGIO ESTERNO",
         "AUTOLAVAGGIO INTERNO ED ESTERNO",
         "AUTOLAVAGGIO INTERNO ED ESTERNO PIÙ SANIFICAZIONE IP VIA CANAPA",
@@ -4222,20 +4220,10 @@ window.handleWashOptionChange = function (type) {
 
     let baseText = cleanAllWashTexts(descEl.value);
 
-    if (type === 'esterno') {
-        if (chkEsterno && chkEsterno.checked) {
-            if (chkCompleto) chkCompleto.checked = false;
-            descEl.value = textEsterno + (baseText ? '\n' + baseText : '');
-        } else {
-            descEl.value = baseText;
-        }
-    } else if (type === 'completo') {
-        if (chkCompleto && chkCompleto.checked) {
-            if (chkEsterno) chkEsterno.checked = false;
-            descEl.value = textCompleto + (baseText ? '\n' + baseText : '');
-        } else {
-            descEl.value = baseText;
-        }
+    if (chkEsterno && chkEsterno.checked) {
+        descEl.value = textEsterno + (baseText ? '\n' + baseText : '');
+    } else {
+        descEl.value = baseText;
     }
 };
 
@@ -4244,7 +4232,6 @@ window.handleWashOptionChange = function (type) {
         document.getElementById('repair-chk-gommista').checked = false;
         document.getElementById('repair-chk-carrozzeria').checked = false;
         if (document.getElementById('repair-chk-lavaggio-esterno')) document.getElementById('repair-chk-lavaggio-esterno').checked = false;
-        if (document.getElementById('repair-chk-lavaggio-completo')) document.getElementById('repair-chk-lavaggio-completo').checked = false;
         document.getElementById('repair-chk-sinistro').checked = false;
         document.getElementById('repair-chk-soccorso').checked = false;
 
@@ -4786,18 +4773,15 @@ window.generateAndDownloadRepairDocx = async function () {
         const chkGommista = document.getElementById('repair-chk-gommista') ? document.getElementById('repair-chk-gommista').checked : false;
         const chkCarrozzeria = document.getElementById('repair-chk-carrozzeria') ? document.getElementById('repair-chk-carrozzeria').checked : false;
         const chkLavaggioEsterno = document.getElementById('repair-chk-lavaggio-esterno') ? document.getElementById('repair-chk-lavaggio-esterno').checked : false;
-        const chkLavaggioCompleto = document.getElementById('repair-chk-lavaggio-completo') ? document.getElementById('repair-chk-lavaggio-completo').checked : false;
         const chkSinistro = document.getElementById('repair-chk-sinistro') ? document.getElementById('repair-chk-sinistro').checked : false;
         const chkSoccorso = document.getElementById('repair-chk-soccorso') ? document.getElementById('repair-chk-soccorso').checked : false;
-
-        const isAnyLavaggio = chkLavaggioEsterno || chkLavaggioCompleto;
 
         // Nel template Word originale: Tabella 1 ha 6 caselle (0: Meccanica, 1: Gommista, 2: Carrozzeria, 3: Autolavaggio, 4: Sinistro, 5: Soccorso)
         const checks = [
             chkMeccanica,
             chkGommista,
             chkCarrozzeria,
-            isAnyLavaggio,
+            chkLavaggioEsterno,
             chkSinistro,
             chkSoccorso
         ];
@@ -4807,15 +4791,12 @@ window.generateAndDownloadRepairDocx = async function () {
         if (chkGommista) selectedTypes.push('Gommista');
         if (chkCarrozzeria) selectedTypes.push('Carrozzeria');
         if (chkLavaggioEsterno) selectedTypes.push('Autolavaggio Esterno');
-        if (chkLavaggioCompleto) selectedTypes.push('Autolavaggio Interno ed Esterno');
         if (chkSinistro) selectedTypes.push('Sinistro');
         if (chkSoccorso) selectedTypes.push('Soccorso Stradale');
 
         let descRaw = document.getElementById('repair-description').value.trim();
         if (chkLavaggioEsterno && !descRaw.toUpperCase().includes('AUTOLAVAGGIO ESTERNO') && !descRaw.toUpperCase().includes('LAVAGGIO ESTERNO')) {
             descRaw = 'AUTOLAVAGGIO ESTERNO IP VIA CANAPA' + (descRaw ? '\n' + descRaw : '');
-        } else if (chkLavaggioCompleto && !descRaw.toUpperCase().includes('AUTOLAVAGGIO INTERNO') && !descRaw.toUpperCase().includes('LAVAGGIO INTERNO') && !descRaw.toUpperCase().includes('INTERNO ED ESTERNO')) {
-            descRaw = 'AUTOLAVAGGIO INTERNO ED ESTERNO IP VIA CANAPA' + (descRaw ? '\n' + descRaw : '');
         }
 
         let filenameInput = (document.getElementById('repair-filename').value || '').trim();
