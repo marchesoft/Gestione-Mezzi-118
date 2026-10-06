@@ -1,4 +1,4 @@
-const APP_VERSION = "3.5.4";
+const APP_VERSION = "3.5.5";
 let isAdmin = false;
 let cachedVehicles = null;
 let cachedLocations = null;
@@ -5401,11 +5401,9 @@ window.openWashModal = async function (vehicleId) {
         const dateElem = document.getElementById('wash-date');
         if (dateElem) dateElem.value = getLocalISODate();
 
-        // Selezione predefinita: LAVAGGIO ESTERNO
-        const radEsterno = document.getElementById('wash-type-esterno');
-        if (radEsterno) radEsterno.checked = true;
-        const radCompleto = document.getElementById('wash-type-completo');
-        if (radCompleto) radCompleto.checked = false;
+        // Tipologia fissa automatica: LAVAGGIO ESTERNO
+        const typeElem = document.getElementById('wash-type-display');
+        if (typeElem) typeElem.value = 'LAVAGGIO ESTERNO';
 
         const driverElem = document.getElementById('wash-driver');
         if (driverElem) driverElem.value = 'MARSILI PAOLO – GAMBERONI FEDERICO – MARCHESINI LUCA';
@@ -5479,8 +5477,8 @@ window.printWashModule = async function () {
         const emailElem = document.getElementById('wash-email');
         const email = (emailElem && emailElem.value ? emailElem.value.trim() : 'logistica118fe@ausl.fe.it');
 
-        const isCompleto = document.getElementById('wash-type-completo') && document.getElementById('wash-type-completo').checked;
-        const description = isCompleto ? 'LAVAGGIO ESTERNO E INTERNO' : 'LAVAGGIO ESTERNO';
+        // Tipologia fissa automatica: LAVAGGIO ESTERNO
+        const description = 'LAVAGGIO ESTERNO';
 
         const dParts = dateVal.split('/');
         const day = (dParts[0] || '29').padStart(2, '0');
@@ -5739,9 +5737,8 @@ window.generateAndDownloadWashDocx = async function () {
         const phone = (document.getElementById('wash-phone').value || '').trim();
         const email = (document.getElementById('wash-email').value || '').trim();
 
-        // Tipologia di intervento: esclusivamente l'opzione selezionata tra le 2 disponibili
-        const isCompleto = document.getElementById('wash-type-completo') && document.getElementById('wash-type-completo').checked;
-        const description = isCompleto ? 'LAVAGGIO ESTERNO E INTERNO' : 'LAVAGGIO ESTERNO';
+        // Tipologia fissa automatica: LAVAGGIO ESTERNO
+        const description = 'LAVAGGIO ESTERNO';
 
         let filenameInput = (document.getElementById('wash-filename').value || '').trim();
         let filename = filenameInput || ('modulo lavaggio ' + (vehicle ? `${vehicle.sigla || ''} ${vehicle.plate || ''}`.trim() : '')).trim();
