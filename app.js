@@ -1,4 +1,4 @@
-const APP_VERSION = "3.5.6";
+const APP_VERSION = "3.5.7";
 let isAdmin = false;
 let cachedVehicles = null;
 let cachedLocations = null;
@@ -4197,14 +4197,17 @@ window.handleWashOptionChange = function (type) {
     const descEl = document.getElementById('repair-description');
     if (!descEl) return;
 
-    const textEsterno = "AUTOLAVAGGIO ESTERNO IP VIA CANAPA";
+    const textEsterno = "LAVAGGIO ESTERNO E INTERNO GUIDA";
     const allWashTexts = [
         textEsterno,
+        "Lavaggio esterno e interno guida",
+        "AUTOLAVAGGIO ESTERNO IP VIA CANAPA",
         "AUTOLAVAGGIO INTERNO ED ESTERNO IP VIA CANAPA",
         "AUTOLAVAGGIO ESTERNO",
         "AUTOLAVAGGIO INTERNO ED ESTERNO",
         "AUTOLAVAGGIO INTERNO ED ESTERNO PIÙ SANIFICAZIONE IP VIA CANAPA",
-        "AUTOLAVAGGIO INTERNO ED ESTERNO PIÙ SANIFICAZIONE"
+        "AUTOLAVAGGIO INTERNO ED ESTERNO PIÙ SANIFICAZIONE",
+        "LAVAGGIO ESTERNO"
     ];
 
     const cleanAllWashTexts = (str) => {
@@ -4790,13 +4793,13 @@ window.generateAndDownloadRepairDocx = async function () {
         if (chkMeccanica) selectedTypes.push('Meccanica / Elettrauto');
         if (chkGommista) selectedTypes.push('Gommista');
         if (chkCarrozzeria) selectedTypes.push('Carrozzeria');
-        if (chkLavaggioEsterno) selectedTypes.push('Autolavaggio Esterno');
+        if (chkLavaggioEsterno) selectedTypes.push('Lavaggio esterno e interno guida');
         if (chkSinistro) selectedTypes.push('Sinistro');
         if (chkSoccorso) selectedTypes.push('Soccorso Stradale');
 
         let descRaw = document.getElementById('repair-description').value.trim();
-        if (chkLavaggioEsterno && !descRaw.toUpperCase().includes('AUTOLAVAGGIO ESTERNO') && !descRaw.toUpperCase().includes('LAVAGGIO ESTERNO')) {
-            descRaw = 'AUTOLAVAGGIO ESTERNO IP VIA CANAPA' + (descRaw ? '\n' + descRaw : '');
+        if (chkLavaggioEsterno && !descRaw.toUpperCase().includes('LAVAGGIO ESTERNO E INTERNO GUIDA') && !descRaw.toUpperCase().includes('LAVAGGIO ESTERNO')) {
+            descRaw = 'LAVAGGIO ESTERNO E INTERNO GUIDA' + (descRaw ? '\n' + descRaw : '');
         }
 
         let filenameInput = (document.getElementById('repair-filename').value || '').trim();
