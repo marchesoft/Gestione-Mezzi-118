@@ -1,4 +1,4 @@
-const APP_VERSION = "3.5.7";
+const APP_VERSION = "3.5.8";
 let isAdmin = false;
 let cachedVehicles = null;
 let cachedLocations = null;
@@ -5242,8 +5242,8 @@ window.createWashDocxBlob = async function (data) {
         }
     }
 
-    // 5. Popola Intervento (LAVAGGIO ESTERNO oppure LAVAGGIO ESTERNO E INTERNO)
-    const washDesc = (data.description || 'LAVAGGIO ESTERNO').trim();
+    // 5. Popola Intervento (LAVAGGIO ESTERNO E INTERNO GUIDA)
+    const washDesc = (data.description || 'LAVAGGIO ESTERNO E INTERNO GUIDA').trim();
     for (let i = 0; i < paragraphs.length; i++) {
         const p = paragraphs[i];
         const tNodes = p.getElementsByTagNameNS ? p.getElementsByTagNameNS(nsW, "t") : p.getElementsByTagName("w:t");
@@ -5254,7 +5254,7 @@ window.createWashDocxBlob = async function (data) {
                 if (tNodes[j].textContent.includes("LAVAGGIO ESTERNO") || tNodes[j].textContent.includes("LAVAGGIO")) {
                     tNodes[j].textContent = washDesc;
                     for (let k = j + 1; k < tNodes.length; k++) {
-                        if (tNodes[k].textContent.trim().startsWith("ESTERNO") || tNodes[k].textContent.trim().startsWith("SANIFICAZIONE") || tNodes[k].textContent.trim().startsWith("INTERNO")) {
+                        if (tNodes[k].textContent.trim().startsWith("ESTERNO") || tNodes[k].textContent.trim().startsWith("SANIFICAZIONE") || tNodes[k].textContent.trim().startsWith("INTERNO") || tNodes[k].textContent.trim().startsWith("GUIDA")) {
                             tNodes[k].textContent = "";
                         }
                     }
@@ -5385,9 +5385,9 @@ window.openWashModal = async function (vehicleId) {
         const dateElem = document.getElementById('wash-date');
         if (dateElem) dateElem.value = getLocalISODate();
 
-        // Tipologia fissa automatica: LAVAGGIO ESTERNO
+        // Tipologia fissa automatica: LAVAGGIO ESTERNO E INTERNO GUIDA
         const typeElem = document.getElementById('wash-type-display');
-        if (typeElem) typeElem.value = 'LAVAGGIO ESTERNO';
+        if (typeElem) typeElem.value = 'LAVAGGIO ESTERNO E INTERNO GUIDA';
 
         const driverElem = document.getElementById('wash-driver');
         if (driverElem) driverElem.value = 'MARSILI PAOLO – GAMBERONI FEDERICO – MARCHESINI LUCA';
@@ -5461,8 +5461,8 @@ window.printWashModule = async function () {
         const emailElem = document.getElementById('wash-email');
         const email = (emailElem && emailElem.value ? emailElem.value.trim() : 'logistica118fe@ausl.fe.it');
 
-        // Tipologia fissa automatica: LAVAGGIO ESTERNO
-        const description = 'LAVAGGIO ESTERNO';
+        // Tipologia fissa automatica: LAVAGGIO ESTERNO E INTERNO GUIDA
+        const description = (document.getElementById('wash-type-display') ? document.getElementById('wash-type-display').value : 'LAVAGGIO ESTERNO E INTERNO GUIDA') || 'LAVAGGIO ESTERNO E INTERNO GUIDA';
 
         const dParts = dateVal.split('/');
         const day = (dParts[0] || '29').padStart(2, '0');
@@ -5721,8 +5721,8 @@ window.generateAndDownloadWashDocx = async function () {
         const phone = (document.getElementById('wash-phone').value || '').trim();
         const email = (document.getElementById('wash-email').value || '').trim();
 
-        // Tipologia fissa automatica: LAVAGGIO ESTERNO
-        const description = 'LAVAGGIO ESTERNO';
+        // Tipologia fissa automatica: LAVAGGIO ESTERNO E INTERNO GUIDA
+        const description = (document.getElementById('wash-type-display') ? document.getElementById('wash-type-display').value : 'LAVAGGIO ESTERNO E INTERNO GUIDA') || 'LAVAGGIO ESTERNO E INTERNO GUIDA';
 
         let filenameInput = (document.getElementById('wash-filename').value || '').trim();
         let filename = filenameInput || ('modulo lavaggio ' + (vehicle ? `${vehicle.sigla || ''} ${vehicle.plate || ''}`.trim() : '')).trim();

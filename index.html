@@ -25,7 +25,7 @@
     <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <!-- App Styles -->
-    <link rel="stylesheet" href="style.css?v=3.5.7">
+    <link rel="stylesheet" href="style.css?v=3.5.8">
 </head>
 
 <body>
@@ -55,7 +55,7 @@
                             <span class="desktop-text">VEICOLI IN GESTIONE 118 DI FERRARA</span>
                             <span class="mobile-text">VEICOLI IN GESTIONE</span>
                             <span id="app-version-display"
-                                style="font-size: 0.8rem; font-weight: 400; opacity: 0.8; margin-left: 0.5rem; vertical-align: middle; text-transform: none;">v 3.5.7</span>
+                                style="font-size: 0.8rem; font-weight: 400; opacity: 0.8; margin-left: 0.5rem; vertical-align: middle; text-transform: none;">v 3.5.8</span>
                         </h3>
                     </div>
                     <div class="action-buttons">
@@ -931,7 +931,7 @@
                     </div>
                     <div>
                         <div style="display: flex; align-items: center; gap: 0.6rem;">
-                            <h2 class="modal-title-mgmt" style="font-size: 1.25rem; color: #0e7490; margin: 0; font-weight: 800;">Modulo Lavaggio Esterno</h2>
+                            <h2 class="modal-title-mgmt" style="font-size: 1.25rem; color: #0e7490; margin: 0; font-weight: 800;">Modulo Lavaggio</h2>
                             <span style="font-size: 0.72rem; padding: 0.2rem 0.55rem; border-radius: 9999px; background: #cffafe; color: #0891b2; font-weight: 700; text-transform: uppercase; letter-spacing: 0.03em;">Solo Stampato</span>
                         </div>
                         <span style="font-size: 0.85rem; color: #0891b2;">Compila i dettagli e stampa lo stampato di ricovero</span>
@@ -969,7 +969,7 @@
                     </div>
                 </div>
 
-                <!-- Tipologia Intervento di Lavaggio (Automatico: Lavaggio Esterno) -->
+                <!-- Tipologia Intervento di Lavaggio (Automatico: Lavaggio esterno e interno guida) -->
                 <div>
                     <h3 style="font-size: 0.85rem; text-transform: uppercase; color: #0891b2; font-weight: 700; margin-bottom: 0.5rem; letter-spacing: 0.05em; display: flex; align-items: center; gap: 0.5rem;">
                         <i class="fa-solid fa-soap"></i> Tipologia di Lavaggio
@@ -977,8 +977,8 @@
                     <div style="background: #f8fafc; padding: 0.75rem 1rem; border-radius: 0.5rem; border: 1px solid #e2e8f0; display: flex; align-items: center; justify-content: space-between;">
                         <div style="display: flex; align-items: center; gap: 0.65rem; font-weight: 700; font-size: 0.9rem; color: #0f172a;">
                             <i class="fa-solid fa-circle-check" style="color: #06b6d4; font-size: 1.15rem;"></i>
-                            <span>LAVAGGIO ESTERNO</span>
-                            <input type="hidden" id="wash-type-display" value="LAVAGGIO ESTERNO">
+                            <span>LAVAGGIO ESTERNO E INTERNO GUIDA</span>
+                            <input type="hidden" id="wash-type-display" value="LAVAGGIO ESTERNO E INTERNO GUIDA">
                         </div>
                         <span style="font-size: 0.72rem; padding: 0.25rem 0.6rem; border-radius: 9999px; background: #cffafe; color: #0891b2; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em;">Automatico</span>
                     </div>
@@ -1056,9 +1056,9 @@
 
     <script src="firebase-config.js"></script>
 
-    <script src="store.js?v=3.5.7"></script>
-    <script src="excel_sync.js?v=3.5.7"></script>
-    <script src="app.js?v=3.5.7"></script>
+    <script src="store.js?v=3.5.8"></script>
+    <script src="excel_sync.js?v=3.5.8"></script>
+    <script src="app.js?v=3.5.8"></script>
 </body>
 
 </html>
