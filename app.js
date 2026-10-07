@@ -1,4 +1,4 @@
-const APP_VERSION = "3.6.0";
+const APP_VERSION = "3.6.1";
 let isAdmin = false;
 let cachedVehicles = null;
 let cachedLocations = null;
@@ -4168,6 +4168,12 @@ window.handleWashOptionChange = function (type) {
     };
 
     if (chkEsterno && chkEsterno.checked) {
+        // Se c'erano note o modifiche prima di selezionare il lavaggio, memorizzale
+        const currentDesc = cleanAllWashTexts(descEl.value);
+        if (currentDesc) {
+            window.currentRepairVehicleNotes = currentDesc;
+        }
+
         // Deseleziona qualunque altra selezione
         const otherCheckboxIds = [
             'repair-chk-meccanica',
@@ -4184,7 +4190,30 @@ window.handleWashOptionChange = function (type) {
         // Nella descrizione metti solo il testo del lavaggio
         descEl.value = textEsterno;
     } else {
-        descEl.value = cleanAllWashTexts(descEl.value);
+        // Se deseleziono lavaggio, ripristina il testo delle problematiche note del mezzo
+        const vehicleId = window.currentRepairVehicleId || currentOpenedVehicleId;
+        const vehicle = cachedVehicles && cachedVehicles.find(v => v.id === vehicleId);
+        const originalNotes = (window.currentRepairVehicleNotes !== undefined && window.currentRepairVehicleNotes !== null)
+            ? window.currentRepairVehicleNotes
+            : ((vehicle && vehicle.notes) ? vehicle.notes : '');
+
+        descEl.value = originalNotes;
+
+        // Se nessuna opzione è selezionata, riseleziona la manutenzione meccanica di default
+        const anyOtherChecked = [
+            'repair-chk-meccanica',
+            'repair-chk-gommista',
+            'repair-chk-carrozzeria',
+            'repair-chk-sinistro',
+            'repair-chk-soccorso'
+        ].some(id => {
+            const el = document.getElementById(id);
+            return el && el.checked;
+        });
+        if (!anyOtherChecked) {
+            const meccEl = document.getElementById('repair-chk-meccanica');
+            if (meccEl) meccEl.checked = true;
+        }
     }
 };
 
@@ -4256,7 +4285,9 @@ window.openRepairRequestModal = async function (vehicleId) {
         document.getElementById('repair-chk-soccorso').checked = false;
 
         // Descrizione: precarica eventuali problematiche note del mezzo o lascia vuoto
-        document.getElementById('repair-description').value = vehicle.notes || '';
+        const knownNotes = vehicle.notes || '';
+        window.currentRepairVehicleNotes = knownNotes;
+        document.getElementById('repair-description').value = knownNotes;
 
         // Nome file predefinito: "richiesta riparazione <SIGLA> <TARGA>"
         const defaultFileName = window.buildRepairFileName(vehicle).replace(/\.docx$/i, '');
