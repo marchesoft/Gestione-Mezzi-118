@@ -1,4 +1,4 @@
-const APP_VERSION = "3.5.8";
+const APP_VERSION = "3.5.9";
 let isAdmin = false;
 let cachedVehicles = null;
 let cachedLocations = null;
@@ -4197,9 +4197,14 @@ window.handleWashOptionChange = function (type) {
     const descEl = document.getElementById('repair-description');
     if (!descEl) return;
 
-    const textEsterno = "LAVAGGIO ESTERNO E INTERNO GUIDA";
+    const textEsterno = "LAVAGGIO ESTERNO E VANO GUIDA IP VIA CANAPA";
     const allWashTexts = [
         textEsterno,
+        "LAVAGGIO ESTERNO E VANO GUIDA IP VIA CANAPA",
+        "LAVAGGIO ESTERNO E VANO GUIDA",
+        "Lavaggio esterno e vano guida",
+        "LAVAGGIO ESTERNO E INTERNO GUIDA IP VIA CANAPA",
+        "LAVAGGIO ESTERNO E INTERNO GUIDA",
         "Lavaggio esterno e interno guida",
         "AUTOLAVAGGIO ESTERNO IP VIA CANAPA",
         "AUTOLAVAGGIO INTERNO ED ESTERNO IP VIA CANAPA",
@@ -4793,13 +4798,13 @@ window.generateAndDownloadRepairDocx = async function () {
         if (chkMeccanica) selectedTypes.push('Meccanica / Elettrauto');
         if (chkGommista) selectedTypes.push('Gommista');
         if (chkCarrozzeria) selectedTypes.push('Carrozzeria');
-        if (chkLavaggioEsterno) selectedTypes.push('Lavaggio esterno e interno guida');
+        if (chkLavaggioEsterno) selectedTypes.push('Lavaggio esterno e vano guida');
         if (chkSinistro) selectedTypes.push('Sinistro');
         if (chkSoccorso) selectedTypes.push('Soccorso Stradale');
 
         let descRaw = document.getElementById('repair-description').value.trim();
-        if (chkLavaggioEsterno && !descRaw.toUpperCase().includes('LAVAGGIO ESTERNO E INTERNO GUIDA') && !descRaw.toUpperCase().includes('LAVAGGIO ESTERNO')) {
-            descRaw = 'LAVAGGIO ESTERNO E INTERNO GUIDA' + (descRaw ? '\n' + descRaw : '');
+        if (chkLavaggioEsterno && !descRaw.toUpperCase().includes('VANO GUIDA') && !descRaw.toUpperCase().includes('LAVAGGIO ESTERNO')) {
+            descRaw = 'LAVAGGIO ESTERNO E VANO GUIDA IP VIA CANAPA' + (descRaw ? '\n' + descRaw : '');
         }
 
         let filenameInput = (document.getElementById('repair-filename').value || '').trim();
@@ -5242,8 +5247,8 @@ window.createWashDocxBlob = async function (data) {
         }
     }
 
-    // 5. Popola Intervento (LAVAGGIO ESTERNO E INTERNO GUIDA)
-    const washDesc = (data.description || 'LAVAGGIO ESTERNO E INTERNO GUIDA').trim();
+    // 5. Popola Intervento (LAVAGGIO ESTERNO E VANO GUIDA)
+    const washDesc = (data.description || 'LAVAGGIO ESTERNO E VANO GUIDA').trim();
     for (let i = 0; i < paragraphs.length; i++) {
         const p = paragraphs[i];
         const tNodes = p.getElementsByTagNameNS ? p.getElementsByTagNameNS(nsW, "t") : p.getElementsByTagName("w:t");
@@ -5254,7 +5259,7 @@ window.createWashDocxBlob = async function (data) {
                 if (tNodes[j].textContent.includes("LAVAGGIO ESTERNO") || tNodes[j].textContent.includes("LAVAGGIO")) {
                     tNodes[j].textContent = washDesc;
                     for (let k = j + 1; k < tNodes.length; k++) {
-                        if (tNodes[k].textContent.trim().startsWith("ESTERNO") || tNodes[k].textContent.trim().startsWith("SANIFICAZIONE") || tNodes[k].textContent.trim().startsWith("INTERNO") || tNodes[k].textContent.trim().startsWith("GUIDA")) {
+                        if (tNodes[k].textContent.trim().startsWith("ESTERNO") || tNodes[k].textContent.trim().startsWith("SANIFICAZIONE") || tNodes[k].textContent.trim().startsWith("INTERNO") || tNodes[k].textContent.trim().startsWith("GUIDA") || tNodes[k].textContent.trim().startsWith("VANO")) {
                             tNodes[k].textContent = "";
                         }
                     }
@@ -5385,9 +5390,9 @@ window.openWashModal = async function (vehicleId) {
         const dateElem = document.getElementById('wash-date');
         if (dateElem) dateElem.value = getLocalISODate();
 
-        // Tipologia fissa automatica: LAVAGGIO ESTERNO E INTERNO GUIDA
+        // Tipologia fissa automatica: LAVAGGIO ESTERNO E VANO GUIDA
         const typeElem = document.getElementById('wash-type-display');
-        if (typeElem) typeElem.value = 'LAVAGGIO ESTERNO E INTERNO GUIDA';
+        if (typeElem) typeElem.value = 'LAVAGGIO ESTERNO E VANO GUIDA';
 
         const driverElem = document.getElementById('wash-driver');
         if (driverElem) driverElem.value = 'MARSILI PAOLO – GAMBERONI FEDERICO – MARCHESINI LUCA';
@@ -5461,8 +5466,8 @@ window.printWashModule = async function () {
         const emailElem = document.getElementById('wash-email');
         const email = (emailElem && emailElem.value ? emailElem.value.trim() : 'logistica118fe@ausl.fe.it');
 
-        // Tipologia fissa automatica: LAVAGGIO ESTERNO E INTERNO GUIDA
-        const description = (document.getElementById('wash-type-display') ? document.getElementById('wash-type-display').value : 'LAVAGGIO ESTERNO E INTERNO GUIDA') || 'LAVAGGIO ESTERNO E INTERNO GUIDA';
+        // Tipologia fissa automatica: LAVAGGIO ESTERNO E VANO GUIDA
+        const description = (document.getElementById('wash-type-display') ? document.getElementById('wash-type-display').value : 'LAVAGGIO ESTERNO E VANO GUIDA') || 'LAVAGGIO ESTERNO E VANO GUIDA';
 
         const dParts = dateVal.split('/');
         const day = (dParts[0] || '29').padStart(2, '0');
@@ -5721,8 +5726,8 @@ window.generateAndDownloadWashDocx = async function () {
         const phone = (document.getElementById('wash-phone').value || '').trim();
         const email = (document.getElementById('wash-email').value || '').trim();
 
-        // Tipologia fissa automatica: LAVAGGIO ESTERNO E INTERNO GUIDA
-        const description = (document.getElementById('wash-type-display') ? document.getElementById('wash-type-display').value : 'LAVAGGIO ESTERNO E INTERNO GUIDA') || 'LAVAGGIO ESTERNO E INTERNO GUIDA';
+        // Tipologia fissa automatica: LAVAGGIO ESTERNO E VANO GUIDA
+        const description = (document.getElementById('wash-type-display') ? document.getElementById('wash-type-display').value : 'LAVAGGIO ESTERNO E VANO GUIDA') || 'LAVAGGIO ESTERNO E VANO GUIDA';
 
         let filenameInput = (document.getElementById('wash-filename').value || '').trim();
         let filename = filenameInput || ('modulo lavaggio ' + (vehicle ? `${vehicle.sigla || ''} ${vehicle.plate || ''}`.trim() : '')).trim();

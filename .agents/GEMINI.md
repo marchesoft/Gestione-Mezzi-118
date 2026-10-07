@@ -1,16 +1,16 @@
-# Regole e Contesto del Progetto (v3.5.8)
+# Regole e Contesto del Progetto (v3.5.9)
 
-Questo file definisce le linee guida e lo stato di salvataggio del progetto per garantire la coerenza con la versione **3.5.8**.
+Questo file definisce le linee guida e lo stato di salvataggio del progetto per garantire la coerenza con la versione **3.5.9**.
 
-## Stato di Riferimento (v3.5.8)
+## Stato di Riferimento (v3.5.9)
 
 1. **Gestione Versioni**:
-   - La versione attuale di riferimento è **3.5.8**.
-   - Qualsiasi modifica futura richiede l'avanzamento della versione (es. `3.5.9` o successive) in `app.js` (`const APP_VERSION = "X.Y.Z";`) e in `index.html` (header).
+   - La versione attuale di riferimento è **3.5.9**.
+   - Qualsiasi modifica futura richiede l'avanzamento della versione (es. `3.6.0` o successive) in `app.js` (`const APP_VERSION = "X.Y.Z";`) e in `index.html` (header).
 
 2. **Bypass della Cache (Cache-Busting)**:
    - I file `app.js` e `style.css` sono importati in `index.html` con il parametro di versione `?v=X.Y.Z` per forzare il caricamento immediato degli aggiornamenti sui dispositivi client (specialmente mobili).
-   - Esempio: `<link rel="stylesheet" href="style.css?v=3.5.8">` e `<script src="app.js?v=3.5.8"></script>`.
+   - Esempio: `<link rel="stylesheet" href="style.css?v=3.5.9">` e `<script src="app.js?v=3.5.9"></script>`.
    - Ad ogni cambio di codice, aggiornare questa stringa con la nuova versione dell'applicazione.
 
 3. **Integrazione Git e GitHub**:
@@ -56,15 +56,15 @@ Questo file definisce le linee guida e lo stato di salvataggio del progetto per 
    - Registrata ed inserita nello storico richieste di riparazione dell'ambulanza Alea **ECHO 22 (targa FF 837 RS)** la richiesta di modulo lavaggio esterno per ricovero veicolo presso officina **CAVAGION** con data **29/01/2026**.
    - La richiesta è visibile sia nello storico richieste del singolo mezzo che nella tabella globale "Riparazioni" del database, ed è scaricabile in formato Word con il modello dedicato Alea.
 
-9. **Modulo Lavaggio - Stampato Ufficiale Parts & Services e Stampa Diretta (v3.3.10, v3.5.5, v3.5.8)**:
+9. **Modulo Lavaggio - Stampato Ufficiale Parts & Services e Stampa Diretta (v3.3.10, v3.5.5, v3.5.8, v3.5.9)**:
    - Nella scheda dettagli veicolo (`openVehicleModal`) è presente un pulsante dedicato **Modulo Lavaggio** (`.btn-wash-request`, colore azzurrino acqua / cyan `#06b6d4`, hover `#0891b2`), cromaticamente distinto dal pulsante verde prato "Richiesta Riparazione" (`#16a34a`) e dall'azzurro "Storico Richieste" (`#0284c7`).
    - Apre una finestra modale compilabile dedicata (`#wash-modal`) per verificare e modificare i dati prima di inviare lo stampato direttamente alla stampante (o salvare come PDF dal dialogo di stampa).
    - **Campi Compilabili e Precompilati Dinamici**:
      - *Dati Veicolo*: Veicolo (es. `AMBULANZA FF 837 RS ECHO 22`), Km rilevati, Data modulo (preimpostata alla data odierna), Officina convenzionata (*IP VIA CANAPA* di default, oppure *CAVAGION*).
-     - *Tipologia di Intervento Fissa*: Impostata automaticamente su **LAVAGGIO ESTERNO E INTERNO GUIDA** con badge "Automatico" (v3.5.8: allineata la tipologia da *Lavaggio Esterno* a *Lavaggio esterno e interno guida*).
+     - *Tipologia di Intervento Fissa*: Impostata automaticamente su **LAVAGGIO ESTERNO E VANO GUIDA** con badge "Automatico" (v3.5.9: allineata la tipologia a *Lavaggio esterno e vano guida*).
      - *Dati Richiedente / Consegna e Ritiro*: Nominativi incaricati (`MARSILI PAOLO – GAMBERONI FEDERICO – MARCHESINI LUCA`), Email istituzionale (`logistica118fe@ausl.fe.it`), Cellulare (`3209229345`).
    - **Invio Diretto alla Stampante (`printWashModule`)**:
-     - Cliccando sul pulsante **Stampa** (`.btn-wash-request` con icona `fa-print`), il sistema genera ed invia direttamente alla stampante di sistema il layout A4 ufficiale Parts & Services (*Ricovero Veicolo per manutenzione - consegna/Ritiro*) indicando come intervento `LAVAGGIO ESTERNO E INTERNO GUIDA`.
+     - Cliccando sul pulsante **Stampa** (`.btn-wash-request` con icona `fa-print`), il sistema genera ed invia direttamente alla stampante di sistema il layout A4 ufficiale Parts & Services (*Ricovero Veicolo per manutenzione - consegna/Ritiro*) indicando come intervento `LAVAGGIO ESTERNO E VANO GUIDA`.
      - Include l'intestazione grafica con logo Parts & Services estratto al volo dal template incorporato, spaziatura corretta, sezioni speculari di Consegna e Ritiro, data formattata e piè di pagina aziendale.
    - **Regola di Non-Persistenza**: Questo modulo serve esclusivamente come stampato compilabile da mandare in stampa immediata e **NON viene salvato nello storico delle richieste del veicolo né su Firestore**.
 
@@ -105,13 +105,13 @@ Questo file definisce le linee guida e lo stato di salvataggio del progetto per 
     - I chilometri mensili sono salvati su Firestore nel campo `monthly_km` di ciascun documento della collection `locations`.
     - La colonna è completamente integrata nelle funzioni di **Esporta Excel** e **Importa Excel** (con mappatura per le intestazioni `Km Mensili`, `monthly_km`, `km_mensili`).
 
-14. **Opzione Lavaggio nella Richiesta di Riparazione (v3.3.13, v3.5.6, v3.5.7)**:
+14. **Opzione Lavaggio nella Richiesta di Riparazione (v3.3.13, v3.5.6, v3.5.7, v3.5.9)**:
     - Nella finestra modale della richiesta di riparazione (`#repair-request-modal`), l'opzione di lavaggio è denominata:
-      - **Lavaggio esterno e interno guida** (`#repair-chk-lavaggio-esterno`)
-      *(v3.5.7: Etichetta aggiornata da "Autolavaggio Esterno" a "Lavaggio esterno e interno guida", con inserimento e aggiornamento automatico della corrispondente dicitura `LAVAGGIO ESTERNO E INTERNO GUIDA` nella descrizione del problema al momento della selezione)*.
-    - **Comportamento nel Modulo Word**: Nel documento Word generato, se viene selezionato *Lavaggio esterno e interno guida*, viene spuntata la casella di **Autolavaggio** (riga 3 della tabella tipologie).
-    - **Testo nella Descrizione**: La selezione inserisce e aggiorna automaticamente nella descrizione dei lavori da eseguire la voce:
-      - `LAVAGGIO ESTERNO E INTERNO GUIDA`
+      - **Lavaggio esterno e vano guida** (`#repair-chk-lavaggio-esterno`)
+      *(v3.5.9: Etichetta aggiornata a "Lavaggio esterno e vano guida", con inserimento e aggiornamento automatico della corrispondente dicitura `LAVAGGIO ESTERNO E VANO GUIDA IP VIA CANAPA` nella descrizione del problema al momento della selezione)*.
+    - **Comportamento nel Modulo Word**: Nel documento Word generato, se viene selezionato *Lavaggio esterno e vano guida*, viene spuntata la casella di **Autolavaggio** (riga 3 della tabella tipologie).
+    - **Testo nella Descrizione con Indicazione Officina IP Via Canapa**: La selezione inserisce e aggiorna automaticamente nella descrizione dei lavori da eseguire la voce:
+      - `LAVAGGIO ESTERNO E VANO GUIDA IP VIA CANAPA`
       garantendo che il testo sia chiaramente riportato sia nel file Word generato che nello storico del veicolo.
 
 15. **Sede e Proiezione Km a Fine Dicembre nel Report Officina (v3.3.9)**:
