@@ -1,16 +1,16 @@
-# Regole e Contesto del Progetto (v3.5.9)
+# Regole e Contesto del Progetto (v3.6.0)
 
-Questo file definisce le linee guida e lo stato di salvataggio del progetto per garantire la coerenza con la versione **3.5.9**.
+Questo file definisce le linee guida e lo stato di salvataggio del progetto per garantire la coerenza con la versione **3.6.0**.
 
-## Stato di Riferimento (v3.5.9)
+## Stato di Riferimento (v3.6.0)
 
 1. **Gestione Versioni**:
-   - La versione attuale di riferimento è **3.5.9**.
-   - Qualsiasi modifica futura richiede l'avanzamento della versione (es. `3.6.0` o successive) in `app.js` (`const APP_VERSION = "X.Y.Z";`) e in `index.html` (header).
+   - La versione attuale di riferimento è **3.6.0**.
+   - Qualsiasi modifica futura richiede l'avanzamento della versione (es. `3.6.1` o successive) in `app.js` (`const APP_VERSION = "X.Y.Z";`) e in `index.html` (header).
 
 2. **Bypass della Cache (Cache-Busting)**:
    - I file `app.js` e `style.css` sono importati in `index.html` con il parametro di versione `?v=X.Y.Z` per forzare il caricamento immediato degli aggiornamenti sui dispositivi client (specialmente mobili).
-   - Esempio: `<link rel="stylesheet" href="style.css?v=3.5.9">` e `<script src="app.js?v=3.5.9"></script>`.
+   - Esempio: `<link rel="stylesheet" href="style.css?v=3.6.0">` e `<script src="app.js?v=3.6.0"></script>`.
    - Ad ogni cambio di codice, aggiornare questa stringa con la nuova versione dell'applicazione.
 
 3. **Integrazione Git e GitHub**:
@@ -105,10 +105,15 @@ Questo file definisce le linee guida e lo stato di salvataggio del progetto per 
     - I chilometri mensili sono salvati su Firestore nel campo `monthly_km` di ciascun documento della collection `locations`.
     - La colonna è completamente integrata nelle funzioni di **Esporta Excel** e **Importa Excel** (con mappatura per le intestazioni `Km Mensili`, `monthly_km`, `km_mensili`).
 
-14. **Opzione Lavaggio nella Richiesta di Riparazione (v3.3.13, v3.5.6, v3.5.7, v3.5.9)**:
+14. **Opzione Lavaggio nella Richiesta di Riparazione (v3.3.13, v3.5.6, v3.5.7, v3.5.9, v3.6.0)**:
     - Nella finestra modale della richiesta di riparazione (`#repair-request-modal`), l'opzione di lavaggio è denominata:
       - **Lavaggio esterno e vano guida** (`#repair-chk-lavaggio-esterno`)
       *(v3.5.9: Etichetta aggiornata a "Lavaggio esterno e vano guida", con inserimento e aggiornamento automatico della corrispondente dicitura `LAVAGGIO ESTERNO E VANO GUIDA IP VIA CANAPA` nella descrizione del problema al momento della selezione)*.
+    - **Selezione Esclusiva e Descrizione Lavaggio (v3.6.0)**:
+      - Alla selezione di *Lavaggio esterno e vano guida*, qualunque altra casella di controllo della tipologia di intervento (*Manutenzione Mecc. / Elettrauto*, *Gommista*, *Carrozzeria*, *Sinistro*, *Soccorso Stradale*) viene automaticamente deselezionata.
+      - Il campo della descrizione del problema / lavori da eseguire (`#repair-description`) viene sovrascritto impostando unicamente ed esclusivamente il testo del lavaggio:
+        `LAVAGGIO ESTERNO E VANO GUIDA IP VIA CANAPA`
+        rimuovendo qualsiasi testo o nota pregressa del mezzo per garantire uno stampato pulito e mirato.
     - **Comportamento nel Modulo Word**: Nel documento Word generato, se viene selezionato *Lavaggio esterno e vano guida*, viene spuntata la casella di **Autolavaggio** (riga 3 della tabella tipologie).
     - **Testo nella Descrizione con Indicazione Officina IP Via Canapa**: La selezione inserisce e aggiorna automaticamente nella descrizione dei lavori da eseguire la voce:
       - `LAVAGGIO ESTERNO E VANO GUIDA IP VIA CANAPA`

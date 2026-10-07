@@ -1,4 +1,4 @@
-const APP_VERSION = "3.5.9";
+const APP_VERSION = "3.6.0";
 let isAdmin = false;
 let cachedVehicles = null;
 let cachedLocations = null;
@@ -4133,6 +4133,61 @@ window.selectRepairTemplate = function (isAlea) {
     window.toggleRepairTemplate(isAlea);
 };
 
+window.handleWashOptionChange = function (type) {
+    const chkEsterno = document.getElementById('repair-chk-lavaggio-esterno');
+    const descEl = document.getElementById('repair-description');
+    if (!descEl) return;
+
+    const textEsterno = "LAVAGGIO ESTERNO E VANO GUIDA IP VIA CANAPA";
+    const allWashTexts = [
+        textEsterno,
+        "LAVAGGIO ESTERNO E VANO GUIDA IP VIA CANAPA",
+        "LAVAGGIO ESTERNO E VANO GUIDA",
+        "Lavaggio esterno e vano guida",
+        "LAVAGGIO ESTERNO E INTERNO GUIDA IP VIA CANAPA",
+        "LAVAGGIO ESTERNO E INTERNO GUIDA",
+        "Lavaggio esterno e interno guida",
+        "AUTOLAVAGGIO ESTERNO IP VIA CANAPA",
+        "AUTOLAVAGGIO INTERNO ED ESTERNO IP VIA CANAPA",
+        "AUTOLAVAGGIO ESTERNO",
+        "AUTOLAVAGGIO INTERNO ED ESTERNO",
+        "AUTOLAVAGGIO INTERNO ED ESTERNO PIÙ SANIFICAZIONE IP VIA CANAPA",
+        "AUTOLAVAGGIO INTERNO ED ESTERNO PIÙ SANIFICAZIONE",
+        "LAVAGGIO ESTERNO"
+    ];
+
+    const cleanAllWashTexts = (str) => {
+        let res = str;
+        allWashTexts.forEach(t => {
+            const escaped = t.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+            res = res.replace(new RegExp('^' + escaped + '\\n?', 'i'), '');
+            res = res.replace(new RegExp('\\n?' + escaped + '$', 'i'), '');
+            res = res.replace(new RegExp(escaped + '\\n?', 'gi'), '');
+        });
+        return res.trim();
+    };
+
+    if (chkEsterno && chkEsterno.checked) {
+        // Deseleziona qualunque altra selezione
+        const otherCheckboxIds = [
+            'repair-chk-meccanica',
+            'repair-chk-gommista',
+            'repair-chk-carrozzeria',
+            'repair-chk-sinistro',
+            'repair-chk-soccorso'
+        ];
+        otherCheckboxIds.forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.checked = false;
+        });
+
+        // Nella descrizione metti solo il testo del lavaggio
+        descEl.value = textEsterno;
+    } else {
+        descEl.value = cleanAllWashTexts(descEl.value);
+    }
+};
+
 window.openRepairRequestModal = async function (vehicleId) {
     try {
         if (!cachedVehicles || !cachedLocations) {
@@ -4191,49 +4246,6 @@ window.openRepairRequestModal = async function (vehicleId) {
         document.getElementById('repair-driver').value = 'MARSILI PAOLO – GAMBERONI FEDERICO – MARCHESINI LUCA';
         document.getElementById('repair-phone').value = '3209229345';
         document.getElementById('repair-email').value = 'logistica118fe@ausl.fe.it';
-
-window.handleWashOptionChange = function (type) {
-    const chkEsterno = document.getElementById('repair-chk-lavaggio-esterno');
-    const descEl = document.getElementById('repair-description');
-    if (!descEl) return;
-
-    const textEsterno = "LAVAGGIO ESTERNO E VANO GUIDA IP VIA CANAPA";
-    const allWashTexts = [
-        textEsterno,
-        "LAVAGGIO ESTERNO E VANO GUIDA IP VIA CANAPA",
-        "LAVAGGIO ESTERNO E VANO GUIDA",
-        "Lavaggio esterno e vano guida",
-        "LAVAGGIO ESTERNO E INTERNO GUIDA IP VIA CANAPA",
-        "LAVAGGIO ESTERNO E INTERNO GUIDA",
-        "Lavaggio esterno e interno guida",
-        "AUTOLAVAGGIO ESTERNO IP VIA CANAPA",
-        "AUTOLAVAGGIO INTERNO ED ESTERNO IP VIA CANAPA",
-        "AUTOLAVAGGIO ESTERNO",
-        "AUTOLAVAGGIO INTERNO ED ESTERNO",
-        "AUTOLAVAGGIO INTERNO ED ESTERNO PIÙ SANIFICAZIONE IP VIA CANAPA",
-        "AUTOLAVAGGIO INTERNO ED ESTERNO PIÙ SANIFICAZIONE",
-        "LAVAGGIO ESTERNO"
-    ];
-
-    const cleanAllWashTexts = (str) => {
-        let res = str;
-        allWashTexts.forEach(t => {
-            const escaped = t.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-            res = res.replace(new RegExp('^' + escaped + '\\n?', 'i'), '');
-            res = res.replace(new RegExp('\\n?' + escaped + '$', 'i'), '');
-            res = res.replace(new RegExp(escaped + '\\n?', 'gi'), '');
-        });
-        return res.trim();
-    };
-
-    let baseText = cleanAllWashTexts(descEl.value);
-
-    if (chkEsterno && chkEsterno.checked) {
-        descEl.value = textEsterno + (baseText ? '\n' + baseText : '');
-    } else {
-        descEl.value = baseText;
-    }
-};
 
         // Checkbox reset (Manutenzione Mecc. / Elettrauto selezionata di default)
         document.getElementById('repair-chk-meccanica').checked = true;
