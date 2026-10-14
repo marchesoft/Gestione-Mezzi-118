@@ -197,10 +197,11 @@ try {
         async addIntervention(vehicleId, intervention) {
             const { sigla, ...cleanIntervention } = intervention;
             try {
-                await this.db.collection('interventions').add({
+                const docRef = await this.db.collection('interventions').add({
                     vehicle_id: vehicleId,
                     ...cleanIntervention
                 });
+                return docRef ? docRef.id : null;
             } catch (error) {
                 console.error('Error adding intervention:', error);
                 alert("Errore salvataggio intervento: " + error.message);

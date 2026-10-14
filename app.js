@@ -1,4 +1,4 @@
-const APP_VERSION = "3.6.1";
+const APP_VERSION = "3.6.2";
 let isAdmin = false;
 let cachedVehicles = null;
 let cachedLocations = null;
@@ -2242,6 +2242,22 @@ window.saveMaintenanceRecord = async function (e) {
         } else {
             await store.addIntervention(vehicleId, record);
         }
+
+        // Sincronizzazione automatica date entrata/uscita con file Excel Desktop
+        if (window.excelSyncUpdateMaintenanceDates) {
+            try {
+                await window.excelSyncUpdateMaintenanceDates(vehicle, {
+                    id: id,
+                    date: date,
+                    date_out: date_out,
+                    workshop: workshop,
+                    description: description
+                });
+            } catch (syncErr) {
+                console.warn("Errore sincronizzazione date manutenzione su Excel:", syncErr);
+            }
+        }
+
         document.getElementById('maintenance-form-modal').classList.add('hidden');
 
         // Refresh appropriate views
@@ -4881,7 +4897,7 @@ window.generateAndDownloadRepairDocx = async function () {
         let excelRes = null;
         if (window.excelSyncAppendRequest) {
             try {
-                excelRes = await window.excelSyncAppendRequest(vehicle, reqData);
+                excelRes = await window.excelSyncAppendRequest(vehicle, reqData, cachedLocations);
             } catch (e) {
                 console.error('Errore sincronizzazione Excel:', e);
                 excelRes = { ok: false, error: e.message };
@@ -4893,6 +4909,28 @@ window.generateAndDownloadRepairDocx = async function () {
         const vehicleTextToCopy = vehicleDisplayElem ? vehicleDisplayElem.value.trim() : (targa || '');
         if (vehicleTextToCopy) {
             try { await window.copyTextToClipboard(vehicleTextToCopy); } catch (e) {}
+        }
+
+        // 3. Creazione automatica nuova manutenzione nello Storico Manutenzione (con data richiesta e descrizione problema)
+        if (vehicleId) {
+            try {
+                const matchingLoc = window.findLocationInText ? window.findLocationInText(descRaw, cachedLocations) : '';
+                const autoMaintRecord = {
+                    date: rawDate || getLocalISODate(),
+                    date_out: null,
+                    workshop: matchingLoc ? upper(matchingLoc) : '',
+                    km: vehicle && vehicle.mileage ? parseInt(vehicle.mileage) : null,
+                    description: upper(descRaw),
+                    type: 'Routine',
+                    cost: 0,
+                    repair_request_id: reqData.id
+                };
+                const newMaintId = await store.addIntervention(vehicleId, autoMaintRecord);
+                reqData.intervention_id = newMaintId;
+                console.log("Manutenzione automatica creata con ID:", newMaintId);
+            } catch (mErr) {
+                console.error("Errore creazione manutenzione automatica:", mErr);
+            }
         }
 
         // Salva la richiesta nello storico del veicolo su Firestore (senza forzare il download automatico del file Word)
