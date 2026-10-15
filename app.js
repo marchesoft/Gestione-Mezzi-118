@@ -1,4 +1,4 @@
-const APP_VERSION = "3.6.4";
+const APP_VERSION = "3.6.5";
 let isAdmin = false;
 let cachedVehicles = null;
 let cachedLocations = null;
@@ -561,10 +561,21 @@ async function renderVehicleGrid(vehicles) {
         const now = new Date();
         const currentYearMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
         const hasCheckThisMonth = vehicle.monthly_checks && vehicle.monthly_checks.some(c => c.date && c.date.startsWith(currentYearMonth));
+        const isAllestita = !!(vehicle.is_allestita === true || vehicle.is_allestita === 'true');
+
+        let leftDotsHtml = '';
+        if (isAllestita || hasCheckThisMonth) {
+            leftDotsHtml = `
+                <div class="status-dots-left" onclick="event.stopPropagation()">
+                    ${isAllestita ? `<div class="equipped-ambulance-dot" title="Ambulanza Allestita${isAdmin ? ' (Clicca per modificare)' : ''}" onclick="toggleVehicleAllestita(event, '${vehicle.id}')" style="${isAdmin ? 'cursor: pointer;' : ''}"></div>` : ''}
+                    ${hasCheckThisMonth ? '<div class="monthly-check-dot" title="Controllo Scadenze Mensile Effettuato"></div>' : ''}
+                </div>
+            `;
+        }
 
         let statusHtml = `
             <div style="position: relative; width: 100%;">
-                ${hasCheckThisMonth ? '<div class="monthly-check-dot" title="Controllo Scadenze Mensile Effettuato"></div>' : ''}
+                ${leftDotsHtml}
                 ${isAdmin ? `
                     <select class="status-full-bar status-${vehicle.status}" onchange="quickUpdateStatus(event, '${vehicle.id}')" onclick="event.stopPropagation()" ${vehicle.status === 'internal-use' ? 'disabled' : ''}>
                         <option value="operative" ${vehicle.status === 'operative' ? 'selected' : ''}>In Servizio</option>
@@ -1026,6 +1037,27 @@ window.quickUpdateStationSelect = function (event, id) {
     }
 }
 
+window.toggleVehicleAllestita = async function (e, id) {
+    if (e) e.stopPropagation();
+    if (!isAdmin) return;
+    try {
+        let vehicle = (cachedVehicles || []).find(v => v.id === id);
+        if (!vehicle) {
+            vehicle = await store.getVehicleById(id);
+        }
+        if (vehicle) {
+            vehicle.is_allestita = !vehicle.is_allestita;
+            await store.updateVehicle(vehicle);
+            renderDashboard(false);
+            if (!document.getElementById('vehicle-modal').classList.contains('hidden') && currentOpenedVehicleId === id) {
+                await openVehicleModal(id);
+            }
+        }
+    } catch (err) {
+        console.error("Errore modifica stato ambulanza allestita:", err);
+    }
+};
+
 // Global Admin State
 // Moved to top
 
@@ -1125,6 +1157,10 @@ window.openVehicleForm = async function (vehicleId = null) {
             if (aleaFormChk) {
                 aleaFormChk.checked = !!(vehicle.is_alea === true || vehicle.is_alea === 'true' || window.isAleaVehicle(vehicle));
             }
+            const allestitaChk = document.getElementById('vehicle-is-allestita');
+            if (allestitaChk) {
+                allestitaChk.checked = !!(vehicle.is_allestita === true || vehicle.is_allestita === 'true');
+            }
         }
     } else {
         title.textContent = 'Aggiungi Nuovo Mezzo';
@@ -1134,6 +1170,10 @@ window.openVehicleForm = async function (vehicleId = null) {
         const aleaFormChk = document.getElementById('vehicle-is-alea');
         if (aleaFormChk) {
             aleaFormChk.checked = false;
+        }
+        const allestitaChk = document.getElementById('vehicle-is-allestita');
+        if (allestitaChk) {
+            allestitaChk.checked = false;
         }
     }
 
@@ -1754,6 +1794,8 @@ window.saveVehicleForm = async function () {
     const todo_notes = todo_notes_raw.split('\n').map(s => s.trim()).map(upper).filter(s => s !== '');
     const aleaChk = document.getElementById('vehicle-is-alea');
     const is_alea = aleaChk ? aleaChk.checked : false;
+    const allestitaChk = document.getElementById('vehicle-is-allestita');
+    const is_allestita = allestitaChk ? allestitaChk.checked : false;
 
     const vehicleData = {
         model: upper(model),
@@ -1766,6 +1808,7 @@ window.saveVehicleForm = async function () {
         mileage_month: upper(mileage_month),
         radio_id: upper(radio_id),
         is_alea: is_alea,
+        is_allestita: is_allestita,
 
         inspection_expiry: inspection_expiry || null,
         revision_o2: revision_o2 || null,
@@ -1862,6 +1905,7 @@ window.openVehicleModal = async function (id) {
                                     ${vehicle.sigla ? `<h1 style="font-size: 1.5rem; font-weight: 800; color: var(--primary-color); margin: 0;">${vehicle.sigla}</h1>` : ''}
                                     <h1 style="font-size: 1.5rem; font-weight: 800; color: var(--text-primary); margin: 0;">${vehicle.plate}</h1>
                                     ${(window.isAleaVehicle && window.isAleaVehicle(vehicle)) ? '<span style="background: #fef3c7; color: #92400e; border: 1px solid #fde68a; font-size: 0.75rem; font-weight: 700; padding: 0.15rem 0.5rem; border-radius: 6px; letter-spacing: 0.05em; vertical-align: middle;"><i class="fa-solid fa-file-contract"></i> ALEA</span>' : ''}
+                                    ${(vehicle.is_allestita === true || vehicle.is_allestita === 'true') ? `<span style="background: #ffffff; color: #0f172a; border: 1px solid #cbd5e1; font-size: 0.75rem; font-weight: 700; padding: 0.15rem 0.5rem; border-radius: 6px; letter-spacing: 0.05em; vertical-align: middle; box-shadow: 0 1px 2px rgba(0,0,0,0.05); ${isAdmin ? 'cursor: pointer;' : ''}" ${isAdmin ? `onclick="toggleVehicleAllestita(event, '${vehicle.id}')" title="Clicca per modificare stato allestita"` : ''}><i class="fa-solid fa-circle" style="color: #ffffff; text-shadow: 0 0 2px #0f172a; font-size: 0.65rem;"></i> ALLESTITA</span>` : ''}
                                 </div>
                                 <div style="display: flex; gap: 0.5rem; align-items: center;">
                                     <h2 style="font-size: 1.1rem; margin: 0; color: var(--text-secondary); font-weight: 600;">${vehicle.model}</h2>
@@ -2839,8 +2883,8 @@ window.exportCurrentTableToCSV = async function () {
 
         // Mapping for headers
         if (type === 'vehicles') {
-            headers = ['id', 'plate', 'model', 'sigla', 'station', 'status', 'mileage', 'mileage_month', 'notes', 'db_notes', 'radio_id', 'inspection_expiry', 'revision_o2'];
-            const italianHeaders = ['ID (Non modificare)', 'Targa', 'Modello', 'Sigla', 'Stazione', 'Stato', 'Km', 'Mese Km', 'Note', 'Note Interne', 'Radio ID', 'Scadenza Revisione', 'Revisione O2'];
+            headers = ['id', 'plate', 'model', 'sigla', 'station', 'status', 'mileage', 'mileage_month', 'notes', 'db_notes', 'radio_id', 'inspection_expiry', 'revision_o2', 'is_allestita'];
+            const italianHeaders = ['ID (Non modificare)', 'Targa', 'Modello', 'Sigla', 'Stazione', 'Stato', 'Km', 'Mese Km', 'Note', 'Note Interne', 'Radio ID', 'Scadenza Revisione', 'Revisione O2', 'Allestita'];
             csvRows.push(italianHeaders.join(';'));
         } else if (type === 'locations') {
             headers = ['luogo', 'monthly_km', 'colore'];
@@ -2880,7 +2924,9 @@ window.exportCurrentTableToCSV = async function () {
             const values = headers.map(header => {
                 let val = row[header];
                 if (val === null || val === undefined) return '';
-                if (header.includes('date') || header === 'data' || header === 'inspection_expiry' || header === 'revision_o2') {
+                if (header === 'is_allestita') {
+                    val = (val === true || val === 'true') ? 'SI' : 'NO';
+                } else if (header.includes('date') || header === 'data' || header === 'inspection_expiry' || header === 'revision_o2') {
                     val = formatDate(val);
                 }
                 // Escape semicolons and handle strings
@@ -3067,7 +3113,8 @@ window.importDataTableFromCSV = function () {
                         'Note': 'notes', 'notes': 'notes',
                         'Radio ID': 'radio_id', 'radio_id': 'radio_id',
                         'Scadenza Revisione': 'inspection_expiry', 'inspection_expiry': 'inspection_expiry',
-                        'Revisione O2': 'revision_o2', 'revision_o2': 'revision_o2'
+                        'Revisione O2': 'revision_o2', 'revision_o2': 'revision_o2',
+                        'Allestita': 'is_allestita', 'is_allestita': 'is_allestita'
                     },
                     'locations': {
                         'Luogo': 'name', 'luogo': 'name', 'name': 'name',
@@ -3116,6 +3163,9 @@ window.importDataTableFromCSV = function () {
                             let val = values[idx];
                             // Basic type conversion
                             if (dbField === 'mileage' || dbField === 'cost' || dbField === 'monthly_km') val = parseFloat(val) || 0;
+                            if (dbField === 'is_allestita') {
+                                val = (val === true || val === 'true' || val === '1' || val === 'SI' || val === 'Sì' || val === 'si' || val === 'sì');
+                            }
 
                             // Date conversion (handle both ISO and Italian format)
                             if (['date', 'date_out', 'data', 'inspection_expiry', 'revision_o2'].includes(dbField) && val) {
@@ -3268,7 +3318,7 @@ window.switchDataTable = async function (type) {
                 '<tr>'
                 + `<td class="col-shrink">${v.plate}</td>`
                 + `<td>${v.model}</td>`
-                + `<td class="col-shrink text-bold text-primary">${v.sigla || '-'}</td>`
+                + `<td class="col-shrink text-bold text-primary">${v.sigla || '-'}${v.is_allestita ? ' <span title="Ambulanza Allestita" style="display:inline-block; width:9px; height:9px; border-radius:50%; background:#fff; border:1.5px solid #0f172a; vertical-align:middle;"></span>' : ''}</td>`
                 + `<td class="col-shrink">${v.station}</td>`
                 + `<td class="col-shrink">${v.status}</td>`
                 + `<td class="col-shrink">${v.mileage}</td>`

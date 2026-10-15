@@ -25,7 +25,7 @@
     <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <!-- App Styles -->
-    <link rel="stylesheet" href="style.css?v=3.6.4">
+    <link rel="stylesheet" href="style.css?v=3.6.5">
 </head>
 
 <body>
@@ -55,7 +55,7 @@
                             <span class="desktop-text">VEICOLI IN GESTIONE 118 DI FERRARA</span>
                             <span class="mobile-text">VEICOLI IN GESTIONE</span>
                             <span id="app-version-display"
-                                style="font-size: 0.8rem; font-weight: 400; opacity: 0.8; margin-left: 0.5rem; vertical-align: middle; text-transform: none;">v 3.6.4</span>
+                                style="font-size: 0.8rem; font-weight: 400; opacity: 0.8; margin-left: 0.5rem; vertical-align: middle; text-transform: none;">v 3.6.5</span>
                         </h3>
                     </div>
                     <div class="action-buttons">
@@ -227,6 +227,13 @@
                                 <label style="display: flex; align-items: center; gap: 0.65rem; font-weight: 600; font-size: 0.9rem; color: #b45309; background: #fef3c7; padding: 0.65rem 0.85rem; border-radius: 0.5rem; border: 1px solid #fde68a; cursor: pointer;">
                                     <input type="checkbox" id="vehicle-is-alea" style="width: 18px; height: 18px; cursor: pointer;">
                                     <span><i class="fa-solid fa-file-contract"></i> Mezzo Flotta Alea (utilizza modello richiesta riparazione dedicato Alea)</span>
+                                </label>
+                            </div>
+
+                            <div class="form-group" style="margin-bottom: 1rem;">
+                                <label style="display: flex; align-items: center; gap: 0.65rem; font-weight: 600; font-size: 0.9rem; color: #0f172a; background: #f8fafc; padding: 0.65rem 0.85rem; border-radius: 0.5rem; border: 1px solid #cbd5e1; cursor: pointer;">
+                                    <input type="checkbox" id="vehicle-is-allestita" style="width: 18px; height: 18px; cursor: pointer;">
+                                    <span><i class="fa-solid fa-truck-medical" style="color: #0284c7;"></i> Ambulanza Allestita (mostra pallino bianco sulla card)</span>
                                 </label>
                             </div>
 
@@ -1062,9 +1069,9 @@
 
     <script src="firebase-config.js"></script>
 
-    <script src="store.js?v=3.6.4"></script>
-    <script src="excel_sync.js?v=3.6.4"></script>
-    <script src="app.js?v=3.6.4"></script>
+    <script src="store.js?v=3.6.5"></script>
+    <script src="excel_sync.js?v=3.6.5"></script>
+    <script src="app.js?v=3.6.5"></script>
 </body>
 
 </html>

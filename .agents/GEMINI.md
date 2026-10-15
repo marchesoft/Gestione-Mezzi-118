@@ -1,16 +1,16 @@
-# Regole e Contesto del Progetto (v3.6.4)
+# Regole e Contesto del Progetto (v3.6.5)
 
-Questo file definisce le linee guida e lo stato di salvataggio del progetto per garantire la coerenza con la versione **3.6.4**.
+Questo file definisce le linee guida e lo stato di salvataggio del progetto per garantire la coerenza con la versione **3.6.5**.
 
-## Stato di Riferimento (v3.6.4)
+## Stato di Riferimento (v3.6.5)
 
 1. **Gestione Versioni**:
-   - La versione attuale di riferimento è **3.6.4**.
-   - Qualsiasi modifica futura richiede l'avanzamento della versione (es. `3.6.5` o successive) in `app.js` (`const APP_VERSION = "X.Y.Z";`) e in `index.html` (header).
+   - La versione attuale di riferimento è **3.6.5**.
+   - Qualsiasi modifica futura richiede l'avanzamento della versione (es. `3.6.6` o successive) in `app.js` (`const APP_VERSION = "X.Y.Z";`) e in `index.html` (header).
 
 2. **Bypass della Cache (Cache-Busting)**:
    - I file `app.js` e `style.css` sono importati in `index.html` con il parametro di versione `?v=X.Y.Z` per forzare il caricamento immediato degli aggiornamenti sui dispositivi client (specialmente mobili).
-   - Esempio: `<link rel="stylesheet" href="style.css?v=3.6.4">` e `<script src="app.js?v=3.6.4"></script>`.
+   - Esempio: `<link rel="stylesheet" href="style.css?v=3.6.5">` e `<script src="app.js?v=3.6.5"></script>`.
    - Ad ogni cambio di codice, aggiornare questa stringa con la nuova versione dell'applicazione.
 
 3. **Integrazione Git e GitHub**:
@@ -34,7 +34,7 @@ Questo file definisce le linee guida e lo stato di salvataggio del progetto per 
    - **Dettagli Veicolo (Mobile)**: Le sezioni si impilano verticalmente per adattarsi allo schermo.
    - **Badge Flotta Alea**: Nei dettagli del veicolo (`openVehicleModal`), se il mezzo appartiene alla flotta Alea compare un badge dorato `ALEA` ben visibile accanto alla sigla e alla targa.
    - **Segna le cose da fare**: Il testo inserito dall'amministratore (nella textarea diviso da invio) viene convertito in array per riga ed inserito in singoli blocchi con bordo grigio ardesia nella cornice griglia.
-   - **Pallino Controllo**: L'indicatore di controllo mensile sulla card è giallo fluo (#ffff00) con contorno bianco solido di 2px (classe .monthly-check-dot in style.css, posizionato a `left: 0.45rem` per distanziarlo dal testo dello stato), per essere visibile anche sullo sfondo verde dello stato "disponibile" (#008000).
+   - **Pallino Controllo e Pallino Bianco Ambulanza Allestita**: L'indicatore di controllo mensile sulla card è giallo fluo (#ffff00) con contorno bianco solido di 2px (classe `.monthly-check-dot` in `style.css`). A sinistra del pallino di controllo è presente il pallino bianco (#ffffff con contorno scuro #0f172a di 2px, classe `.equipped-ambulance-dot`), che indica che l'ambulanza è allestita (`vehicle.is_allestita: true`). Entrambi i pallini sono contenuti nel blocco flex `.status-dots-left` posizionato all'estrema sinistra della barra di stato (`left: 0.45rem`) in modo da non interferire con il testo centrato dello stato. Cliccando sul pallino bianco della card, un utente amministratore può attivare o disattivare rapidamente lo stato allestita.
    - **Gestione Database**: Lo storico di tutti i controlli mensili è visibile, modificabile ed eliminabile esclusivamente nella scheda tab "Controlli" del modal "Gestione Database", provvisto di esportazione in formato Excel/CSV. I controlli sono visualizzati raggruppati cronologicamente per mese ed anno con divisori colorati e mostrano le colonne Esecutore e Posizione Attuale.
 
 7. **Richiesta di Riparazione Word (.docx) ed Esclusività dei Modelli (v3.3.15)**:
@@ -192,4 +192,11 @@ Questo file definisce le linee guida e lo stato di salvataggio del progetto per 
       - **Colonna 6 (F)**: Data di uscita dall'officina.
       - **Colonna 7 (G)**: Note.
 
-
+21. **Ambulanza Allestita e Pallino Bianco sulla Card (v3.6.5)**:
+    - **Pallino Bianco (`.equipped-ambulance-dot`)**: per i mezzi contrassegnati come "Ambulanza Allestita", viene visualizzato un indicatore circolare bianco (`#ffffff`, 14x14px, bordo scuro `#0f172a` per contrasto visivo su qualsiasi sfondo di stato) posizionato a sinistra del pallino giallo di controllo mensile.
+    - **Contenitore Flex `.status-dots-left`**: alloggia sia il pallino bianco che quello giallo all'estrema sinistra della barra di stato (`left: 0.45rem`) con spaziatura (`gap: 0.35rem`), evitando qualsiasi sovrapposizione con il testo dello stato centrato.
+    - **Gestione e Persistenza**:
+      - Checkbox `Ambulanza Allestita` (`#vehicle-is-allestita`) nel modulo di aggiunta/modifica veicolo (`vehicle-form-modal`), memorizzato come booleano `is_allestita` nel documento del veicolo.
+      - **Toggle Rapido**: gli amministratori possono cliccare direttamente sul pallino bianco della card o sul badge `ALLESTITA` nei dettagli del veicolo per attivare o disattivare rapidamente lo stato allestita.
+      - **Badge nei Dettagli Mezzo**: visibile badge `ALLESTITA` con fondo bianco e bordo ardesia nell'intestazione del veicolo accanto all'eventuale badge `ALEA`.
+      - **Supporto CSV**: integrata colonna `Allestita` (`is_allestita`) sia nell'esportazione che nell'importazione CSV/Excel della tabella Mezzi.

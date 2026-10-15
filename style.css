@@ -68,17 +68,36 @@ input[type="date"] {
     color: #000000 !important;
 }
 
-.monthly-check-dot {
+.status-dots-left {
     position: absolute;
     top: 50%;
     left: 0.45rem;
     transform: translateY(-50%);
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+    z-index: 5;
+    pointer-events: auto;
+}
+
+.equipped-ambulance-dot {
     width: 14px;
     height: 14px;
-    background-color: #ffff00; /* Fluo Yellow */
+    background-color: #ffffff; /* Bianco per Ambulanza Allestita */
+    border-radius: 50%;
+    border: 2px solid #0f172a; /* Bordo scuro per risaltare su qualsiasi colore di stato */
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.35);
+    flex-shrink: 0;
+}
+
+.monthly-check-dot {
+    width: 14px;
+    height: 14px;
+    background-color: #ffff00; /* Fluo Yellow per Controllo Mensile */
     border-radius: 50%;
     border: 2px solid white;
-    z-index: 5;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.35);
+    flex-shrink: 0;
 }
 
 /* Layout */
