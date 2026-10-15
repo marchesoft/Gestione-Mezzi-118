@@ -1,16 +1,16 @@
-# Regole e Contesto del Progetto (v3.6.2)
+# Regole e Contesto del Progetto (v3.6.3)
 
-Questo file definisce le linee guida e lo stato di salvataggio del progetto per garantire la coerenza con la versione **3.6.2**.
+Questo file definisce le linee guida e lo stato di salvataggio del progetto per garantire la coerenza con la versione **3.6.3**.
 
-## Stato di Riferimento (v3.6.2)
+## Stato di Riferimento (v3.6.3)
 
 1. **Gestione Versioni**:
-   - La versione attuale di riferimento è **3.6.2**.
-   - Qualsiasi modifica futura richiede l'avanzamento della versione (es. `3.6.3` o successive) in `app.js` (`const APP_VERSION = "X.Y.Z";`) e in `index.html` (header).
+   - La versione attuale di riferimento è **3.6.3**.
+   - Qualsiasi modifica futura richiede l'avanzamento della versione (es. `3.6.4` o successive) in `app.js` (`const APP_VERSION = "X.Y.Z";`) e in `index.html` (header).
 
 2. **Bypass della Cache (Cache-Busting)**:
    - I file `app.js` e `style.css` sono importati in `index.html` con il parametro di versione `?v=X.Y.Z` per forzare il caricamento immediato degli aggiornamenti sui dispositivi client (specialmente mobili).
-   - Esempio: `<link rel="stylesheet" href="style.css?v=3.6.2">` e `<script src="app.js?v=3.6.2"></script>`.
+   - Esempio: `<link rel="stylesheet" href="style.css?v=3.6.3">` e `<script src="app.js?v=3.6.3"></script>`.
    - Ad ogni cambio di codice, aggiornare questa stringa con la nuova versione dell'applicazione.
 
 3. **Integrazione Git e GitHub**:
@@ -173,26 +173,28 @@ Questo file definisce le linee guida e lo stato di salvataggio del progetto per 
     - **Eliminazione sincronizzata**: quando una richiesta di riparazione viene eliminata dallo storico (`deleteRepairRequest`), la corrispondente riga viene individuata ed eliminata dal foglio Excel con compattazione e scalamento degli indici delle righe successive.
     - **Gestione file bloccato / coda**: se il file Excel risulta aperto in sola lettura/bloccato dall'applicazione Excel, le operazioni restano in sospeso (in `localStorage`) e vengono applicate alla chiusura del file al salvataggio successivo. Lo stato dettagliato viene comunicato direttamente nel banner di notifica di salvataggio.
 
-20. **Integrazione Richiesta Riparazione, Storico Manutenzione e Sincronizzazione Excel Avanzata (v3.6.2)**:
+20. **Integrazione Richiesta Riparazione, Storico Manutenzione e Sincronizzazione Excel Avanzata (v3.6.2, v3.6.3)**:
     - **Creazione Automatica Manutenzione da Richiesta di Riparazione**:
       - Quando viene emessa e salvata una nuova richiesta di riparazione (`generateAndDownloadRepairDocx`), il sistema aggiunge automaticamente un nuovo record nella collezione `interventions` (Storico Manutenzione del veicolo):
-        - `date`: impostata alla data della richiesta (`YYYY-MM-DD`).
-        - `date_out`: inizialmente `null` (in attesa di uscita dal ricovero).
+        - `request_date`: impostata alla data della richiesta (`YYYY-MM-DD`).
+        - `date` (Data Entrata): inizialmente `null` (**deve essere vuota** al momento della richiesta, prima dell'ingresso effettivo in officina).
+        - `date_out` (Data Uscita): inizialmente `null` (in attesa di uscita dal ricovero).
         - `description`: descrizione del problema indicata nella richiesta (maiuscola).
         - `workshop`: se nella descrizione è presente il nome di un luogo registrato nella tabella luoghi (`locations`), viene automaticamente preimpostato come officina.
         - `km`: chilometraggio attuale del veicolo.
         - `repair_request_id`: ID univoco della richiesta per collegamento bidirezionale.
-      - La nuova voce compare immediatamente nella tabella *Storico Manutenzione* all'interno dei dettagli del veicolo.
+      - **Posizionamento Colonne nello Storico Manutenzione**:
+        - Nella vista dettagli veicolo (`openVehicleModal`), nel modulo compilabile (`#maintenance-form-modal`) e nella gestione database (`switchDataTable('interventions')`), la colonna/campo **Data Richiesta** è posizionato **prima della Data Entrata** (la quale resta vuota fino alla reale presa in carico del veicolo).
     - **Mappatura Colonne File Excel Locale (`ORGANIZZAZIONE RICHIESTE MEZZI.xlsx`)**:
       - **Colonna 1 (A)**: Sigla / Nome del mezzo (es. `E7`, `E18`, `V74`).
       - **Colonna 2 (B)**: Descrizione del problema / Tipo intervento.
       - **Colonna 3 (C)**: Data della richiesta (formattata `DD MM YY`).
       - **Colonna 4 (D)**: Nome del luogo / officina (se il nome di un luogo registrato nella tabella luoghi è contenuto nella descrizione del problema).
-      - **Colonna 5 (E)**: Data di entrata in officina.
-      - **Colonna 6 (F)**: Data di uscita dall'officina.
+      - **Colonna 5 (E)**: Data di entrata in officina (inizialmente vuota, sincronizzata all'inserimento).
+      - **Colonna 6 (F)**: Data di uscita dall'officina (inizialmente vuota, sincronizzata all'inserimento).
       - **Colonna 7 (G)**: Note.
     - **Sincronizzazione Dinamica Date Entrata e Uscita (`excelSyncUpdateMaintenanceDates`)**:
-      - Quando l'utente inserisce o aggiorna la **Data Entrata** (`#maintenance-date`) o la **Data Uscita** (`#maintenance-date-out`) nel modulo di manutenzione (`saveMaintenanceRecord`), il sistema individua automaticamente la riga corrispondente nel file Excel sul Desktop e aggiorna contestualmente la **Colonna 5 (E)** e la **Colonna 6 (F)** con le rispettive date.
+      - Quando l'utente inserisce o aggiorna la **Data Entrata** (`#maintenance-date`) o la **Data Uscita** (`#maintenance-date-out`) nel modulo di manutenzione (`saveMaintenanceRecord`), il sistema individua automaticamente la riga corrispondente nel file Excel sul Desktop (anche tramite confronto con `request_date`) e aggiorna contestualmente la **Colonna 5 (E)** e la **Colonna 6 (F)** con le rispettive date.
       - Se la Colonna 4 (D) risulta vuota ed è specificata un'officina nel modulo di manutenzione, viene valorizzata anche la Colonna 4.
 
 

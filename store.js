@@ -12,8 +12,14 @@ try {
                 const vSnapshot = await this.db.collection('vehicles').get();
                 const vehicles = vSnapshot.docs.map(doc => ({ ...doc.data(), id: doc.id }));
 
-                const iSnapshot = await this.db.collection('interventions').orderBy('date', 'desc').get();
-                const allInterventions = iSnapshot.docs.map(doc => ({ ...doc.data(), id: doc.id }));
+                const iSnapshot = await this.db.collection('interventions').get();
+                const allInterventions = iSnapshot.docs
+                    .map(doc => ({ ...doc.data(), id: doc.id }))
+                    .sort((a, b) => {
+                        const dateA = a.date || a.request_date || '';
+                        const dateB = b.date || b.request_date || '';
+                        return dateB.localeCompare(dateA);
+                    });
 
                 const interventionsByVehicle = allInterventions.reduce((acc, curr) => {
                     if (!acc[curr.vehicle_id]) acc[curr.vehicle_id] = [];
@@ -47,7 +53,11 @@ try {
 
                 data.maintenanceHistory = iSnapshot.docs
                     .map(iDoc => ({ ...iDoc.data(), id: iDoc.id }))
-                    .sort((a, b) => new Date(b.date) - new Date(a.date));
+                    .sort((a, b) => {
+                        const dateA = a.date || a.request_date || '';
+                        const dateB = b.date || b.request_date || '';
+                        return dateB.localeCompare(dateA);
+                    });
 
                 return data;
             } catch (error) {
@@ -164,8 +174,14 @@ try {
 
         async getInterventions() {
             try {
-                const snapshot = await this.db.collection('interventions').orderBy('date', 'desc').get();
-                const interventions = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id }));
+                const snapshot = await this.db.collection('interventions').get();
+                const interventions = snapshot.docs
+                    .map(doc => ({ ...doc.data(), id: doc.id }))
+                    .sort((a, b) => {
+                        const dateA = a.date || a.request_date || '';
+                        const dateB = b.date || b.request_date || '';
+                        return dateB.localeCompare(dateA);
+                    });
 
                 // To get sigla, we'd need another fetch or a join. 
                 // In Firestore, we usually denormalize or fetch separately.

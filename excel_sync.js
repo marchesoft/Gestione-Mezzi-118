@@ -631,6 +631,7 @@
         const rows = Array.from(sheetData.getElementsByTagNameNS(SHEET_NS, 'row'));
         const targetSigla = (targetData.sigla || '').toString().trim().toUpperCase();
         const targetDesc = (targetData.description || '').toString().trim().toUpperCase();
+        const targetReqDate = targetData.request_date ? excelDate(targetData.request_date) : '';
         const targetDateIn = targetData.date_in ? excelDate(targetData.date_in) : '';
         const targetDateOut = targetData.date_out ? excelDate(targetData.date_out) : '';
         const targetWorkshop = (targetData.workshop || '').toString().trim().toUpperCase();
@@ -659,6 +660,7 @@
 
             const rowSigla = (cellMap['A'] || '').toUpperCase().trim();
             const rowDesc = (cellMap['B'] || '').toUpperCase().trim();
+            const rowReqDate = (cellMap['C'] || '').replace(/[\/\-\.]/g, ' ').trim();
 
             const siglaMatch = targetSigla ? (
                 rowSigla === targetSigla || 
@@ -666,6 +668,8 @@
             ) : true;
 
             if (!siglaMatch) continue;
+
+            const reqDateMatch = targetReqDate ? (rowReqDate === targetReqDate) : true;
 
             let descMatch = false;
             if (targetDesc && rowDesc) {
@@ -679,7 +683,7 @@
                 descMatch = true;
             }
 
-            if (descMatch) {
+            if (reqDateMatch && descMatch) {
                 foundRowIndex = i;
                 break;
             }
@@ -780,6 +784,7 @@
 
         const targetData = {
             sigla: shortSigla(vehicle ? (vehicle.sigla || vehicle.plate) : ''),
+            request_date: record.request_date || '',
             date_in: record.date || '',
             date_out: record.date_out || '',
             workshop: record.workshop || '',

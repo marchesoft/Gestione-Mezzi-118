@@ -1,4 +1,4 @@
-const APP_VERSION = "3.6.2";
+const APP_VERSION = "3.6.3";
 let isAdmin = false;
 let cachedVehicles = null;
 let cachedLocations = null;
@@ -2119,6 +2119,7 @@ window.openVehicleModal = async function (id) {
                     <table style="width: 100%; border-collapse: collapse;">
                         <thead style="background: #f8fafc; border-bottom: 1px solid var(--border-color);">
                             <tr>
+                                <th style="text-align: left; padding: 1rem; font-size: 0.85rem; color: var(--text-secondary);">Data Richiesta</th>
                                 <th style="text-align: left; padding: 1rem; font-size: 0.85rem; color: var(--text-secondary);">Data Entrata</th>
                                 <th style="text-align: left; padding: 1rem; font-size: 0.85rem; color: var(--text-secondary);">Data Uscita</th>
                                 <th style="text-align: left; padding: 1rem; font-size: 0.85rem; color: var(--text-secondary);">Officina</th>
@@ -2130,6 +2131,7 @@ window.openVehicleModal = async function (id) {
                         <tbody>
                             ${vehicle.maintenanceHistory.map(record => `
                                 <tr style="border-bottom: 1px solid var(--border-color);">
+                                    <td style="padding: 1rem; font-weight: 500;">${record.request_date ? formatDate(record.request_date) : '-'}</td>
                                     <td style="padding: 1rem; font-weight: 500;">${record.date ? formatDate(record.date) : '-'}</td>
                                     <td style="padding: 1rem; font-weight: 500;">${record.date_out ? formatDate(record.date_out) : '-'}</td>
                                     <td style="padding: 1rem; font-weight: 500;">${record.workshop || '-'}</td>
@@ -2187,20 +2189,23 @@ window.openMaintenanceForm = function (vehicleId, vehicleSigla, record = null) {
     workshopSelect.innerHTML = '<option value="">-- Seleziona Officina --</option>' +
         (cachedLocations || []).map(loc => `<option value="${loc.luogo}">${loc.luogo}</option>`).join('');
 
+    const reqDateEl = document.getElementById('maintenance-request-date');
     if (record) {
         // Edit Mode
         document.querySelector('#maintenance-form-modal h3').textContent = 'Modifica Manutenzione';
         document.getElementById('maintenance-id').value = record.id;
-        document.getElementById('maintenance-date').value = record.date;
+        if (reqDateEl) reqDateEl.value = record.request_date || '';
+        document.getElementById('maintenance-date').value = record.date || '';
         document.getElementById('maintenance-date-out').value = record.date_out || '';
         document.getElementById('maintenance-workshop').value = record.workshop || '';
         document.getElementById('maintenance-km').value = record.km || '';
-        document.getElementById('maintenance-description').value = record.description;
+        document.getElementById('maintenance-description').value = record.description || '';
     } else {
         // Add Mode
         document.querySelector('#maintenance-form-modal h3').textContent = 'Aggiungi Manutenzione';
         document.getElementById('maintenance-id').value = '';
-        document.getElementById('maintenance-date').valueAsDate = new Date();
+        if (reqDateEl) reqDateEl.value = getLocalISODate();
+        document.getElementById('maintenance-date').value = ''; // Data Entrata inizialmente vuota
         document.getElementById('maintenance-date-out').value = '';
         document.getElementById('maintenance-workshop').value = '';
         document.getElementById('maintenance-km').value = '';
@@ -2215,8 +2220,10 @@ window.saveMaintenanceRecord = async function (e) {
 
     const vehicleId = document.getElementById('maintenance-vehicle-id').value;
     const id = document.getElementById('maintenance-id').value;
-    const date = document.getElementById('maintenance-date').value;
-    const date_out = document.getElementById('maintenance-date-out').value;
+    const reqDateEl = document.getElementById('maintenance-request-date');
+    const requestDate = reqDateEl ? reqDateEl.value.trim() : '';
+    const date = document.getElementById('maintenance-date').value.trim();
+    const date_out = document.getElementById('maintenance-date-out').value.trim();
     const workshop = document.getElementById('maintenance-workshop').value;
     const kmVal = document.getElementById('maintenance-km').value;
     const description = document.getElementById('maintenance-description').value;
@@ -2226,7 +2233,8 @@ window.saveMaintenanceRecord = async function (e) {
     const vehicleSigla = vehicle ? (vehicle.sigla || vehicle.plate) : 'N/A';
 
     const record = {
-        date,
+        request_date: requestDate || null,
+        date: date || null,
         date_out: date_out || null,
         workshop: upper(workshop),
         km: kmVal ? parseInt(kmVal) : null,
@@ -2248,6 +2256,7 @@ window.saveMaintenanceRecord = async function (e) {
             try {
                 await window.excelSyncUpdateMaintenanceDates(vehicle, {
                     id: id,
+                    request_date: requestDate,
                     date: date,
                     date_out: date_out,
                     workshop: workshop,
@@ -2768,8 +2777,8 @@ window.exportCurrentTableToCSV = async function () {
             const italianHeaders = ['Luogo', 'Km Mensili', 'Colore'];
             csvRows.push(italianHeaders.join(';'));
         } else if (type === 'interventions') {
-            headers = ['id', 'date', 'date_out', 'sigla', 'workshop', 'description', 'cost'];
-            const italianHeaders = ['ID (Non modificare)', 'Data Entrata', 'Data Uscita', 'Mezzo (Sigla)', 'Officina', 'Descrizione Intervento', 'Costo'];
+            headers = ['id', 'request_date', 'date', 'date_out', 'sigla', 'workshop', 'description', 'cost'];
+            const italianHeaders = ['ID (Non modificare)', 'Data Richiesta', 'Data Entrata', 'Data Uscita', 'Mezzo (Sigla)', 'Officina', 'Descrizione Intervento', 'Costo'];
             csvRows.push(italianHeaders.join(';'));
         } else if (type === 'cambiomezzo') {
             headers = ['id', 'data', 'turno', 'luogo', 'equipaggio', 'dal_mezzo', 'al_mezzo'];
@@ -2997,6 +3006,7 @@ window.importDataTableFromCSV = function () {
                     },
                     'interventions': {
                         'ID (Non modificare)': 'id', 'id': 'id',
+                        'Data Richiesta': 'request_date', 'request_date': 'request_date', 'data_richiesta': 'request_date',
                         'Data Entrata': 'date', 'date': 'date',
                         'Data Uscita': 'date_out', 'date_out': 'date_out',
                         'Mezzo (Sigla)': 'sigla', 'sigla': 'sigla', 'vehicle_id': 'vehicle_id',
@@ -3284,6 +3294,7 @@ window.switchDataTable = async function (type) {
                     <table class="mgmt-table" id="interventions-table">
                         <thead>
                             <tr>
+                                <th class="col-shrink">Data Richiesta</th>
                                 <th class="col-shrink">Data Entrata</th>
                                 <th class="col-shrink">Data Uscita</th>
                                 <th class="col-shrink">Mezzo</th>
@@ -3296,6 +3307,7 @@ window.switchDataTable = async function (type) {
                         <tbody>
                             ${data.map(i =>
                 '<tr>'
+                + `<td class="col-shrink">${formatDate(i.request_date)}</td>`
                 + `<td class="col-shrink">${formatDate(i.date)}</td>`
                 + `<td class="col-shrink">${formatDate(i.date_out)}</td>`
                 + `<td class="col-shrink text-bold text-primary">${i.sigla || 'N/A'}</td>`
@@ -4916,7 +4928,8 @@ window.generateAndDownloadRepairDocx = async function () {
             try {
                 const matchingLoc = window.findLocationInText ? window.findLocationInText(descRaw, cachedLocations) : '';
                 const autoMaintRecord = {
-                    date: rawDate || getLocalISODate(),
+                    request_date: rawDate || getLocalISODate(), // Data della richiesta
+                    date: null, // Data di entrata inizialmente vuota
                     date_out: null,
                     workshop: matchingLoc ? upper(matchingLoc) : '',
                     km: vehicle && vehicle.mileage ? parseInt(vehicle.mileage) : null,
