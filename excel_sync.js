@@ -622,19 +622,26 @@
         }
     };
 
-    // ---------- Aggiornamento date entrata/uscita manutenzione nel file Excel ----------
-    function updateRowMaintenanceDatesInSheetXml(xml, targetData, sharedStrings = []) {
+    // ---------- Aggiornamento manutenzione nel file Excel (v3.6.4) ----------
+    function updateRowMaintenanceInSheetXml(xml, targetData, sharedStrings = []) {
         const doc = new DOMParser().parseFromString(xml, 'application/xml');
         const sheetData = doc.getElementsByTagNameNS(SHEET_NS, 'sheetData')[0];
         if (!sheetData) return { newXml: xml, found: false };
 
         const rows = Array.from(sheetData.getElementsByTagNameNS(SHEET_NS, 'row'));
-        const targetSigla = (targetData.sigla || '').toString().trim().toUpperCase();
-        const targetDesc = (targetData.description || '').toString().trim().toUpperCase();
-        const targetReqDate = targetData.request_date ? excelDate(targetData.request_date) : '';
-        const targetDateIn = targetData.date_in ? excelDate(targetData.date_in) : '';
-        const targetDateOut = targetData.date_out ? excelDate(targetData.date_out) : '';
-        const targetWorkshop = (targetData.workshop || '').toString().trim().toUpperCase();
+        const searchSigla = (targetData.search_sigla || targetData.sigla || '').toString().trim().toUpperCase();
+        const searchDesc = (targetData.search_desc || targetData.old_description || targetData.description || '').toString().trim().toUpperCase();
+        const searchReqDate = (targetData.search_req_date || targetData.old_request_date || targetData.request_date) 
+            ? excelDate(targetData.search_req_date || targetData.old_request_date || targetData.request_date) : '';
+        const searchDateIn = (targetData.search_date_in || targetData.old_date_in || targetData.date_in) 
+            ? excelDate(targetData.search_date_in || targetData.old_date_in || targetData.date_in) : '';
+
+        const newSigla = (targetData.sigla || searchSigla || '').toString().trim().toUpperCase();
+        const newDesc = (targetData.description !== undefined ? targetData.description : searchDesc).toString().trim().toUpperCase();
+        const newReqDate = targetData.request_date ? excelDate(targetData.request_date) : (searchReqDate || '');
+        const newWorkshop = (targetData.workshop !== undefined ? targetData.workshop : (targetData.old_workshop || '')).toString().trim().toUpperCase();
+        const newDateIn = targetData.date_in ? excelDate(targetData.date_in) : '';
+        const newDateOut = targetData.date_out ? excelDate(targetData.date_out) : '';
 
         const colStyles = {};
         rows.forEach(r => {
@@ -662,18 +669,18 @@
             const rowDesc = (cellMap['B'] || '').toUpperCase().trim();
             const rowReqDate = (cellMap['C'] || '').replace(/[\/\-\.]/g, ' ').trim();
 
-            const siglaMatch = targetSigla ? (
-                rowSigla === targetSigla || 
-                rowSigla.replace(/\s+/g, '') === targetSigla.replace(/\s+/g, '')
+            const siglaMatch = searchSigla ? (
+                rowSigla === searchSigla || 
+                rowSigla.replace(/\s+/g, '') === searchSigla.replace(/\s+/g, '')
             ) : true;
 
             if (!siglaMatch) continue;
 
-            const reqDateMatch = targetReqDate ? (rowReqDate === targetReqDate) : true;
+            const reqDateMatch = searchReqDate ? (rowReqDate === searchReqDate) : true;
 
             let descMatch = false;
-            if (targetDesc && rowDesc) {
-                const cleanT = targetDesc.replace(/[^A-Z0-9]/g, ' ').trim();
+            if (searchDesc && rowDesc) {
+                const cleanT = searchDesc.replace(/[^A-Z0-9]/g, ' ').trim();
                 const cleanR = rowDesc.replace(/[^A-Z0-9]/g, ' ').trim();
                 const tWords = cleanT.split(/\s+/).filter(w => w.length > 2);
                 const rWords = cleanR.split(/\s+/).filter(w => w.length > 2);
@@ -689,8 +696,8 @@
             }
         }
 
-        // Fallback: se non trovata per descrizione esatta, cerca la riga più recente del mezzo
-        if (foundRowIndex === -1 && targetSigla) {
+        // Fallback 1: cerca per sola sigla + data richiesta
+        if (foundRowIndex === -1 && searchSigla && searchReqDate) {
             for (let i = rows.length - 1; i >= 0; i--) {
                 const r = rows[i];
                 const rIdx = parseInt(r.getAttribute('r'), 10);
@@ -704,15 +711,56 @@
                 });
 
                 const rowSigla = (cellMap['A'] || '').toUpperCase().trim();
-                if (rowSigla === targetSigla || rowSigla.replace(/\s+/g, '') === targetSigla.replace(/\s+/g, '')) {
+                const rowReqDate = (cellMap['C'] || '').replace(/[\/\-\.]/g, ' ').trim();
+
+                if ((rowSigla === searchSigla || rowSigla.replace(/\s+/g, '') === searchSigla.replace(/\s+/g, '')) && rowReqDate === searchReqDate) {
                     foundRowIndex = i;
                     break;
                 }
             }
         }
 
+        // Fallback 2: cerca per sigla e descrizione simile
+        if (foundRowIndex === -1 && searchSigla && searchDesc) {
+            for (let i = rows.length - 1; i >= 0; i--) {
+                const r = rows[i];
+                const rIdx = parseInt(r.getAttribute('r'), 10);
+                if (isNaN(rIdx) || rIdx <= 2) continue;
+
+                const cells = Array.from(r.getElementsByTagNameNS(SHEET_NS, 'c'));
+                const cellMap = {};
+                cells.forEach(c => {
+                    const col = (c.getAttribute('r') || '').replace(/\d+/g, '');
+                    cellMap[col] = getCellText(c, sharedStrings);
+                });
+
+                const rowSigla = (cellMap['A'] || '').toUpperCase().trim();
+                const rowDesc = (cellMap['B'] || '').toUpperCase().trim();
+
+                if (rowSigla === searchSigla || rowSigla.replace(/\s+/g, '') === searchSigla.replace(/\s+/g, '')) {
+                    const cleanT = searchDesc.replace(/[^A-Z0-9]/g, ' ').trim();
+                    const cleanR = rowDesc.replace(/[^A-Z0-9]/g, ' ').trim();
+                    if (cleanT.includes(cleanR) || cleanR.includes(cleanT)) {
+                        foundRowIndex = i;
+                        break;
+                    }
+                }
+            }
+        }
+
+        // Se non ancora trovata, aggiungi come nuova riga sul foglio per garantire sincronizzazione completa
         if (foundRowIndex === -1) {
-            return { newXml: xml, found: false };
+            const newRowCells = [
+                newSigla,
+                newDesc,
+                newReqDate,
+                newWorkshop,
+                newDateIn,
+                newDateOut,
+                ''
+            ];
+            const appendedXml = appendRowsToSheetXml(xml, [newRowCells]);
+            return { newXml: appendedXml, found: false, appended: true };
         }
 
         const targetRow = rows[foundRowIndex];
@@ -723,6 +771,7 @@
             const cells = Array.from(targetRow.getElementsByTagNameNS(SHEET_NS, 'c'));
             let c = cells.find(cell => (cell.getAttribute('r') || '') === cellRef);
             if (!c) {
+                if (!textVal) return;
                 c = doc.createElementNS(SHEET_NS, 'c');
                 c.setAttribute('r', cellRef);
                 if (colStyles[colLetter]) c.setAttribute('s', colStyles[colLetter]);
@@ -749,25 +798,18 @@
             }
         }
 
+        // Colonna 1 (A): Sigla
+        if (newSigla) setCellVal('A', newSigla);
+        // Colonna 2 (B): Descrizione
+        if (newDesc !== undefined) setCellVal('B', newDesc);
+        // Colonna 3 (C): Data Richiesta
+        if (newReqDate !== undefined) setCellVal('C', newReqDate);
+        // Colonna 4 (D): Officina / Luogo
+        if (newWorkshop !== undefined) setCellVal('D', newWorkshop);
         // Colonna 5 (E): DATA ENTRATA IN OFFICINA
-        if (targetDateIn) {
-            setCellVal('E', targetDateIn);
-        }
-
+        setCellVal('E', newDateIn);
         // Colonna 6 (F): DATA USCITA
-        if (targetDateOut !== undefined && targetDateOut !== null) {
-            setCellVal('F', targetDateOut);
-        }
-
-        // Se officina specificata e Colonna 4 (D) è vuota, aggiorna Colonna 4
-        if (targetWorkshop) {
-            const currentCells = Array.from(targetRow.getElementsByTagNameNS(SHEET_NS, 'c'));
-            const dCell = currentCells.find(c => (c.getAttribute('r') || '') === ('D' + rIdx));
-            const currentD = dCell ? getCellText(dCell, sharedStrings) : '';
-            if (!currentD) {
-                setCellVal('D', targetWorkshop);
-            }
-        }
+        setCellVal('F', newDateOut);
 
         let out = new XMLSerializer().serializeToString(doc);
         if (!out.startsWith('<?xml')) {
@@ -776,7 +818,7 @@
         return { newXml: out, found: true, rowNumber: rIdx };
     }
 
-    window.excelSyncUpdateMaintenanceDates = async function (vehicle, record) {
+    window.excelSyncUpdateMaintenance = async function (vehicle, recordData) {
         if (!window.excelSyncSupported()) return { ok: false, skipped: true };
         let handle = await window.excelSyncEnsureHandle(false);
         if (!handle) handle = await window.excelSyncEnsureHandle(true);
@@ -784,11 +826,15 @@
 
         const targetData = {
             sigla: shortSigla(vehicle ? (vehicle.sigla || vehicle.plate) : ''),
-            request_date: record.request_date || '',
-            date_in: record.date || '',
-            date_out: record.date_out || '',
-            workshop: record.workshop || '',
-            description: record.description || ''
+            search_sigla: shortSigla(vehicle ? (vehicle.sigla || vehicle.plate) : ''),
+            search_desc: (recordData.old_description || recordData.description || '').toString().trim().toUpperCase(),
+            search_req_date: recordData.old_request_date || recordData.request_date || '',
+            search_date_in: recordData.old_date_in || recordData.date || '',
+            description: recordData.description || '',
+            request_date: recordData.request_date || '',
+            date_in: recordData.date || '',
+            date_out: recordData.date_out || '',
+            workshop: recordData.workshop || ''
         };
 
         try {
@@ -806,11 +852,7 @@
             const sheetXml = await zip.file(sheetPath).async('string');
             const sharedStrings = await loadSharedStrings(zip);
 
-            const updateRes = updateRowMaintenanceDatesInSheetXml(sheetXml, targetData, sharedStrings);
-            if (!updateRes.found) {
-                console.log(`Excel: nessuna riga trovata per aggiornare date di ${targetData.sigla}`);
-                return { ok: true, notFound: true, fileName: handle.name };
-            }
+            const updateRes = updateRowMaintenanceInSheetXml(sheetXml, targetData, sharedStrings);
 
             zip.file(sheetPath, updateRes.newXml);
             const blob = await zip.generateAsync({
@@ -822,10 +864,70 @@
             const writable = await handle.createWritable();
             await writable.write(blob);
             await writable.close();
-            console.log(`Excel: aggiornata riga ${updateRes.rowNumber} (${targetData.sigla}) -> Entrata: ${targetData.date_in}, Uscita: ${targetData.date_out}`);
-            return { ok: true, updated: true, rowNumber: updateRes.rowNumber, fileName: handle.name };
+            if (updateRes.found) {
+                console.log(`Excel: aggiornata riga ${updateRes.rowNumber} (${targetData.sigla}) -> Entrata: ${targetData.date_in}, Uscita: ${targetData.date_out}`);
+                return { ok: true, updated: true, rowNumber: updateRes.rowNumber, fileName: handle.name };
+            } else {
+                console.log(`Excel: riga non trovata, accodata nuova riga per ${targetData.sigla}`);
+                return { ok: true, appended: true, fileName: handle.name };
+            }
         } catch (e) {
-            console.error('Errore aggiornamento date Excel:', e);
+            console.error('Errore aggiornamento manutenzione Excel:', e);
+            const locked = e && (e.name === 'NoModificationAllowedError' || e.name === 'InvalidStateError' || /lock|in use|utilizzo/i.test(e.message || ''));
+            return {
+                ok: false,
+                error: locked ? 'il file è aperto in Microsoft Excel: chiudilo per aggiornarlo' : (e && e.message ? e.message : String(e))
+            };
+        }
+    };
+    window.excelSyncUpdateMaintenanceDates = window.excelSyncUpdateMaintenance;
+
+    // ---------- Eliminazione manutenzione dal file Excel (v3.6.4) ----------
+    window.excelSyncDeleteMaintenance = async function (vehicle, record) {
+        if (!window.excelSyncSupported()) return { ok: false, skipped: true };
+        let handle = await window.excelSyncGetHandle();
+        if (!handle) handle = await window.excelSyncEnsureHandle(true);
+        if (!handle) return { ok: false, notLinked: true };
+
+        try {
+            let q = await handle.queryPermission({ mode: 'readwrite' });
+            if (q !== 'granted') {
+                q = await handle.requestPermission({ mode: 'readwrite' });
+                if (q !== 'granted') {
+                    throw new Error('permesso di lettura/scrittura non autorizzato dal browser');
+                }
+            }
+
+            const file = await handle.getFile();
+            const zip = await JSZip.loadAsync(await file.arrayBuffer());
+            const sheetPath = await resolveFirstSheetPath(zip);
+            const sheetXml = await zip.file(sheetPath).async('string');
+            const sharedStrings = await loadSharedStrings(zip);
+
+            const targetData = {
+                sigla: shortSigla(vehicle ? (vehicle.sigla || vehicle.plate) : ''),
+                date: record.request_date ? excelDate(record.request_date) : (record.date ? excelDate(record.date) : ''),
+                description: (record.description || '').toUpperCase()
+            };
+
+            const delRes = removeRowFromSheetXml(sheetXml, targetData, sharedStrings);
+            if (!delRes.found) {
+                return { ok: true, notFound: true, fileName: handle.name };
+            }
+
+            zip.file(sheetPath, delRes.newXml);
+            const blob = await zip.generateAsync({
+                type: 'blob',
+                compression: 'DEFLATE',
+                mimeType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+            });
+
+            const writable = await handle.createWritable();
+            await writable.write(blob);
+            await writable.close();
+            return { ok: true, removed: true, rowNumber: delRes.removedRowNumber, fileName: handle.name };
+        } catch (e) {
+            console.error('Errore rimozione riga manutenzione Excel:', e);
             const locked = e && (e.name === 'NoModificationAllowedError' || e.name === 'InvalidStateError' || /lock|in use|utilizzo/i.test(e.message || ''));
             return {
                 ok: false,

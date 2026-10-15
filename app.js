@@ -1,4 +1,4 @@
-const APP_VERSION = "3.6.3";
+const APP_VERSION = "3.6.4";
 let isAdmin = false;
 let cachedVehicles = null;
 let cachedLocations = null;
@@ -1877,9 +1877,6 @@ window.openVehicleModal = async function (id) {
                             <button class="btn btn-wash-request" style="background: #06b6d4; color: white; padding: 0.4rem 0.8rem; font-size: 0.85rem; border: none; border-radius: 0.375rem; cursor: pointer; display: flex; align-items: center; gap: 0.4rem;" onclick="openWashModal('${vehicle.id}')" title="Compila e scarica modulo lavaggio Word (stampato)">
                                 <i class="fa-solid fa-shower"></i> Modulo Lavaggio
                             </button>
-                            <button class="btn" style="background: #0284c7; color: white; padding: 0.4rem 0.8rem; font-size: 0.85rem; border: none; border-radius: 0.375rem; cursor: pointer; display: flex; align-items: center; gap: 0.4rem;" onclick="openVehicleRepairHistoryModal('${vehicle.id}')" title="Visualizza lo storico delle richieste di riparazione">
-                                <i class="fa-solid fa-clock-rotate-left"></i> Storico Richieste ${(vehicle.repair_requests && vehicle.repair_requests.length > 0) ? `<span style="background: rgba(255,255,255,0.25); padding: 0.1rem 0.45rem; border-radius: 9999px; font-size: 0.75rem; font-weight: 700;">${vehicle.repair_requests.length}</span>` : ''}
-                            </button>
                             ${isAdmin ? `<button class="btn btn-primary" style="padding: 0.4rem 0.8rem; font-size: 0.85rem;" onclick="openVehicleForm('${vehicle.id}')"><i class="fa-solid fa-pen"></i> Modifica</button>` : ''}
                         </div>
                     </div>
@@ -2129,7 +2126,11 @@ window.openVehicleModal = async function (id) {
                             </tr>
                         </thead>
                         <tbody>
-                            ${vehicle.maintenanceHistory.map(record => `
+                            ${vehicle.maintenanceHistory.map(record => {
+                                const linkedReq = (vehicle.repair_requests && Array.isArray(vehicle.repair_requests))
+                                    ? vehicle.repair_requests.find(r => (record.repair_request_id && r.id === record.repair_request_id) || (r.date === record.request_date && r.description === record.description))
+                                    : null;
+                                return `
                                 <tr style="border-bottom: 1px solid var(--border-color);">
                                     <td style="padding: 1rem; font-weight: 500;">${record.request_date ? formatDate(record.request_date) : '-'}</td>
                                     <td style="padding: 1rem; font-weight: 500;">${record.date ? formatDate(record.date) : '-'}</td>
@@ -2137,14 +2138,18 @@ window.openVehicleModal = async function (id) {
                                     <td style="padding: 1rem; font-weight: 500;">${record.workshop || '-'}</td>
                                     <td style="padding: 1rem; font-weight: 600; color: var(--primary-color);">${record.km ? parseInt(record.km).toLocaleString() + ' km' : '-'}</td>
                                     <td style="padding: 1rem;">${record.description}</td>
-                                    ${isAdmin ? `
-                                    <td style="padding: 1rem; text-align: right;">
-                                        <button class="btn" style="padding: 0.25rem 0.5rem; font-size: 0.8rem; background: var(--primary-color); color: white; margin-right: 0.5rem;" onclick='openMaintenanceForm("${vehicle.id}", "${vehicle.sigla || vehicle.plate}", ${JSON.stringify(record).replace(/'/g, "&#39;")})'><i class="fa-solid fa-pen"></i></button>
-                                        <button class="btn" style="padding: 0.25rem 0.5rem; font-size: 0.8rem; background: var(--status-to-repair); color: white;" onclick="deleteMaintenanceRecord('${record.id}', '${vehicle.id}')"><i class="fa-solid fa-trash"></i></button>
+                                    <td style="padding: 1rem; text-align: right; white-space: nowrap;">
+                                        ${linkedReq ? `
+                                        <button class="btn" style="padding: 0.25rem 0.5rem; font-size: 0.8rem; background: #2563eb; color: white; margin-right: 0.35rem;" title="Scarica Richiesta Word compilata" onclick="downloadSavedRepairDocx('${vehicle.id}', '${linkedReq.id}')"><i class="fa-solid fa-file-word"></i></button>
+                                        ` : ''}
+                                        ${isAdmin ? `
+                                        <button class="btn" style="padding: 0.25rem 0.5rem; font-size: 0.8rem; background: var(--primary-color); color: white; margin-right: 0.35rem;" title="Modifica Manutenzione" onclick='openMaintenanceForm("${vehicle.id}", "${vehicle.sigla || vehicle.plate}", ${JSON.stringify(record).replace(/'/g, "&#39;")})'><i class="fa-solid fa-pen"></i></button>
+                                        <button class="btn" style="padding: 0.25rem 0.5rem; font-size: 0.8rem; background: var(--status-to-repair); color: white;" title="Elimina Manutenzione" onclick="deleteMaintenanceRecord('${record.id}', '${vehicle.id}')"><i class="fa-solid fa-trash"></i></button>
+                                        ` : ''}
                                     </td>
-                                    ` : ''}
                                 </tr>
-                            `).join('')}
+                                `;
+                            }).join('')}
                         </tbody>
                     </table>
                 ` : '<p style="padding: 2rem; text-align: center; color: var(--text-secondary);">Nessun record di manutenzione trovato.</p>'}
@@ -2167,11 +2172,68 @@ window.deleteVehicleHandler = async function (id) {
 }
 
 window.deleteMaintenanceRecord = async function (recordId, vehicleId) {
-    setTimeout(() => {
-        if (confirm('Eliminare questo record?')) {
-            store.deleteIntervention(recordId).then(() => {
-                openVehicleModal(vehicleId);
-            });
+    setTimeout(async () => {
+        if (confirm('Eliminare questo record di manutenzione?')) {
+            try {
+                let vehicle = vehicleId ? await store.getVehicleById(vehicleId) : null;
+                let recordToDelete = null;
+
+                if (vehicle && vehicle.maintenanceHistory) {
+                    recordToDelete = vehicle.maintenanceHistory.find(r => r.id === recordId);
+                }
+                if (!recordToDelete) {
+                    const allInterventions = await store.getInterventions();
+                    recordToDelete = allInterventions.find(r => r.id === recordId);
+                    if (recordToDelete && !vehicle && recordToDelete.vehicle_id) {
+                        vehicle = await store.getVehicleById(recordToDelete.vehicle_id);
+                        vehicleId = recordToDelete.vehicle_id;
+                    }
+                }
+
+                await store.deleteIntervention(recordId);
+
+                // Se collegato a una richiesta Word, rimuovi anche da vehicle.repair_requests
+                if (vehicle && vehicle.repair_requests && Array.isArray(vehicle.repair_requests)) {
+                    const reqIdx = vehicle.repair_requests.findIndex(r => 
+                        (recordToDelete && recordToDelete.repair_request_id && r.id === recordToDelete.repair_request_id) || 
+                        (recordToDelete && r.date === recordToDelete.request_date && r.description === recordToDelete.description)
+                    );
+                    if (reqIdx !== -1) {
+                        vehicle.repair_requests.splice(reqIdx, 1);
+                        await store.updateVehicle(vehicle);
+                    }
+                }
+
+                // Sincronizzazione eliminazione riga da Excel Desktop
+                let excelDelMsg = '';
+                if (window.excelSyncDeleteMaintenance && vehicle && recordToDelete) {
+                    try {
+                        const delRes = await window.excelSyncDeleteMaintenance(vehicle, recordToDelete);
+                        if (delRes && delRes.ok && delRes.removed) {
+                            excelDelMsg = `\n(Riga ${delRes.rowNumber} rimossa dal foglio Excel Desktop)`;
+                        } else if (delRes && !delRes.ok && !delRes.notLinked && !delRes.skipped) {
+                            excelDelMsg = `\n(Attenzione: non è stato possibile aggiornare il file Excel: ${delRes.error})`;
+                        }
+                    } catch (e) {
+                        console.error('Errore sincronizzazione eliminazione Excel:', e);
+                    }
+                }
+
+                if (excelDelMsg) alert("Manutenzione eliminata con successo." + excelDelMsg);
+
+                // Aggiorna le viste aperte
+                if (vehicleId && !document.getElementById('vehicle-modal').classList.contains('hidden')) {
+                    await openVehicleModal(vehicleId);
+                }
+                await renderDashboard();
+                const dataModal = document.getElementById('data-management-modal');
+                if (dataModal && !dataModal.classList.contains('hidden')) {
+                    await switchDataTable(window.lastDataManagerTab || 'interventions');
+                }
+            } catch (err) {
+                console.error("Errore durante l'eliminazione manutenzione:", err);
+                alert("Errore durante l'eliminazione: " + err.message);
+            }
         }
     }, 50);
 }
@@ -2184,6 +2246,9 @@ window.openMaintenanceForm = function (vehicleId, vehicleSigla, record = null) {
     form.reset();
     document.getElementById('maintenance-vehicle-id').value = vehicleId;
     document.getElementById('maintenance-vehicle-sigla').value = vehicleSigla || 'N/A';
+
+    // Memorizza lo stato iniziale del record per il tracciamento delle modifiche e la corrispondenza Excel
+    window._currentEditingMaintenanceRecord = record ? JSON.parse(JSON.stringify(record)) : null;
 
     // Populate Workshop dropdown from cachedLocations
     workshopSelect.innerHTML = '<option value="">-- Seleziona Officina --</option>' +
@@ -2241,7 +2306,6 @@ window.saveMaintenanceRecord = async function (e) {
         description: upper(description),
         type: 'Routine',
         cost: 0
-        // 'sigla' removed as it's not a column in 'interventions' table
     };
 
     try {
@@ -2251,11 +2315,17 @@ window.saveMaintenanceRecord = async function (e) {
             await store.addIntervention(vehicleId, record);
         }
 
-        // Sincronizzazione automatica date entrata/uscita con file Excel Desktop
-        if (window.excelSyncUpdateMaintenanceDates) {
+        // Sincronizzazione automatica completa (date, officina, descrizione) con file Excel Desktop
+        if (window.excelSyncUpdateMaintenance) {
             try {
-                await window.excelSyncUpdateMaintenanceDates(vehicle, {
+                const oldRec = window._currentEditingMaintenanceRecord;
+                await window.excelSyncUpdateMaintenance(vehicle, {
                     id: id,
+                    old_request_date: oldRec ? oldRec.request_date : '',
+                    old_date_in: oldRec ? oldRec.date : '',
+                    old_date_out: oldRec ? oldRec.date_out : '',
+                    old_description: oldRec ? oldRec.description : '',
+                    old_workshop: oldRec ? oldRec.workshop : '',
                     request_date: requestDate,
                     date: date,
                     date_out: date_out,
@@ -2263,7 +2333,7 @@ window.saveMaintenanceRecord = async function (e) {
                     description: description
                 });
             } catch (syncErr) {
-                console.warn("Errore sincronizzazione date manutenzione su Excel:", syncErr);
+                console.warn("Errore sincronizzazione manutenzione su Excel:", syncErr);
             }
         }
 
@@ -3139,6 +3209,9 @@ window.editInterventionHandler = async function (id) {
 }
 
 window.switchDataTable = async function (type) {
+    if (type === 'riparazioni') {
+        type = 'interventions';
+    }
     window.lastDataManagerTab = type; // Track for refresh logic
     // Update tabs
     const buttons = document.querySelectorAll('.filter-btn'); // Reuse existing class for styling
@@ -3290,6 +3363,7 @@ window.switchDataTable = async function (type) {
                         ` : ''}
                     </div>
                 </div>
+                <div id="excel-sync-mgmt-container" style="margin-bottom: 1.25rem;"></div>
                 <div style="overflow-x: auto;">
                     <table class="mgmt-table" id="interventions-table">
                         <thead>
@@ -3315,8 +3389,8 @@ window.switchDataTable = async function (type) {
                 + `<td class="col-shrink" style="font-weight:600; color:var(--primary-color);">${i.km ? parseInt(i.km).toLocaleString() + ' km' : '-'}</td>`
                 + `<td class="col-expand">${i.description}</td>`
                 + (isAdmin ? '<td class="col-actions">'
-                    + `<button onclick="editInterventionHandler('${i.id}')" style="margin-right:0.5rem; cursor:pointer; background:none; border:none; color:var(--primary-color);"><i class="fa-solid fa-pen"></i></button>`
-                    + `<button onclick="setTimeout(() => { if(confirm('Eliminare questo intervento?')){store.deleteIntervention('${i.id}').then(() => switchDataTable('interventions'))} }, 50)" style="cursor:pointer; background:none; border:none; color:var(--status-to-repair);"><i class="fa-solid fa-trash"></i></button>`
+                    + `<button onclick="editInterventionHandler('${i.id}')" style="margin-right:0.5rem; cursor:pointer; background:none; border:none; color:var(--primary-color);" title="Modifica"><i class="fa-solid fa-pen"></i></button>`
+                    + `<button onclick="deleteMaintenanceRecord('${i.id}', '${i.vehicle_id}')" style="cursor:pointer; background:none; border:none; color:var(--status-to-repair);" title="Elimina"><i class="fa-solid fa-trash"></i></button>`
                     + '</td>' : '') + '</tr>'
             ).join('')}
                         </tbody>
@@ -3927,7 +4001,7 @@ window.switchDataTable = async function (type) {
 
     container.innerHTML = html;
 
-    if (type === 'riparazioni' && window.renderExcelSyncPanel) {
+    if ((type === 'interventions' || type === 'riparazioni') && window.renderExcelSyncPanel) {
         window.renderExcelSyncPanel();
     }
 }
@@ -4960,18 +5034,13 @@ window.generateAndDownloadRepairDocx = async function () {
                 }
                 await store.updateVehicle(targetVehicle);
 
-                // Aggiorna la vista dei dettagli del veicolo
-                if (currentOpenedVehicleId === vehicleId) {
+                // Aggiorna la vista dei dettagli del veicolo se aperta
+                if (!document.getElementById('vehicle-modal').classList.contains('hidden') || currentOpenedVehicleId === vehicleId) {
                     await openVehicleModal(vehicleId);
                 }
-                // Se lo storico modale del veicolo è aperto, ricarica
-                const histModal = document.getElementById('vehicle-repair-history-modal');
-                if (histModal && !histModal.classList.contains('hidden')) {
-                    await openVehicleRepairHistoryModal(vehicleId);
-                }
-                // Se la tabella di gestione è aperta su riparazioni, ricarica
-                if (window.lastDataManagerTab === 'riparazioni') {
-                    switchDataTable('riparazioni');
+                // Se la tabella di gestione database è aperta su interventi, ricarica
+                if (window.lastDataManagerTab === 'interventions' || window.lastDataManagerTab === 'riparazioni') {
+                    switchDataTable('interventions');
                 }
             }
         }
