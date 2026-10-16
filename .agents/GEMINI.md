@@ -1,16 +1,16 @@
-# Regole e Contesto del Progetto (v3.6.6)
+# Regole e Contesto del Progetto (v3.6.7)
 
-Questo file definisce le linee guida e lo stato di salvataggio del progetto per garantire la coerenza con la versione **3.6.6**.
+Questo file definisce le linee guida e lo stato di salvataggio del progetto per garantire la coerenza con la versione **3.6.7**.
 
-## Stato di Riferimento (v3.6.6)
+## Stato di Riferimento (v3.6.7)
 
 1. **Gestione Versioni**:
-   - La versione attuale di riferimento è **3.6.6**.
-   - Qualsiasi modifica futura richiede l'avanzamento della versione (es. `3.6.7` o successive) in `app.js` (`const APP_VERSION = "X.Y.Z";`) e in `index.html` (header).
+   - La versione attuale di riferimento è **3.6.7**.
+   - Qualsiasi modifica futura richiede l'avanzamento della versione (es. `3.6.8` o successive) in `app.js` (`const APP_VERSION = "X.Y.Z";`) e in `index.html` (header).
 
 2. **Bypass della Cache (Cache-Busting)**:
    - I file `app.js` e `style.css` sono importati in `index.html` con il parametro di versione `?v=X.Y.Z` per forzare il caricamento immediato degli aggiornamenti sui dispositivi client (specialmente mobili).
-   - Esempio: `<link rel="stylesheet" href="style.css?v=3.6.6">` e `<script src="app.js?v=3.6.6"></script>`.
+   - Esempio: `<link rel="stylesheet" href="style.css?v=3.6.7">` e `<script src="app.js?v=3.6.7"></script>`.
    - Ad ogni cambio di codice, aggiornare questa stringa con la nuova versione dell'applicazione.
 
 3. **Integrazione Git e GitHub**:
@@ -204,3 +204,8 @@ Questo file definisce le linee guida e lo stato di salvataggio del progetto per 
 22. **Richieste di Riparazione e Km nello Storico Manutenzione (v3.6.6)**:
     - Alla creazione di una nuova richiesta di riparazione (`generateAndDownloadRepairDocx`), la registrazione automatica inserita nello **Storico Manutenzione** mantiene il campo chilometri vuoto (`km: null`) anziché inserire automaticamente i chilometri del mese del veicolo (`vehicle.mileage`).
     - Il valore dei chilometri effettivi potrà essere inserito successivamente e puntualmente dall'amministratore (es. al ritiro o al rientro dall'officina).
+
+23. **Immutabilità della Data Richiesta (v3.6.7)**:
+    - Il campo **Data Richiesta** (`repair-date` nel modulo Word e `maintenance-request-date` nel modulo manutenzione) è impostato come fisso e non modificabile (`readonly`, sfondo grigio `#f1f5f9`, cursore `not-allowed`, `pointer-events: none`).
+    - Nelle nuove richieste e nelle nuove manutenzioni viene impostata automaticamente alla data odierna e rimane bloccata.
+    - Nelle modifiche dei record esistenti nello Storico Manutenzioni, la Data Richiesta rimane fissa al valore originariamente registrato, garantendo l'integrità dello storico e la perfetta corrispondenza con la colonna C del foglio Excel sincronizzato.

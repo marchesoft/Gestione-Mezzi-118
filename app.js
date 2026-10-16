@@ -1,4 +1,4 @@
-const APP_VERSION = "3.6.6";
+const APP_VERSION = "3.6.7";
 let isAdmin = false;
 let cachedVehicles = null;
 let cachedLocations = null;
@@ -2299,6 +2299,12 @@ window.openMaintenanceForm = function (vehicleId, vehicleSigla, record = null) {
         (cachedLocations || []).map(loc => `<option value="${loc.luogo}">${loc.luogo}</option>`).join('');
 
     const reqDateEl = document.getElementById('maintenance-request-date');
+    if (reqDateEl) {
+        reqDateEl.readOnly = true;
+        reqDateEl.style.backgroundColor = '#f1f5f9';
+        reqDateEl.style.cursor = 'not-allowed';
+        reqDateEl.style.pointerEvents = 'none';
+    }
     if (record) {
         // Edit Mode
         document.querySelector('#maintenance-form-modal h3').textContent = 'Modifica Manutenzione';
@@ -4416,10 +4422,14 @@ window.openRepairRequestModal = async function (vehicleId) {
             }).join('');
         }
 
-        // 3. Data corrente impostata nel selettore a finestra (date picker)
+        // 3. Data corrente impostata - fissa e non modificabile
         const dateInput = document.getElementById('repair-date');
         if (dateInput) {
             dateInput.value = getLocalISODate();
+            dateInput.readOnly = true;
+            dateInput.style.backgroundColor = '#f1f5f9';
+            dateInput.style.cursor = 'not-allowed';
+            dateInput.style.pointerEvents = 'none';
         }
 
         // Contatti e richiedente di default

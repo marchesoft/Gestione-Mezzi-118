@@ -25,7 +25,7 @@
     <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <!-- App Styles -->
-    <link rel="stylesheet" href="style.css?v=3.6.6">
+    <link rel="stylesheet" href="style.css?v=3.6.7">
 </head>
 
 <body>
@@ -55,7 +55,7 @@
                             <span class="desktop-text">VEICOLI IN GESTIONE 118 DI FERRARA</span>
                             <span class="mobile-text">VEICOLI IN GESTIONE</span>
                             <span id="app-version-display"
-                                style="font-size: 0.8rem; font-weight: 400; opacity: 0.8; margin-left: 0.5rem; vertical-align: middle; text-transform: none;">v 3.6.6</span>
+                                style="font-size: 0.8rem; font-weight: 400; opacity: 0.8; margin-left: 0.5rem; vertical-align: middle; text-transform: none;">v 3.6.7</span>
                         </h3>
                     </div>
                     <div class="action-buttons">
@@ -466,8 +466,8 @@
                                     <label
                                         style="display: block; margin-bottom: 0.5rem; font-weight: 500; font-size: 0.9rem;">Data
                                         Richiesta</label>
-                                    <input type="date" id="maintenance-request-date"
-                                        style="width: 100%; padding: 0.6rem; border: 1px solid var(--border-color); border-radius: 0.5rem;">
+                                    <input type="date" id="maintenance-request-date" readonly tabindex="-1"
+                                        style="width: 100%; padding: 0.6rem; border: 1px solid var(--border-color); border-radius: 0.5rem; background-color: #f1f5f9; color: #475569; font-weight: 600; cursor: not-allowed; pointer-events: none;" title="Data Richiesta fissa e non modificabile">
                                 </div>
                                 <div class="form-group">
                                     <label
@@ -849,7 +849,7 @@
                         </div>
                         <div>
                             <label style="font-size: 0.75rem; font-weight: 700; color: #334155; margin-bottom: 0.25rem; display: block;">DATA RICHIESTA</label>
-                            <input type="date" id="repair-date" class="form-input" style="width: 100%; padding: 0.5rem 0.75rem; border: 1px solid var(--border-color); border-radius: 0.375rem; background-color: white; color: black; color-scheme: light; font-weight: 600;">
+                            <input type="date" id="repair-date" class="form-input" readonly tabindex="-1" style="width: 100%; padding: 0.5rem 0.75rem; border: 1px solid var(--border-color); border-radius: 0.375rem; background-color: #f1f5f9; color: #475569; color-scheme: light; font-weight: 600; cursor: not-allowed; pointer-events: none;" title="Data Richiesta fissa e non modificabile">
                         </div>
                         <div>
                             <label style="font-size: 0.75rem; font-weight: 700; color: #334155; margin-bottom: 0.25rem; display: block;">DIPARTIMENTO / SERVIZIO</label>
@@ -1069,9 +1069,9 @@
 
     <script src="firebase-config.js"></script>
 
-    <script src="store.js?v=3.6.6"></script>
-    <script src="excel_sync.js?v=3.6.6"></script>
-    <script src="app.js?v=3.6.6"></script>
+    <script src="store.js?v=3.6.7"></script>
+    <script src="excel_sync.js?v=3.6.7"></script>
+    <script src="app.js?v=3.6.7"></script>
 </body>
 
 </html>
