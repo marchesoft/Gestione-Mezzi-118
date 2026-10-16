@@ -1,4 +1,4 @@
-const APP_VERSION = "3.6.8";
+const APP_VERSION = "3.6.9";
 let isAdmin = false;
 let cachedVehicles = null;
 let cachedLocations = null;
@@ -338,7 +338,33 @@ window.manualRefresh = async function () {
 
 
 let isSyncing = false; // Prevents race conditions during fetch
+let syncQueued = false;
 let lastVehicleSync = Date.now();
+let realtimeDebounceTimer = null;
+
+function triggerRealtimeDashboardRefresh() {
+    clearTimeout(realtimeDebounceTimer);
+    realtimeDebounceTimer = setTimeout(async () => {
+        console.log("Realtime: Aggiornamento immediato dati e viste...");
+        await renderDashboard(true);
+
+        // Se il modale Gestione Dati (Storico Manutenzioni, Richieste, ecc.) è aperto, ricarica all'istante la tabella attiva
+        const dataModal = document.getElementById('data-management-modal');
+        if (dataModal && !dataModal.classList.contains('hidden') && window.switchDataTable) {
+            const activeTab = window.lastDataManagerTab || 'interventions';
+            console.log("Realtime: Aggiornamento immediato tabella aperta:", activeTab);
+            window.switchDataTable(activeTab);
+        }
+
+        // Se la scheda dettagli veicolo è aperta, ricarica all'istante
+        const vehicleModal = document.getElementById('vehicle-modal');
+        if (vehicleModal && !vehicleModal.classList.contains('hidden') && currentOpenedVehicleId && window.openVehicleModal) {
+            console.log("Realtime: Aggiornamento immediato scheda veicolo:", currentOpenedVehicleId);
+            window.openVehicleModal(currentOpenedVehicleId);
+        }
+    }, 100);
+}
+window.triggerRealtimeDashboardRefresh = triggerRealtimeDashboardRefresh;
 
 function setupRealtimeSubscription() {
     if (window.store && window.store.db) {
@@ -346,17 +372,14 @@ function setupRealtimeSubscription() {
 
         // Vehicles Subscription
         window.store.db.collection('vehicles').onSnapshot((snapshot) => {
-            console.log("Realtime: Vehicles snapshot received. Triggering full refresh for accurate maintenanceHistory...");
-            // Full refresh so maintenanceHistory (including km field) is always up to date
-            renderDashboard(true);
+            console.log("Realtime: Vehicles snapshot received.");
+            triggerRealtimeDashboardRefresh();
         }, err => console.error("Realtime Vehicles error:", err));
 
         // Interventions Subscription
         window.store.db.collection('interventions').onSnapshot((snapshot) => {
-            console.log("Realtime: Interventions snapshot received. Refreshing dashboard...");
-            // Interventions affect maintenanceHistory which is nested in cachedVehicles
-            // Simplest is to trigger a full refresh to re-link everything
-            renderDashboard(true);
+            console.log("Realtime: Interventions snapshot received.");
+            triggerRealtimeDashboardRefresh();
         }, err => console.error("Realtime Interventions error:", err));
 
         // Locations Subscription
@@ -366,13 +389,14 @@ function setupRealtimeSubscription() {
                 const data = doc.data();
                 return { luogo: data.name, colore: data.colore };
             }).sort((a, b) => a.luogo.localeCompare(b.luogo));
-            renderDashboard(false); // Re-render with new locations (station names)
+            renderDashboard(false);
         }, err => console.error("Realtime Locations error:", err));
 
         // Cambi Mezzi Subscription
         window.store.db.collection('cambiomezzo').onSnapshot((snapshot) => {
             console.log("Realtime: Cambi Mezzi snapshot received.");
-            if (!document.getElementById('data-management-modal').classList.contains('hidden')) {
+            const dataModal = document.getElementById('data-management-modal');
+            if (dataModal && !dataModal.classList.contains('hidden')) {
                 switchDataTable('cambiomezzo');
             }
         }, err => console.error("Realtime Cambi error:", err));
@@ -380,11 +404,14 @@ function setupRealtimeSubscription() {
 }
 
 async function renderDashboard(forceRefresh = false) {
-    if (isSyncing) return; // Prevent multiple concurrent refreshes
+    if (isSyncing) {
+        syncQueued = true;
+        return;
+    }
+    isSyncing = true;
 
     try {
         if (forceRefresh || !cachedVehicles) {
-            isSyncing = true;
             console.log("Syncing dashboard data from DB...");
 
             // Parallel fetch
@@ -441,6 +468,10 @@ async function renderDashboard(forceRefresh = false) {
         console.error("Dashboard render error:", err);
     } finally {
         isSyncing = false;
+        if (syncQueued) {
+            syncQueued = false;
+            setTimeout(() => renderDashboard(true), 50);
+        }
     }
 }
 

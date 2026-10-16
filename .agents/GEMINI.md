@@ -210,11 +210,19 @@ Questo file definisce le linee guida e lo stato di salvataggio del progetto per 
     - Nelle nuove richieste e nelle nuove manutenzioni viene impostata automaticamente alla data odierna e rimane bloccata.
     - Nelle modifiche dei record esistenti nello Storico Manutenzioni, la Data Richiesta rimane fissa al valore originariamente registrato, garantendo l'integrità dello storico e la perfetta corrispondenza con la colonna C del foglio Excel sincronizzato.
 
-24. **Sincronizzazione Automatica Cloud da Cellulare a File Excel Desktop (v3.6.8)**:
+24. **Sincronizzazione Automatica Cloud da Cellulare a File Excel Desktop (v3.6.8 - v3.6.9)**:
     - **Ponte Cloud Firebase (`excel_sync_queue`)**: Quando una manutenzione viene modificata o inserita (o una richiesta creata o eliminata) da smartphone o da qualsiasi dispositivo mobile, l'operazione viene registrata sia nella collezione principale di Firestore sia nella coda cloud `excel_sync_queue`.
     - **Sincronizzazione 100% Automatica (Zero Tasti da Premere)**:
       - Il PC Desktop esegue un listener in tempo reale su `excel_sync_queue`.
       - Non appena riceve la modifica inviata dal cellulare, apre e aggiorna automaticamente in background il file `ORGANIZZAZIONE RICHIESTE MEZZI.xlsx` sul Desktop del PC, segnando l'operazione come completata.
       - Se il gestionale sul PC viene aperto successivamente, all'avvio elabora e scrive all'istante tutte le modifiche pendenti senza richiedere la pressione di alcun tasto.
       - Un toast verde non invasivo a scomparsa (`showExcelAutoSyncToast`) notifica la corretta sincronizzazione avvenuta.
+
+25. **Aggiornamento Real-Time Istantaneo Zero-Latenza PC & Cellulare (v3.6.9)**:
+    - **Risoluzione Latenza tra Cellulare e PC**:
+      - Riscaldamento automatico dei permessi File System Access (`warmUpExcelHandlePermission`): memorizza lo stato autorizzato per tutta la sessione del browser al primo tocco o click sulla finestra, consentendo al listener background di scrivere sul file Excel all'istante senza attendere gesture o click successivi.
+      - Passaggio diretto dello snapshot: quando il cellulare invia una modifica, il listener Firestore sul PC passa direttamente i documenti ricevuti a `excelSyncProcessCloudQueue`, eliminando query di rete ridondanti e azzerando i tempi di attesa.
+      - Accodamento `syncQueued` e debounce a 100ms: le modifiche concomitanti su Firestore (`interventions` e `vehicles`) non vengono più scartate dal flag `isSyncing`, ma accodate ed elaborate istantaneamente in un unico ciclo pulito.
+      - Ricaricamento real-time delle schermate aperte: quando arriva una modifica dal cellulare, il PC aggiorna istantaneamente non solo la dashboard mezzi, ma anche la tabella attiva in *Gestione Dati* (es. *Storico Manutenzioni*) o la scheda dettagli del veicolo se aperta.
+      - Polling rapido di sicurezza (3.5s) e gestione file bloccato: se il file Excel è aperto nel programma Microsoft Excel sul PC, viene mostrato un avviso discreto e, non appena l'utente chiude Excel, la scrittura si completa automaticamente entro 3 secondi.
 

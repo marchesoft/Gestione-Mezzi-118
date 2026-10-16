@@ -251,8 +251,11 @@
                     console.warn('Handle esistente non autorizzato (stato: ' + q + ')');
                     if (q === 'denied') {
                         try { await idbSet(HANDLE_KEY, null); } catch (e) {}
+                        handle = null;
+                    } else if (interactive) {
+                        handle = null;
                     }
-                    handle = null;
+                    // Se non siamo interattivi (background) e q è 'prompt', manteniamo l'handle per uso successivo
                 }
             } catch (err) {
                 console.warn('Errore verifica handle salvato:', err);
@@ -987,45 +990,88 @@
 
     // ---------- Elaborazione Automatica Coda Cloud (PC Desktop) ----------
     window._isProcessingExcelCloudQueue = false;
+    window._excelCloudQueuePendingRerun = false;
+    window._excelHandlePermissionGranted = false;
 
-    window.excelSyncProcessCloudQueue = async function (forceInteractive = false) {
+    async function warmUpExcelHandlePermission() {
         if (!window.excelSyncSupported()) return;
-        if (window._isProcessingExcelCloudQueue) return;
+        const handle = await window.excelSyncGetHandle();
+        if (!handle) return;
+        try {
+            let q = await handle.queryPermission({ mode: 'readwrite' });
+            if (q === 'granted') {
+                window._excelHandlePermissionGranted = true;
+                return;
+            }
+            if (q === 'prompt') {
+                const res = await handle.requestPermission({ mode: 'readwrite' });
+                if (res === 'granted') {
+                    window._excelHandlePermissionGranted = true;
+                    console.log('[Excel Sync] Permesso scrittura concesso con successo per la sessione!');
+                    window.excelSyncProcessCloudQueue(false);
+                }
+            }
+        } catch (e) {
+            // Ignora errori di user activation
+        }
+    }
+
+    window.excelSyncProcessCloudQueue = async function (forceInteractive = false, passedDocs = null) {
+        if (!window.excelSyncSupported()) return;
+        if (window._isProcessingExcelCloudQueue) {
+            window._excelCloudQueuePendingRerun = true;
+            return;
+        }
 
         const firestore = getFirestore();
         if (!firestore) return;
 
-        try {
-            const snap = await firestore.collection('excel_sync_queue')
-                .where('status', '==', 'pending')
-                .get();
+        let docs = passedDocs;
+        if (!docs) {
+            try {
+                const snap = await firestore.collection('excel_sync_queue')
+                    .where('status', '==', 'pending')
+                    .get();
 
-            if (snap.empty) return;
-
-            // Ordina cronologicamente in memoria
-            const docs = snap.docs.sort((a, b) => {
-                const ta = a.data().created_at || '';
-                const tb = b.data().created_at || '';
-                return ta.localeCompare(tb);
-            });
-
-            // Recupera l'handle del file Excel sul Desktop (false = senza prompt se non richiesto)
-            let handle = await window.excelSyncEnsureHandle(false);
-            if (!handle && forceInteractive) {
-                handle = await window.excelSyncEnsureHandle(true);
+                if (snap.empty) return;
+                docs = snap.docs;
+            } catch (qErr) {
+                console.warn('[Excel Cloud Sync] Errore lettura coda:', qErr);
+                return;
             }
-            if (!handle) return;
+        }
+        if (!docs || docs.length === 0) return;
 
-            let q = await handle.queryPermission({ mode: 'readwrite' });
-            if (q !== 'granted') {
-                if (forceInteractive) {
+        // Ordina cronologicamente in memoria
+        docs.sort((a, b) => {
+            const ta = (a.data() && a.data().created_at) || '';
+            const tb = (b.data() && b.data().created_at) || '';
+            return ta.localeCompare(tb);
+        });
+
+        // Recupera l'handle del file Excel sul Desktop
+        let handle = await window.excelSyncEnsureHandle(false);
+        if (!handle && forceInteractive) {
+            handle = await window.excelSyncEnsureHandle(true);
+        }
+        if (!handle) return;
+
+        let q = await handle.queryPermission({ mode: 'readwrite' });
+        if (q !== 'granted') {
+            if (forceInteractive) {
+                try {
                     q = await handle.requestPermission({ mode: 'readwrite' });
-                }
-                if (q !== 'granted') return;
+                } catch (e) {}
             }
+            if (q !== 'granted') {
+                return;
+            }
+        }
 
-            window._isProcessingExcelCloudQueue = true;
+        window._excelHandlePermissionGranted = true;
+        window._isProcessingExcelCloudQueue = true;
 
+        try {
             const file = await handle.getFile();
             const zip = await JSZip.loadAsync(await file.arrayBuffer());
             const sheetPath = await resolveFirstSheetPath(zip);
@@ -1037,6 +1083,8 @@
 
             for (const docSnap of docs) {
                 const item = docSnap.data();
+                if (!item || item.status !== 'pending') continue;
+
                 const action = item.action;
                 const d = item.data || {};
                 const sigla = item.sigla || '';
@@ -1100,6 +1148,11 @@
                 console.log(`[Excel Cloud Queue] Sincronizzate con successo ${modifiedCount} modifiche da cellulare nel file ${handle.name}!`);
 
                 window.showExcelAutoSyncToast && window.showExcelAutoSyncToast(modifiedCount);
+
+                // Aggiorna anche le viste e tabelle aperte sul computer all'istante
+                if (window.triggerRealtimeDashboardRefresh) {
+                    window.triggerRealtimeDashboardRefresh();
+                }
             }
 
             // Segna come completati i record elaborati su Firestore
@@ -1114,10 +1167,23 @@
                 await batch.commit();
             }
 
+            // Rimuovi eventuale avviso di file Excel bloccato
+            window.hideExcelLockedNotice && window.hideExcelLockedNotice();
+
         } catch (err) {
             console.warn('[Excel Cloud Queue] Errore elaborazione coda automatica:', err);
+            const isLocked = err && (err.name === 'NoModificationAllowedError' || err.name === 'InvalidStateError' || /lock|in use|utilizzo/i.test(err.message || ''));
+            if (isLocked) {
+                window.showExcelLockedNotice && window.showExcelLockedNotice(handle ? handle.name : 'ORGANIZZAZIONE RICHIESTE MEZZI.xlsx');
+                // Riprova tra 3 secondi (appena l'utente chiude Excel si aggiorna subito)
+                setTimeout(() => window.excelSyncProcessCloudQueue(false), 3000);
+            }
         } finally {
             window._isProcessingExcelCloudQueue = false;
+            if (window._excelCloudQueuePendingRerun) {
+                window._excelCloudQueuePendingRerun = false;
+                setTimeout(() => window.excelSyncProcessCloudQueue(false), 150);
+            }
         }
     };
 
@@ -1156,23 +1222,61 @@
         }, 4500);
     };
 
+    window.showExcelLockedNotice = function (fileName) {
+        let notice = document.getElementById('excel-locked-notice');
+        if (!notice) {
+            notice = document.createElement('div');
+            notice.id = 'excel-locked-notice';
+            notice.style.position = 'fixed';
+            notice.style.bottom = '80px';
+            notice.style.right = '24px';
+            notice.style.zIndex = '99998';
+            notice.style.backgroundColor = '#fffbeb';
+            notice.style.color = '#92400e';
+            notice.style.border = '1px solid #fde68a';
+            notice.style.padding = '0.75rem 1.15rem';
+            notice.style.borderRadius = '10px';
+            notice.style.boxShadow = '0 4px 16px rgba(0, 0, 0, 0.15)';
+            notice.style.display = 'flex';
+            notice.style.alignItems = 'center';
+            notice.style.gap = '0.65rem';
+            notice.style.fontSize = '0.85rem';
+            notice.style.fontWeight = '600';
+            notice.style.transition = 'opacity 0.3s ease';
+            document.body.appendChild(notice);
+        }
+        notice.innerHTML = `<i class="fa-solid fa-file-excel" style="color: #d97706; font-size: 1.2rem;"></i> Il file <strong>${fileName}</strong> è aperto in Excel sul PC: chiudilo per completare la sincronizzazione automatica.`;
+        notice.style.opacity = '1';
+        notice.style.display = 'flex';
+    };
+
+    window.hideExcelLockedNotice = function () {
+        const notice = document.getElementById('excel-locked-notice');
+        if (notice) {
+            notice.style.opacity = '0';
+            setTimeout(() => { if (notice) notice.style.display = 'none'; }, 300);
+        }
+    };
+
     function initCloudQueueAutoSync() {
         if (!window.excelSyncSupported()) return;
         const firestore = getFirestore();
         if (!firestore) return;
 
-        // 1. Elaborazione automatica dopo avvio (senza gesture se permesso già memorizzato)
+        // 1. Controlla e riscalda permessi all'avvio
         setTimeout(() => {
+            warmUpExcelHandlePermission();
             window.excelSyncProcessCloudQueue(false);
-        }, 1500);
+        }, 1200);
 
-        // 2. Listener real-time Firestore per aggiornamenti istantanei mentre la pagina PC è aperta
+        // 2. Listener real-time Firestore per aggiornamenti istantanei da cellulare
         try {
             firestore.collection('excel_sync_queue')
                 .where('status', '==', 'pending')
                 .onSnapshot(snap => {
                     if (snap && !snap.empty) {
-                        window.excelSyncProcessCloudQueue(false);
+                        console.log('[Excel Cloud Sync] Rilevate modifiche in coda dal cellulare:', snap.size);
+                        window.excelSyncProcessCloudQueue(false, snap.docs);
                     }
                 }, err => {
                     console.warn('[Excel Cloud Sync] Snapshot listener:', err);
@@ -1181,18 +1285,25 @@
             console.warn('[Excel Cloud Sync] Impossibile avviare listener realtime:', e);
         }
 
-        // 3. Elaborazione al ritorno del focus o cambio scheda
+        // 3. Polling rapido di sicurezza (ogni 3.5 secondi) per azzerare qualsiasi ritardo di schede in background
+        setInterval(() => {
+            window.excelSyncProcessCloudQueue(false);
+        }, 3500);
+
+        // 4. Elaborazione immediata quando la scheda o la finestra torna attiva
         window.addEventListener('focus', () => {
             window.excelSyncProcessCloudQueue(false);
         });
+        document.addEventListener('visibilitychange', () => {
+            if (document.visibilityState === 'visible') {
+                window.excelSyncProcessCloudQueue(false);
+            }
+        });
 
-        // 4. Se Chrome richiede una gesture dell'utente dopo un riavvio completo,
-        // al primissimo click o tasto premuto ovunque nella finestra si sincronizza in background
-        const passiveRun = () => {
-            window.excelSyncProcessCloudQueue(true);
-        };
-        document.addEventListener('click', passiveRun, { capture: true, once: true, passive: true });
-        document.addEventListener('keydown', passiveRun, { capture: true, once: true, passive: true });
+        // 5. Riscaldamento permessi su qualsiasi interazione utente (click/tasti ovunque nella finestra)
+        ['click', 'pointerdown', 'keydown'].forEach(evt => {
+            document.addEventListener(evt, warmUpExcelHandlePermission, { capture: true, passive: true });
+        });
     }
 
     // ---------- UI ----------
