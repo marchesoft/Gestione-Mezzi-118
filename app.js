@@ -1,4 +1,4 @@
-const APP_VERSION = "3.6.7";
+const APP_VERSION = "3.6.8";
 let isAdmin = false;
 let cachedVehicles = null;
 let cachedLocations = null;
@@ -4872,7 +4872,9 @@ window.showRepairSaveConfirmationBanner = function (filename, targetFolder = "Ca
 
     let excelLine = '';
     if (excelRes && !excelRes.skipped) {
-        if (excelRes.ok) {
+        if (excelRes.queued_cloud) {
+            excelLine = `<div class="repair-banner-item"><i class="fa-solid fa-cloud-arrow-up" style="color: #0284c7;"></i><span>Sincronizzazione automatica con Excel Desktop avviata</span></div>`;
+        } else if (excelRes.ok) {
             excelLine = `<div class="repair-banner-item"><i class="fa-solid fa-file-excel" style="color: #16a34a;"></i><span>Riga aggiunta a <strong>${excelRes.fileName || 'ORGANIZZAZIONE RICHIESTE MEZZI.xlsx'}</strong></span></div>`;
         } else if (excelRes.notLinked) {
             excelLine = `<div class="repair-banner-item"><i class="fa-solid fa-triangle-exclamation" style="color: #d97706;"></i><span>File Excel non selezionato</span></div>`;
