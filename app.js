@@ -1,4 +1,4 @@
-const APP_VERSION = "3.6.5";
+const APP_VERSION = "3.6.6";
 let isAdmin = false;
 let cachedVehicles = null;
 let cachedLocations = null;
@@ -5056,7 +5056,7 @@ window.generateAndDownloadRepairDocx = async function () {
                     date: null, // Data di entrata inizialmente vuota
                     date_out: null,
                     workshop: matchingLoc ? upper(matchingLoc) : '',
-                    km: vehicle && vehicle.mileage ? parseInt(vehicle.mileage) : null,
+                    km: null, // Inizialmente vuoto, non inserire i km del mese in automatico
                     description: upper(descRaw),
                     type: 'Routine',
                     cost: 0,
