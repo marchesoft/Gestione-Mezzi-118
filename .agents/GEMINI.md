@@ -226,3 +226,8 @@ Questo file definisce le linee guida e lo stato di salvataggio del progetto per 
       - Ricaricamento real-time delle schermate aperte: quando arriva una modifica dal cellulare, il PC aggiorna istantaneamente non solo la dashboard mezzi, ma anche la tabella attiva in *Gestione Dati* (es. *Storico Manutenzioni*) o la scheda dettagli del veicolo se aperta.
       - Polling rapido di sicurezza (3.5s) e gestione file bloccato: se il file Excel è aperto nel programma Microsoft Excel sul PC, viene mostrato un avviso discreto e, non appena l'utente chiude Excel, la scrittura si completa automaticamente entro 3 secondi.
 
+26. **Chiusura Automatica della Scheda Dettagli dopo la Conferma di Modifica (v3.7.0)**:
+    - Quando l'utente modifica i dati di un veicolo, una manutenzione, le note o un appuntamento a partire dalla scheda dettagli (`vehicle-modal`):
+      - Viene mostrato il messaggio/alert di conferma (es. *Modifiche salvate con successo!*, *Manutenzione modificata con successo!*).
+      - Alla pressione del tasto **OK** da parte dell'utente, la scheda dettagli (`vehicle-modal`) si chiude automaticamente tramite `closeVehicleModal()`, azzerando `currentOpenedVehicleId` e riportando la visualizzazione sulla schermata principale con i dati già aggiornati.
+

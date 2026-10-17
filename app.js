@@ -1,4 +1,4 @@
-const APP_VERSION = "3.6.9";
+const APP_VERSION = "3.7.0";
 let isAdmin = false;
 let cachedVehicles = null;
 let cachedLocations = null;
@@ -1848,6 +1848,8 @@ window.saveVehicleForm = async function () {
         todo_notes: todo_notes
     };
 
+    const wasInVehicleModal = !document.getElementById('vehicle-modal').classList.contains('hidden');
+
     if (id) {
         // Optimistic Update for Existing Vehicle
         const existing = cachedVehicles ? cachedVehicles.find(v => v.id === id) : await store.getVehicleById(id);
@@ -1870,6 +1872,7 @@ window.saveVehicleForm = async function () {
             } catch (err) {
                 console.error("Failed to update vehicle:", err);
                 alert("Errore salvataggio modifiche nel database. Ricaricare la pagina.");
+                return;
             }
         }
     } else {
@@ -1891,10 +1894,13 @@ window.saveVehicleForm = async function () {
         await switchDataTable(window.lastDataManagerTab || 'vehicles');
     }
 
-
-
-    if (!document.getElementById('vehicle-modal').classList.contains('hidden') && id) {
-        window.openVehicleModal(id);
+    if (id) {
+        alert("Modifiche salvate con successo!");
+        if (wasInVehicleModal) {
+            closeVehicleModal();
+        }
+    } else {
+        alert("Nuovo mezzo registrato con successo!");
     }
 }
 
@@ -2239,7 +2245,7 @@ window.deleteVehicleHandler = async function (id) {
     setTimeout(() => {
         if (confirm('Sei sicuro di voler eliminare questo veicolo?')) {
             store.deleteVehicle(id).then(() => {
-                document.getElementById('vehicle-modal').classList.add('hidden');
+                closeVehicleModal();
                 renderDashboard();
             });
         }
@@ -2294,11 +2300,11 @@ window.deleteMaintenanceRecord = async function (recordId, vehicleId) {
                     }
                 }
 
-                if (excelDelMsg) alert("Manutenzione eliminata con successo." + excelDelMsg);
+                alert("Manutenzione eliminata con successo." + (excelDelMsg || ''));
 
-                // Aggiorna le viste aperte
-                if (vehicleId && !document.getElementById('vehicle-modal').classList.contains('hidden')) {
-                    await openVehicleModal(vehicleId);
+                // Chiudi la scheda dettagli se aperta
+                if (!document.getElementById('vehicle-modal').classList.contains('hidden')) {
+                    closeVehicleModal();
                 }
                 await renderDashboard();
                 const dataModal = document.getElementById('data-management-modal');
@@ -2422,14 +2428,17 @@ window.saveMaintenanceRecord = async function (e) {
 
         // Refresh appropriate views
         await renderDashboard();
-        if (!document.getElementById('vehicle-modal').classList.contains('hidden') && vehicleId) {
-            await openVehicleModal(vehicleId);
-        }
 
         // Refresh Data Management table if it's open
         const dataModal = document.getElementById('data-management-modal');
         if (dataModal && !dataModal.classList.contains('hidden')) {
             await switchDataTable(window.lastDataManagerTab || 'interventions');
+        }
+
+        const wasInVehicleModal = !document.getElementById('vehicle-modal').classList.contains('hidden');
+        alert(id ? "Manutenzione modificata con successo!" : "Manutenzione salvata con successo!");
+        if (wasInVehicleModal) {
+            closeVehicleModal();
         }
 
         // If data management was used, re-open it to requested tab
@@ -2685,7 +2694,7 @@ window.saveVehicleNote = async function (id, text, showFeedback = false) {
             await renderDashboard(true); // Force refresh
             if (showFeedback) {
                 alert('Note aggiornate con successo!');
-                document.getElementById('vehicle-modal').classList.add('hidden');
+                closeVehicleModal();
             }
         }
     } catch (e) {
@@ -2705,7 +2714,7 @@ window.saveVehicleTodoNote = async function (id, text, showFeedback = true) {
             await renderDashboard(true); // Force refresh
             if (showFeedback) {
                 alert("Note 'Da Fare' aggiornate con successo!");
-                document.getElementById('vehicle-modal').classList.add('hidden');
+                closeVehicleModal();
             }
         }
     } catch (error) {
@@ -5320,8 +5329,8 @@ window.deleteRepairRequest = async function (vehicleId, reqIdOrIndex, fallbackIn
                 if (cv) cv.repair_requests = vehicle.repair_requests;
             }
 
-            if (currentOpenedVehicleId === vehicleId) {
-                await openVehicleModal(vehicleId);
+            if (!document.getElementById('vehicle-modal').classList.contains('hidden') || currentOpenedVehicleId === vehicleId) {
+                closeVehicleModal();
             }
             const histModal = document.getElementById('vehicle-repair-history-modal');
             if (histModal && !histModal.classList.contains('hidden')) {
