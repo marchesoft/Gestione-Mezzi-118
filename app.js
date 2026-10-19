@@ -1,4 +1,4 @@
-const APP_VERSION = "3.7.0";
+const APP_VERSION = "3.7.1";
 let isAdmin = false;
 let cachedVehicles = null;
 let cachedLocations = null;
@@ -1908,6 +1908,7 @@ window.openVehicleModal = async function (id) {
     currentOpenedVehicleId = id;
     let vehicle = await store.getVehicleById(id);
     if (!vehicle) return;
+    if (currentOpenedVehicleId !== id) return;
 
     if (cachedVehicles) {
         const updated = cachedVehicles.find(v => v.id === id);
@@ -2238,6 +2239,7 @@ window.openVehicleModal = async function (id) {
                 </div>
                 `;
 
+    if (currentOpenedVehicleId !== id) return;
     modal.classList.remove('hidden');
 }
 
@@ -2424,7 +2426,9 @@ window.saveMaintenanceRecord = async function (e) {
             }
         }
 
+        // Chiudi immediatamente il form di manutenzione e la scheda dettagli veicolo
         document.getElementById('maintenance-form-modal').classList.add('hidden');
+        closeVehicleModal();
 
         // Refresh appropriate views
         await renderDashboard();
@@ -2435,11 +2439,8 @@ window.saveMaintenanceRecord = async function (e) {
             await switchDataTable(window.lastDataManagerTab || 'interventions');
         }
 
-        const wasInVehicleModal = !document.getElementById('vehicle-modal').classList.contains('hidden');
         alert(id ? "Manutenzione modificata con successo!" : "Manutenzione salvata con successo!");
-        if (wasInVehicleModal) {
-            closeVehicleModal();
-        }
+        closeVehicleModal();
 
         // If data management was used, re-open it to requested tab
         // We can detect if it was likely open or just always refresh dashboard/lists
@@ -5136,10 +5137,8 @@ window.generateAndDownloadRepairDocx = async function () {
                 }
                 await store.updateVehicle(targetVehicle);
 
-                // Aggiorna la vista dei dettagli del veicolo se aperta
-                if (!document.getElementById('vehicle-modal').classList.contains('hidden') || currentOpenedVehicleId === vehicleId) {
-                    await openVehicleModal(vehicleId);
-                }
+                // Chiudi la scheda dettagli del veicolo
+                closeVehicleModal();
                 // Se la tabella di gestione database è aperta su interventi, ricarica
                 if (window.lastDataManagerTab === 'interventions' || window.lastDataManagerTab === 'riparazioni') {
                     switchDataTable('interventions');
@@ -5161,6 +5160,8 @@ window.generateAndDownloadRepairDocx = async function () {
         URL.revokeObjectURL(url);
 
         closeRepairRequestModal();
+        closeVehicleModal();
+        await renderDashboard(false);
 
         // Mostra banner di conferma salvataggio e cartella di destinazione
         window.showRepairSaveConfirmationBanner(filename, "Cartella Download", excelRes);

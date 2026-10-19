@@ -1,16 +1,16 @@
-# Regole e Contesto del Progetto (v3.6.8)
+# Regole e Contesto del Progetto (v3.7.1)
 
-Questo file definisce le linee guida e lo stato di salvataggio del progetto per garantire la coerenza con la versione **3.6.8**.
+Questo file definisce le linee guida e lo stato di salvataggio del progetto per garantire la coerenza con la versione **3.7.1**.
 
-## Stato di Riferimento (v3.6.8)
+## Stato di Riferimento (v3.7.1)
 
 1. **Gestione Versioni**:
-   - La versione attuale di riferimento è **3.6.8**.
-   - Qualsiasi modifica futura richiede l'avanzamento della versione (es. `3.6.9` o successive) in `app.js` (`const APP_VERSION = "X.Y.Z";`) e in `index.html` (header).
+   - La versione attuale di riferimento è **3.7.1**.
+   - Qualsiasi modifica futura richiede l'avanzamento della versione (es. `3.7.2` o successive) in `app.js` (`const APP_VERSION = "X.Y.Z";`) e in `index.html` (header).
 
 2. **Bypass della Cache (Cache-Busting)**:
    - I file `app.js` e `style.css` sono importati in `index.html` con il parametro di versione `?v=X.Y.Z` per forzare il caricamento immediato degli aggiornamenti sui dispositivi client (specialmente mobili).
-   - Esempio: `<link rel="stylesheet" href="style.css?v=3.6.8">` e `<script src="app.js?v=3.6.8"></script>`.
+   - Esempio: `<link rel="stylesheet" href="style.css?v=3.7.1">` e `<script src="app.js?v=3.7.1"></script>`.
    - Ad ogni cambio di codice, aggiornare questa stringa con la nuova versione dell'applicazione.
 
 3. **Integrazione Git e GitHub**:
@@ -230,4 +230,9 @@ Questo file definisce le linee guida e lo stato di salvataggio del progetto per 
     - Quando l'utente modifica i dati di un veicolo, una manutenzione, le note o un appuntamento a partire dalla scheda dettagli (`vehicle-modal`):
       - Viene mostrato il messaggio/alert di conferma (es. *Modifiche salvate con successo!*, *Manutenzione modificata con successo!*).
       - Alla pressione del tasto **OK** da parte dell'utente, la scheda dettagli (`vehicle-modal`) si chiude automaticamente tramite `closeVehicleModal()`, azzerando `currentOpenedVehicleId` e riportando la visualizzazione sulla schermata principale con i dati già aggiornati.
+
+27. **Chiusura Scheda Dettagli su Aggiunta Richiesta Riparazione e Aggiornamento Manutenzione (v3.7.1)**:
+    - **Aggiunta Richiesta di Riparazione (`generateAndDownloadRepairDocx`)**: al salvataggio di una nuova richiesta di riparazione (`#repair-submit-btn`), oltre alla chiusura del modale della richiesta (`closeRepairRequestModal()`) e alla visualizzazione del banner toast, viene contestualmente chiusa la scheda dettagli del veicolo (`closeVehicleModal()`) senza più mantenerla o ricaricarla a video.
+    - **Aggiornamento Manutenzione (`saveMaintenanceRecord`)**: alla modifica o salvataggio di un record di manutenzione, la scheda dettagli del veicolo viene chiusa immediatamente (`closeVehicleModal()`) prima dell'elaborazione di `renderDashboard()` e dell'alert di conferma, azzerando `currentOpenedVehicleId` e prevenendo che le sottoscrizioni in tempo reale Firestore (o eventuali ritardi asincroni) possano riaprire o mantenere visibile la scheda dettagli a schermo.
+    - **Protezione Concorrenza su `openVehicleModal`**: se la modale dettagli viene chiusa mentre è in corso il caricamento asincrono del veicolo (`store.getVehicleById`), la procedura abortisce immediatamente senza rimuovere la classe `hidden`.
 
