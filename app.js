@@ -1,4 +1,4 @@
-const APP_VERSION = "3.7.1";
+const APP_VERSION = "3.7.2";
 let isAdmin = false;
 let cachedVehicles = null;
 let cachedLocations = null;
@@ -1675,7 +1675,7 @@ function setupEventListeners() {
     if (maintenanceForm) {
         maintenanceForm.addEventListener('submit', (e) => {
             e.preventDefault();
-            saveMaintenanceRecord();
+            saveMaintenanceRecord(e);
         });
     }
 
@@ -2370,7 +2370,16 @@ window.openMaintenanceForm = function (vehicleId, vehicleSigla, record = null) {
 }
 
 window.saveMaintenanceRecord = async function (e) {
-    if (e) e.preventDefault(); // Handle form submit event
+    if (e && e.preventDefault) e.preventDefault(); // Handle form submit event
+
+    // 1. Riscaldamento / richiesta permessi Excel immediata nel contesto del click utente
+    if (window.excelSyncSupported && window.excelSyncSupported()) {
+        try {
+            await window.excelSyncEnsureHandle(true);
+        } catch (hErr) {
+            console.warn("Riscaldamento permessi Excel in saveMaintenanceRecord:", hErr);
+        }
+    }
 
     const vehicleId = document.getElementById('maintenance-vehicle-id').value;
     const id = document.getElementById('maintenance-id').value;
@@ -2404,25 +2413,43 @@ window.saveMaintenanceRecord = async function (e) {
             await store.addIntervention(vehicleId, record);
         }
 
-        // Sincronizzazione automatica completa (date, officina, descrizione) con file Excel Desktop
-        if (window.excelSyncUpdateMaintenance) {
-            try {
-                const oldRec = window._currentEditingMaintenanceRecord;
-                await window.excelSyncUpdateMaintenance(vehicle, {
-                    id: id,
-                    old_request_date: oldRec ? oldRec.request_date : '',
-                    old_date_in: oldRec ? oldRec.date : '',
-                    old_date_out: oldRec ? oldRec.date_out : '',
-                    old_description: oldRec ? oldRec.description : '',
-                    old_workshop: oldRec ? oldRec.workshop : '',
-                    request_date: requestDate,
-                    date: date,
-                    date_out: date_out,
-                    workshop: workshop,
-                    description: description
-                });
-            } catch (syncErr) {
-                console.warn("Errore sincronizzazione manutenzione su Excel:", syncErr);
+        // 2. Sincronizzazione automatica completa (date, officina, descrizione) con file Excel Desktop
+        let excelRes = null;
+        const oldRec = window._currentEditingMaintenanceRecord;
+        const syncPayload = {
+            id: id,
+            sigla: vehicleSigla,
+            old_request_date: oldRec ? oldRec.request_date : '',
+            old_date_in: oldRec ? oldRec.date : '',
+            old_date_out: oldRec ? oldRec.date_out : '',
+            old_description: oldRec ? oldRec.description : '',
+            old_workshop: oldRec ? oldRec.workshop : '',
+            request_date: requestDate,
+            date: date,
+            date_out: date_out,
+            workshop: workshop,
+            description: description
+        };
+
+        if (!id) {
+            // Nuova manutenzione aggiunta: crea e accoda nuova riga nel foglio Excel Desktop
+            if (window.excelSyncAppendMaintenance) {
+                try {
+                    excelRes = await window.excelSyncAppendMaintenance(vehicle, syncPayload);
+                } catch (syncErr) {
+                    console.warn("Errore aggiunta manutenzione su Excel:", syncErr);
+                    excelRes = { ok: false, error: syncErr.message };
+                }
+            }
+        } else {
+            // Manutenzione modificata: aggiorna la riga esistente nel foglio Excel Desktop
+            if (window.excelSyncUpdateMaintenance) {
+                try {
+                    excelRes = await window.excelSyncUpdateMaintenance(vehicle, syncPayload);
+                } catch (syncErr) {
+                    console.warn("Errore aggiornamento manutenzione su Excel:", syncErr);
+                    excelRes = { ok: false, error: syncErr.message };
+                }
             }
         }
 
@@ -2439,7 +2466,26 @@ window.saveMaintenanceRecord = async function (e) {
             await switchDataTable(window.lastDataManagerTab || 'interventions');
         }
 
-        alert(id ? "Manutenzione modificata con successo!" : "Manutenzione salvata con successo!");
+        // Messaggio di conferma con esito dettagliato della sincronizzazione Excel
+        let excelMsg = '';
+        if (excelRes) {
+            if (excelRes.ok) {
+                if (excelRes.updated) {
+                    excelMsg = `\n(Riga ${excelRes.rowNumber} aggiornata nel foglio Excel Desktop)`;
+                } else if (excelRes.appended || excelRes.written) {
+                    excelMsg = `\n(Nuova riga aggiunta al foglio Excel Desktop: ORGANIZZAZIONE RICHIESTE MEZZI.xlsx)`;
+                } else if (excelRes.queued_cloud) {
+                    excelMsg = `\n(Sincronizzato con il cloud: scrittura automatica sul file Excel del PC)`;
+                }
+            } else if (excelRes.error && /aperto/i.test(excelRes.error)) {
+                excelMsg = `\n(Attenzione: ${excelRes.error})`;
+                if (window.showExcelLockedNotice) window.showExcelLockedNotice(excelRes.fileName || 'ORGANIZZAZIONE RICHIESTE MEZZI.xlsx');
+            } else if (!excelRes.notLinked) {
+                excelMsg = `\n(Attenzione Excel: ${excelRes.error || 'non aggiornato'})`;
+            }
+        }
+
+        alert((id ? "Manutenzione modificata con successo!" : "Manutenzione salvata con successo!") + excelMsg);
         closeVehicleModal();
 
         // If data management was used, re-open it to requested tab

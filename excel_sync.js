@@ -128,7 +128,7 @@
     }
     window.excelSyncPendingCount = function () { return getPending().length; };
 
-    // ---------- Conversione richiesta -> riga Excel ----------
+    // ---------- Conversione richiesta / manutenzione -> riga Excel ----------
     function shortSigla(sigla) {
         const s = (sigla || '').toString().toUpperCase().trim();
         const m = s.match(/^([A-Z]+)\s*-?\s*0*(\d+)$/);
@@ -143,6 +143,26 @@
             return `${d.padStart(2, '0')} ${m.padStart(2, '0')} ${y.slice(-2)}`;
         }
         return dateStr || '';
+    }
+    function normalizeDateStr(dStr) {
+        if (!dStr) return '';
+        const str = dStr.toString().trim();
+        if (/^\d{5}$/.test(str)) {
+            const serial = parseInt(str, 10);
+            const utcDays = serial - 25569;
+            const date = new Date(utcDays * 86400 * 1000);
+            const day = String(date.getUTCDate()).padStart(2, '0');
+            const month = String(date.getUTCMonth() + 1).padStart(2, '0');
+            const year = String(date.getUTCFullYear()).slice(-2);
+            return `${day} ${month} ${year}`;
+        }
+        const parts = str.split(/[\s\/\-\.]+/).filter(Boolean);
+        if (parts.length === 3) {
+            let [d, m, y] = parts;
+            if (d.length === 4) { const t = d; d = y; y = t; }
+            return `${d.padStart(2, '0')} ${m.padStart(2, '0')} ${y.slice(-2)}`;
+        }
+        return str.replace(/[\/\-\.]/g, ' ').trim();
     }
     function findLocationInText(text, locations = []) {
         if (!text) return '';
@@ -188,6 +208,47 @@
                 ''                                                             // Colonna 7: Note
             ]
         };
+    };
+
+    window.buildExcelRowFromMaintenance = function (vehicle, maint) {
+        let desc = (maint.description || '').toString()
+            .split(/\r?\n/).map(s => s.trim()).filter(Boolean).join(', ');
+        const locList = window.cachedLocations || [];
+        const matchingLuogo = maint.workshop || (window.findLocationInText ? findLocationInText(desc, locList) : '');
+
+        return {
+            id: maint.id || ('maint_' + Date.now()),
+            cells: [
+                shortSigla(vehicle ? (vehicle.sigla || vehicle.plate) : (maint.sigla || '')), // Colonna 1: Nome mezzo
+                desc.toUpperCase(),                                                           // Colonna 2: Descrizione intervento
+                excelDate(maint.request_date || maint.date || ''),                            // Colonna 3: Data richiesta
+                (matchingLuogo || '').toUpperCase(),                                          // Colonna 4: Luogo / Officina
+                maint.date ? excelDate(maint.date) : '',                                      // Colonna 5: Data entrata
+                maint.date_out ? excelDate(maint.date_out) : '',                              // Colonna 6: Data uscita
+                ''                                                                            // Colonna 7: Note
+            ]
+        };
+    };
+
+    window.excelSyncAppendMaintenance = async function (vehicle, recordData) {
+        if (!window.excelSyncSupported()) {
+            return await window.excelSyncEnqueueCloud('append_maintenance', vehicle, {
+                id: recordData.id || ('maint_' + Date.now()),
+                sigla: shortSigla(vehicle ? (vehicle.sigla || vehicle.plate) : (recordData.sigla || '')),
+                description: recordData.description || '',
+                request_date: recordData.request_date || recordData.date || '',
+                date: recordData.date || '',
+                date_in: recordData.date || '',
+                date_out: recordData.date_out || '',
+                workshop: recordData.workshop || ''
+            });
+        }
+        let handle = await window.excelSyncEnsureHandle(true);
+        if (!handle) return { ok: false, notLinked: true };
+        const pending = getPending();
+        pending.push(window.buildExcelRowFromMaintenance(vehicle, recordData));
+        setPending(pending);
+        return window.excelSyncFlush(handle);
     };
 
     // ---------- Permessi e Acquisizione Automatica Handle ----------
@@ -546,8 +607,14 @@
             const rowDesc = (cellMap['B'] || '').toUpperCase().trim();
             const rowDate = (cellMap['C'] || '').replace(/[\/\-\.]/g, ' ').trim();
 
-            const siglaMatch = targetSigla ? (rowSigla === targetSigla || rowSigla.replace(/\s+/g, '') === targetSigla.replace(/\s+/g, '')) : true;
-            const dateMatch = targetDate ? (rowDate === targetDate) : true;
+            const siglaMatch = targetSigla ? (
+                rowSigla === targetSigla || 
+                rowSigla.replace(/\s+/g, '') === targetSigla.replace(/\s+/g, '') ||
+                shortSigla(rowSigla) === shortSigla(targetSigla)
+            ) : true;
+            const dateMatch = targetDate ? (
+                normalizeDateStr(rowDate) === normalizeDateStr(targetDate)
+            ) : true;
             
             let descMatch = true;
             if (targetDesc && rowDesc) {
@@ -670,7 +737,7 @@
         }
     };
 
-    // ---------- Aggiornamento manutenzione nel file Excel (v3.6.4) ----------
+    // ---------- Aggiornamento manutenzione nel file Excel (v3.6.4 / v3.7.2) ----------
     function updateRowMaintenanceInSheetXml(xml, targetData, sharedStrings = []) {
         const doc = new DOMParser().parseFromString(xml, 'application/xml');
         const sheetData = doc.getElementsByTagNameNS(SHEET_NS, 'sheetData')[0];
@@ -686,7 +753,7 @@
 
         const newSigla = (targetData.sigla || searchSigla || '').toString().trim().toUpperCase();
         const newDesc = (targetData.description !== undefined ? targetData.description : searchDesc).toString().trim().toUpperCase();
-        const newReqDate = targetData.request_date ? excelDate(targetData.request_date) : (searchReqDate || '');
+        const newReqDate = targetData.request_date ? excelDate(targetData.request_date) : (searchReqDate ? excelDate(searchReqDate) : (targetData.date_in ? excelDate(targetData.date_in) : ''));
         const newWorkshop = (targetData.workshop !== undefined ? targetData.workshop : (targetData.old_workshop || '')).toString().trim().toUpperCase();
         const newDateIn = targetData.date_in ? excelDate(targetData.date_in) : '';
         const newDateOut = targetData.date_out ? excelDate(targetData.date_out) : '';
@@ -719,12 +786,15 @@
 
             const siglaMatch = searchSigla ? (
                 rowSigla === searchSigla || 
-                rowSigla.replace(/\s+/g, '') === searchSigla.replace(/\s+/g, '')
+                rowSigla.replace(/\s+/g, '') === searchSigla.replace(/\s+/g, '') ||
+                shortSigla(rowSigla) === shortSigla(searchSigla)
             ) : true;
 
             if (!siglaMatch) continue;
 
-            const reqDateMatch = searchReqDate ? (rowReqDate === searchReqDate) : true;
+            const reqDateMatch = searchReqDate ? (
+                normalizeDateStr(rowReqDate) === normalizeDateStr(searchReqDate)
+            ) : true;
 
             let descMatch = false;
             if (searchDesc && rowDesc) {
@@ -744,7 +814,7 @@
             }
         }
 
-        // Fallback 1: cerca per sola sigla + data richiesta
+        // Fallback 1: cerca per sola sigla + data richiesta (con normalizzazione formati data)
         if (foundRowIndex === -1 && searchSigla && searchReqDate) {
             for (let i = rows.length - 1; i >= 0; i--) {
                 const r = rows[i];
@@ -761,7 +831,7 @@
                 const rowSigla = (cellMap['A'] || '').toUpperCase().trim();
                 const rowReqDate = (cellMap['C'] || '').replace(/[\/\-\.]/g, ' ').trim();
 
-                if ((rowSigla === searchSigla || rowSigla.replace(/\s+/g, '') === searchSigla.replace(/\s+/g, '')) && rowReqDate === searchReqDate) {
+                if ((rowSigla === searchSigla || rowSigla.replace(/\s+/g, '') === searchSigla.replace(/\s+/g, '') || shortSigla(rowSigla) === shortSigla(searchSigla)) && normalizeDateStr(rowReqDate) === normalizeDateStr(searchReqDate)) {
                     foundRowIndex = i;
                     break;
                 }
@@ -785,13 +855,37 @@
                 const rowSigla = (cellMap['A'] || '').toUpperCase().trim();
                 const rowDesc = (cellMap['B'] || '').toUpperCase().trim();
 
-                if (rowSigla === searchSigla || rowSigla.replace(/\s+/g, '') === searchSigla.replace(/\s+/g, '')) {
+                if (rowSigla === searchSigla || rowSigla.replace(/\s+/g, '') === searchSigla.replace(/\s+/g, '') || shortSigla(rowSigla) === shortSigla(searchSigla)) {
                     const cleanT = searchDesc.replace(/[^A-Z0-9]/g, ' ').trim();
                     const cleanR = rowDesc.replace(/[^A-Z0-9]/g, ' ').trim();
-                    if (cleanT.includes(cleanR) || cleanR.includes(cleanT)) {
+                    if (cleanT && cleanR && (cleanT.includes(cleanR) || cleanR.includes(cleanT))) {
                         foundRowIndex = i;
                         break;
                     }
+                }
+            }
+        }
+
+        // Fallback 3: cerca per sigla e data entrata
+        if (foundRowIndex === -1 && searchSigla && searchDateIn) {
+            for (let i = rows.length - 1; i >= 0; i--) {
+                const r = rows[i];
+                const rIdx = parseInt(r.getAttribute('r'), 10);
+                if (isNaN(rIdx) || rIdx <= 2) continue;
+
+                const cells = Array.from(r.getElementsByTagNameNS(SHEET_NS, 'c'));
+                const cellMap = {};
+                cells.forEach(c => {
+                    const col = (c.getAttribute('r') || '').replace(/\d+/g, '');
+                    cellMap[col] = getCellText(c, sharedStrings);
+                });
+
+                const rowSigla = (cellMap['A'] || '').toUpperCase().trim();
+                const rowDateIn = (cellMap['E'] || '').replace(/[\/\-\.]/g, ' ').trim();
+
+                if ((rowSigla === searchSigla || rowSigla.replace(/\s+/g, '') === searchSigla.replace(/\s+/g, '') || shortSigla(rowSigla) === shortSigla(searchSigla)) && normalizeDateStr(rowDateIn) === normalizeDateStr(searchDateIn)) {
+                    foundRowIndex = i;
+                    break;
                 }
             }
         }
@@ -851,7 +945,7 @@
         // Colonna 2 (B): Descrizione
         if (newDesc !== undefined) setCellVal('B', newDesc);
         // Colonna 3 (C): Data Richiesta
-        if (newReqDate !== undefined) setCellVal('C', newReqDate);
+        if (newReqDate) setCellVal('C', newReqDate);
         // Colonna 4 (D): Officina / Luogo
         if (newWorkshop !== undefined) setCellVal('D', newWorkshop);
         // Colonna 5 (E): DATA ENTRATA IN OFFICINA
@@ -870,8 +964,7 @@
         if (!window.excelSyncSupported()) {
             return await window.excelSyncEnqueueCloud('update_maintenance', vehicle, recordData);
         }
-        let handle = await window.excelSyncEnsureHandle(false);
-        if (!handle) handle = await window.excelSyncEnsureHandle(true);
+        let handle = await window.excelSyncEnsureHandle(true);
         if (!handle) return { ok: false, notLinked: true };
 
         const targetData = {
@@ -926,19 +1019,19 @@
             const locked = e && (e.name === 'NoModificationAllowedError' || e.name === 'InvalidStateError' || /lock|in use|utilizzo/i.test(e.message || ''));
             return {
                 ok: false,
+                fileName: handle.name,
                 error: locked ? 'il file è aperto in Microsoft Excel: chiudilo per aggiornarlo' : (e && e.message ? e.message : String(e))
             };
         }
     };
     window.excelSyncUpdateMaintenanceDates = window.excelSyncUpdateMaintenance;
 
-    // ---------- Eliminazione manutenzione dal file Excel (v3.6.4) ----------
+    // ---------- Eliminazione manutenzione dal file Excel (v3.6.4 / v3.7.2) ----------
     window.excelSyncDeleteMaintenance = async function (vehicle, record) {
         if (!window.excelSyncSupported()) {
             return await window.excelSyncEnqueueCloud('delete_maintenance', vehicle, record);
         }
-        let handle = await window.excelSyncGetHandle();
-        if (!handle) handle = await window.excelSyncEnsureHandle(true);
+        let handle = await window.excelSyncEnsureHandle(true);
         if (!handle) return { ok: false, notLinked: true };
 
         try {
@@ -1106,16 +1199,16 @@
                     sheetXml = res.newXml;
                     modifiedCount++;
                     completedDocIds.push(docSnap.id);
-                } else if (action === 'append_request') {
-                    const matchingLuogo = d.workshop || findLocationInText(d.description, window.cachedLocations || []);
+                } else if (action === 'append_request' || action === 'append_maintenance') {
+                    const matchingLuogo = d.workshop || (window.findLocationInText ? findLocationInText(d.description, window.cachedLocations || []) : '');
                     const row = [
                         shortSigla(sigla),
                         (d.description || '').toUpperCase().trim(),
-                        d.date ? excelDate(d.date) : '',
-                        matchingLuogo.toUpperCase(),
-                        d.date_in ? excelDate(d.date_in) : '',
+                        d.request_date ? excelDate(d.request_date) : (d.date ? excelDate(d.date) : ''),
+                        (matchingLuogo || '').toUpperCase(),
+                        d.date_in ? excelDate(d.date_in) : (d.date ? excelDate(d.date) : ''),
                         d.date_out ? excelDate(d.date_out) : '',
-                        ''
+                        d.notes || ''
                     ];
                     sheetXml = appendRowsToSheetXml(sheetXml, [row]);
                     modifiedCount++;

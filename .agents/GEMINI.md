@@ -1,16 +1,16 @@
-# Regole e Contesto del Progetto (v3.7.1)
+# Regole e Contesto del Progetto (v3.7.2)
 
-Questo file definisce le linee guida e lo stato di salvataggio del progetto per garantire la coerenza con la versione **3.7.1**.
+Questo file definisce le linee guida e lo stato di salvataggio del progetto per garantire la coerenza con la versione **3.7.2**.
 
-## Stato di Riferimento (v3.7.1)
+## Stato di Riferimento (v3.7.2)
 
 1. **Gestione Versioni**:
-   - La versione attuale di riferimento è **3.7.1**.
+   - La versione attuale di riferimento è **3.7.2**.
    - Qualsiasi modifica futura richiede l'avanzamento della versione (es. `3.7.2` o successive) in `app.js` (`const APP_VERSION = "X.Y.Z";`) e in `index.html` (header).
 
 2. **Bypass della Cache (Cache-Busting)**:
    - I file `app.js` e `style.css` sono importati in `index.html` con il parametro di versione `?v=X.Y.Z` per forzare il caricamento immediato degli aggiornamenti sui dispositivi client (specialmente mobili).
-   - Esempio: `<link rel="stylesheet" href="style.css?v=3.7.1">` e `<script src="app.js?v=3.7.1"></script>`.
+   - Esempio: `<link rel="stylesheet" href="style.css?v=3.7.2">` e `<script src="app.js?v=3.7.2"></script>`.
    - Ad ogni cambio di codice, aggiornare questa stringa con la nuova versione dell'applicazione.
 
 3. **Integrazione Git e GitHub**:
@@ -236,3 +236,18 @@ Questo file definisce le linee guida e lo stato di salvataggio del progetto per 
     - **Aggiornamento Manutenzione (`saveMaintenanceRecord`)**: alla modifica o salvataggio di un record di manutenzione, la scheda dettagli del veicolo viene chiusa immediatamente (`closeVehicleModal()`) prima dell'elaborazione di `renderDashboard()` e dell'alert di conferma, azzerando `currentOpenedVehicleId` e prevenendo che le sottoscrizioni in tempo reale Firestore (o eventuali ritardi asincroni) possano riaprire o mantenere visibile la scheda dettagli a schermo.
     - **Protezione Concorrenza su `openVehicleModal`**: se la modale dettagli viene chiusa mentre è in corso il caricamento asincrono del veicolo (`store.getVehicleById`), la procedura abortisce immediatamente senza rimuovere la classe `hidden`.
 
+28. **Sincronizzazione Completa Excel su Aggiunta e Modifica Manutenzioni (v3.7.2)**:
+    - **Aggiunta Nuova Manutenzione (`excelSyncAppendMaintenance`)**:
+      - Quando l'utente aggiunge una nuova manutenzione (sia dalla scheda dettagli del veicolo che da Gestione Database), il record viene non solo salvato su Firestore, ma contestualmente accodato come nuova riga nel file Excel Desktop (`ORGANIZZAZIONE RICHIESTE MEZZI.xlsx`).
+      - Popola in modo coerente tutte le colonne: Colonna A (Sigla normalizzata con `shortSigla`), Colonna B (Descrizione problema), Colonna C (Data richiesta `DD MM YY`), Colonna D (Officina / Luogo), Colonna E (Data entrata se indicata), Colonna F (Data uscita se indicata), Colonna G (Note).
+      - Se l'operazione avviene da cellulare, viene accodata in `excel_sync_queue` con azione `append_maintenance` ed elaborata in tempo reale dal listener del PC.
+    - **Modifica di Qualsiasi Voce nello Storico Manutenzioni (`excelSyncUpdateMaintenance`)**:
+      - Qualsiasi modifica apportata a una voce nello Storico Manutenzioni (Data Entrata, Data Uscita, Officina, Descrizione, ecc.) aggiorna all'istante la riga corrispondente nel file Excel Desktop.
+      - Se per qualsiasi motivo la riga non è ancora presente nel file Excel, viene accodata automaticamente per garantire la completa integrità dei dati.
+    - **Risoluzione Decadimento User Activation**:
+      - In `saveMaintenanceRecord`, il riscaldamento e la verifica dei permessi dell'handle File System Access (`excelSyncEnsureHandle(true)`) vengono eseguiti subito all'inizio della funzione nel contesto diretto del click utente, prevenendo il blocco dei permessi da parte del browser Chromium.
+    - **Corrispondenza Resiliente delle Righe**:
+      - Introdotta la funzione `normalizeDateStr` per confrontare le date in modo indipendente dal formato (supporta slash, trattini, spazi, anni a 2 o 4 cifre e seriali numerici Excel).
+      - La corrispondenza della sigla include il matching flessibile `shortSigla` (es. `E1` / `ECHO 01`).
+    - **Feedback Visivo di Sincronizzazione**:
+      - L'avviso di conferma notifica all'utente l'esito puntuale della sincronizzazione Excel (es. riga aggiornata con numero di riga, nuova riga aggiunta, accodamento cloud o avviso file aperto in Microsoft Excel).
