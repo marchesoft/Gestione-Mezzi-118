@@ -1,4 +1,4 @@
-const APP_VERSION = "3.7.3";
+const APP_VERSION = "3.7.4";
 let isAdmin = false;
 let cachedVehicles = null;
 let cachedLocations = null;
@@ -2375,7 +2375,10 @@ window.saveMaintenanceRecord = async function (e) {
     // 1. Riscaldamento / richiesta permessi Excel immediata nel contesto del click utente
     if (window.excelSyncSupported && window.excelSyncSupported()) {
         try {
-            await window.excelSyncEnsureHandle(true);
+            const existingHandle = await window.excelSyncGetHandle();
+            if (existingHandle) {
+                await window.excelSyncEnsureHandle(true);
+            }
         } catch (hErr) {
             console.warn("Riscaldamento permessi Excel in saveMaintenanceRecord:", hErr);
         }

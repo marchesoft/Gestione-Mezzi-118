@@ -1,16 +1,16 @@
-# Regole e Contesto del Progetto (v3.7.3)
+# Regole e Contesto del Progetto (v3.7.4)
 
-Questo file definisce le linee guida e lo stato di salvataggio del progetto per garantire la coerenza con la versione **3.7.3**.
+Questo file definisce le linee guida e lo stato di salvataggio del progetto per garantire la coerenza con la versione **3.7.4**.
 
-## Stato di Riferimento (v3.7.3)
+## Stato di Riferimento (v3.7.4)
 
 1. **Gestione Versioni**:
-   - La versione attuale di riferimento è **3.7.3**.
+   - La versione attuale di riferimento è **3.7.4**.
    - Qualsiasi modifica futura richiede l'avanzamento della versione (es. `3.7.2` o successive) in `app.js` (`const APP_VERSION = "X.Y.Z";`) e in `index.html` (header).
 
 2. **Bypass della Cache (Cache-Busting)**:
    - I file `app.js` e `style.css` sono importati in `index.html` con il parametro di versione `?v=X.Y.Z` per forzare il caricamento immediato degli aggiornamenti sui dispositivi client (specialmente mobili).
-   - Esempio: `<link rel="stylesheet" href="style.css?v=3.7.3">` e `<script src="app.js?v=3.7.3"></script>`.
+   - Esempio: `<link rel="stylesheet" href="style.css?v=3.7.4">` e `<script src="app.js?v=3.7.4"></script>`.
    - Ad ogni cambio di codice, aggiornare questa stringa con la nuova versione dell'applicazione.
 
 3. **Integrazione Git e GitHub**:
@@ -256,3 +256,11 @@ Questo file definisce le linee guida e lo stato di salvataggio del progetto per 
     - Il campo **Data Richiesta** (`maintenance-request-date`) nel modulo di inserimento e modifica manutenzione (`#maintenance-form-modal`) è ora completamente modificabile dall'utente (`readOnly = false`, interattivo e con selettore calendario nativo).
     - All'apertura del modulo per l'inserimento di una nuova manutenzione viene preimpostata la data odierna come valore predefinito, consentendo all'utente di modificarla liberamente per registrare manutenzioni con data di richiesta antecedente o personalizzata.
     - Il valore della Data Richiesta viene memorizzato sul database Firestore e sincronizzato con la colonna C del file Excel Desktop (`ORGANIZZAZIONE RICHIESTE MEZZI.xlsx`).
+
+30. **Sincronizzazione Multi-Postazione PC Casa -> PC Lavoro e Allineamento Database (v3.7.4)**:
+    - **Sincronizzazione Trasparente da PC Remoto / Casa**: Se una richiesta o una manutenzione viene creata, aggiornata o eliminata da una postazione dove il file Excel non è collegato in locale (es. PC di casa, computer portatile, cellulare o tablet), l'operazione non genera errori né richiede l'apertura di file locali, ma viene accodata istantaneamente su Firestore (`excel_sync_queue`).
+    - **Aggiornamento Automatico all'Avvio del PC del Lavoro**:
+      - All'accensione del PC di lavoro e all'apertura dell'applicazione, il listener Firestore intercetta le modifiche pendenti. Se i permessi sul file Desktop sono già concessi nella sessione, il foglio `ORGANIZZAZIONE RICHIESTE MEZZI.xlsx` viene aggiornato all'istante in background con toast di conferma.
+      - Se il browser Chromium richiede l'autorizzazione di sicurezza, compare un banner in evidenza: `⚡ Rilevate modifiche inviate da casa / cellulare: [ Sincronizza Ora su Desktop ]`. Con un solo click l'utente autorizza la scrittura e sincronizza tutto.
+    - **Funzione di Allineamento Completo con Database (`excelSyncReconcileWithDatabase`)**:
+      - Introdotto nel pannello di sincronizzazione di Gestione Database il pulsante blu **Allinea con Database**. Scansiona l'intero archivio di manutenzioni e richieste salvate su Firestore, verifica le righe già presenti nel foglio Excel Desktop e accoda in automatico qualsiasi voce mancante (compresa quella già inserita da casa prima dell'aggiornamento).

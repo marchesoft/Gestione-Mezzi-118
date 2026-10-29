@@ -1,5 +1,5 @@
 // =====================================================================
-// Sincronizzazione Richieste di Riparazione -> file Excel locale (v3.5.4)
+// Sincronizzazione Richieste di Riparazione -> file Excel locale (v3.7.4)
 // File di destinazione: "ORGANIZZAZIONE RICHIESTE MEZZI.xlsx" (Desktop)
 //
 // Usa la File System Access API (Chrome / Edge desktop): al salvataggio
@@ -10,6 +10,13 @@
 // formattazione, larghezze colonne, stili e impostazioni di stampa.
 // Se il file non è scrivibile (es. aperto in Excel) la riga resta in coda
 // (localStorage) e viene scritta al salvataggio successivo.
+//
+// Supporto Cloud Multi-Postazione (v3.7.4):
+// Le operazioni eseguite da dispositivi mobili, smartphone o PC di casa
+// (dove il file Excel locale non è presente) vengono trasmesse alla coda
+// Cloud Firestore ('excel_sync_queue'). Non appena il PC principale del lavoro
+// viene acceso e la web app viene aperta, il file Excel del Desktop viene
+// aggiornato automaticamente con tutte le modifiche pendenti.
 // =====================================================================
 (function () {
     const DB_NAME = 'gm118_excel_sync';
@@ -108,7 +115,7 @@
                 data: data || {},
                 status: 'pending',
                 created_at: new Date().toISOString(),
-                device: window.isMobileDevice() ? 'mobile' : 'pc'
+                device: window.isMobileDevice() ? 'mobile' : 'pc_casa'
             };
             const docRef = await firestore.collection('excel_sync_queue').add(item);
             console.log(`[Excel Cloud Sync] Inserita operazione "${action}" per ${siglaVal} (ID: ${docRef.id})`);
@@ -231,20 +238,28 @@
     };
 
     window.excelSyncAppendMaintenance = async function (vehicle, recordData) {
-        if (!window.excelSyncSupported()) {
-            return await window.excelSyncEnqueueCloud('append_maintenance', vehicle, {
-                id: recordData.id || ('maint_' + Date.now()),
-                sigla: shortSigla(vehicle ? (vehicle.sigla || vehicle.plate) : (recordData.sigla || '')),
-                description: recordData.description || '',
-                request_date: recordData.request_date || recordData.date || '',
-                date: recordData.date || '',
-                date_in: recordData.date || '',
-                date_out: recordData.date_out || '',
-                workshop: recordData.workshop || ''
-            });
+        const payload = {
+            id: recordData.id || ('maint_' + Date.now()),
+            sigla: shortSigla(vehicle ? (vehicle.sigla || vehicle.plate) : (recordData.sigla || '')),
+            description: recordData.description || '',
+            request_date: recordData.request_date || recordData.date || '',
+            date: recordData.date || '',
+            date_in: recordData.date || '',
+            date_out: recordData.date_out || '',
+            workshop: recordData.workshop || ''
+        };
+
+        // Se siamo su dispositivo mobile o se su questo PC non è collegato il file locale (es. PC di casa):
+        let handle = await window.excelSyncGetHandle();
+        if (!handle) {
+            return await window.excelSyncEnqueueCloud('append_maintenance', vehicle, payload);
         }
-        let handle = await window.excelSyncEnsureHandle(true);
-        if (!handle) return { ok: false, notLinked: true };
+
+        handle = await window.excelSyncEnsureHandle(true);
+        if (!handle) {
+            return await window.excelSyncEnqueueCloud('append_maintenance', vehicle, payload);
+        }
+
         const pending = getPending();
         pending.push(window.buildExcelRowFromMaintenance(vehicle, recordData));
         setPending(pending);
@@ -370,18 +385,26 @@
 
     // ---------- Accodamento + scrittura ----------
     window.excelSyncAppendRequest = async function (vehicle, req, locations = []) {
-        if (!window.excelSyncSupported()) {
-            return await window.excelSyncEnqueueCloud('append_request', vehicle, {
-                id: req.id,
-                description: req.description || '',
-                date: req.date || '',
-                types: req.types || [],
-                station: req.station || '',
-                workshop: (window.findLocationInText ? window.findLocationInText(req.description, locations) : '') || req.station || ''
-            });
+        const payload = {
+            id: req.id,
+            description: req.description || '',
+            date: req.date || '',
+            types: req.types || [],
+            station: req.station || '',
+            workshop: (window.findLocationInText ? window.findLocationInText(req.description, locations) : '') || req.station || ''
+        };
+
+        // Se siamo su dispositivo mobile o se su questo PC non è collegato il file locale (es. PC di casa):
+        let handle = await window.excelSyncGetHandle();
+        if (!handle) {
+            return await window.excelSyncEnqueueCloud('append_request', vehicle, payload);
         }
-        let handle = await window.excelSyncEnsureHandle(true);
-        if (!handle) return { ok: false, notLinked: true };
+
+        handle = await window.excelSyncEnsureHandle(true);
+        if (!handle) {
+            return await window.excelSyncEnqueueCloud('append_request', vehicle, payload);
+        }
+
         const pending = getPending();
         if (!pending.some(p => p.id === req.id)) {
             pending.push(window.buildExcelRowFromRepairRequest(vehicle, req, locations));
@@ -672,14 +695,14 @@
 
     // ---------- Eliminazione richiesta dal file Excel ----------
     window.excelSyncDeleteRequest = async function (vehicle, req) {
-        if (!window.excelSyncSupported()) {
-            return await window.excelSyncEnqueueCloud('delete_request', vehicle, req);
-        }
         let handle = await window.excelSyncGetHandle();
         if (!handle) {
-            handle = await window.excelSyncEnsureHandle(true);
+            return await window.excelSyncEnqueueCloud('delete_request', vehicle, req);
         }
-        if (!handle) return { ok: false, notLinked: true };
+        handle = await window.excelSyncEnsureHandle(true);
+        if (!handle) {
+            return await window.excelSyncEnqueueCloud('delete_request', vehicle, req);
+        }
 
         // 1. Rimuovi da eventuali pending locali
         const pending = getPending();
@@ -961,11 +984,14 @@
     }
 
     window.excelSyncUpdateMaintenance = async function (vehicle, recordData) {
-        if (!window.excelSyncSupported()) {
+        let handle = await window.excelSyncGetHandle();
+        if (!handle) {
             return await window.excelSyncEnqueueCloud('update_maintenance', vehicle, recordData);
         }
-        let handle = await window.excelSyncEnsureHandle(true);
-        if (!handle) return { ok: false, notLinked: true };
+        handle = await window.excelSyncEnsureHandle(true);
+        if (!handle) {
+            return await window.excelSyncEnqueueCloud('update_maintenance', vehicle, recordData);
+        }
 
         const targetData = {
             sigla: shortSigla(vehicle ? (vehicle.sigla || vehicle.plate) : ''),
@@ -1028,11 +1054,14 @@
 
     // ---------- Eliminazione manutenzione dal file Excel (v3.6.4 / v3.7.2) ----------
     window.excelSyncDeleteMaintenance = async function (vehicle, record) {
-        if (!window.excelSyncSupported()) {
+        let handle = await window.excelSyncGetHandle();
+        if (!handle) {
             return await window.excelSyncEnqueueCloud('delete_maintenance', vehicle, record);
         }
-        let handle = await window.excelSyncEnsureHandle(true);
-        if (!handle) return { ok: false, notLinked: true };
+        handle = await window.excelSyncEnsureHandle(true);
+        if (!handle) {
+            return await window.excelSyncEnqueueCloud('delete_maintenance', vehicle, record);
+        }
 
         try {
             let q = await handle.queryPermission({ mode: 'readwrite' });
@@ -1147,7 +1176,12 @@
         if (!handle && forceInteractive) {
             handle = await window.excelSyncEnsureHandle(true);
         }
-        if (!handle) return;
+        if (!handle) {
+            // Su questo computer non è collegato il file Excel locale (es. siamo su PC di casa o portatile):
+            // non mostrare banner e termina silenziosamente
+            window.hideExcelCloudPendingBanner && window.hideExcelCloudPendingBanner();
+            return;
+        }
 
         let q = await handle.queryPermission({ mode: 'readwrite' });
         if (q !== 'granted') {
@@ -1157,6 +1191,9 @@
                 } catch (e) {}
             }
             if (q !== 'granted') {
+                // I permessi di scrittura non sono ancora stati concessi in questa sessione del browser.
+                // Mostra il banner in evidenza con il pulsante per sincronizzare con 1 click!
+                window.showExcelCloudPendingBanner && window.showExcelCloudPendingBanner(docs.length);
                 return;
             }
         }
@@ -1238,9 +1275,10 @@
                 const writable = await handle.createWritable();
                 await writable.write(blob);
                 await writable.close();
-                console.log(`[Excel Cloud Queue] Sincronizzate con successo ${modifiedCount} modifiche da cellulare nel file ${handle.name}!`);
+                console.log(`[Excel Cloud Queue] Sincronizzate con successo ${modifiedCount} modifiche da casa/cellulare nel file ${handle.name}!`);
 
                 window.showExcelAutoSyncToast && window.showExcelAutoSyncToast(modifiedCount);
+                window.hideExcelCloudPendingBanner && window.hideExcelCloudPendingBanner();
 
                 // Aggiorna anche le viste e tabelle aperte sul computer all'istante
                 if (window.triggerRealtimeDashboardRefresh) {
@@ -1258,6 +1296,7 @@
                     });
                 });
                 await batch.commit();
+                window.hideExcelCloudPendingBanner && window.hideExcelCloudPendingBanner();
             }
 
             // Rimuovi eventuale avviso di file Excel bloccato
@@ -1278,6 +1317,56 @@
                 setTimeout(() => window.excelSyncProcessCloudQueue(false), 150);
             }
         }
+    };
+
+    window.showExcelCloudPendingBanner = function (count) {
+        if (!count || count <= 0) {
+            window.hideExcelCloudPendingBanner();
+            return;
+        }
+        let banner = document.getElementById('excel-cloud-pending-banner');
+        if (!banner) {
+            banner = document.createElement('div');
+            banner.id = 'excel-cloud-pending-banner';
+            banner.style.position = 'fixed';
+            banner.style.top = '12px';
+            banner.style.left = '50%';
+            banner.style.transform = 'translateX(-50%)';
+            banner.style.zIndex = '99999';
+            banner.style.backgroundColor = '#0f172a';
+            banner.style.color = '#ffffff';
+            banner.style.border = '2px solid #38bdf8';
+            banner.style.borderRadius = '12px';
+            banner.style.padding = '0.65rem 1.15rem';
+            banner.style.boxShadow = '0 10px 25px -5px rgba(0, 0, 0, 0.5), 0 8px 10px -6px rgba(0, 0, 0, 0.4)';
+            banner.style.display = 'flex';
+            banner.style.alignItems = 'center';
+            banner.style.gap = '1rem';
+            banner.style.fontSize = '0.88rem';
+            banner.style.fontWeight = '500';
+            banner.style.maxWidth = '92vw';
+            banner.style.flexWrap = 'wrap';
+            document.body.appendChild(banner);
+        }
+        const textMod = count === 1 ? '1 modifica inviata da casa / cellulare' : `${count} modifiche inviate da casa / cellulare`;
+        banner.innerHTML = `
+            <div style="display: flex; align-items: center; gap: 0.65rem;">
+                <i class="fa-solid fa-cloud-arrow-down" style="color: #38bdf8; font-size: 1.25rem;"></i>
+                <span>Rilevata <strong>${textMod}</strong> in attesa per il file Excel Desktop.</span>
+            </div>
+            <div style="display: flex; align-items: center; gap: 0.5rem; margin-left: auto;">
+                <button type="button" onclick="window.excelSyncProcessCloudQueue(true)" style="background: #0284c7; color: #ffffff; border: none; padding: 0.45rem 0.95rem; border-radius: 8px; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 0.45rem; font-size: 0.83rem; box-shadow: 0 2px 6px rgba(2, 132, 199, 0.4);">
+                    <i class="fa-solid fa-file-excel"></i> Sincronizza Ora su Desktop
+                </button>
+                <button type="button" onclick="window.hideExcelCloudPendingBanner()" style="background: transparent; border: none; color: #94a3b8; font-size: 1.2rem; cursor: pointer; padding: 0.2rem 0.4rem; line-height: 1;" title="Chiudi avviso">&times;</button>
+            </div>
+        `;
+        banner.style.display = 'flex';
+    };
+
+    window.hideExcelCloudPendingBanner = function () {
+        const banner = document.getElementById('excel-cloud-pending-banner');
+        if (banner) banner.style.display = 'none';
     };
 
     window.showExcelAutoSyncToast = function (count) {
@@ -1303,7 +1392,7 @@
             toast.style.pointerEvents = 'none';
             document.body.appendChild(toast);
         }
-        toast.innerHTML = `<i class="fa-solid fa-cloud-arrow-down" style="color: #6ee7b7; font-size: 1.15rem;"></i> Sincronizzato con il file Excel del Desktop (${count} ${count === 1 ? 'modifica dal cellulare' : 'modifiche dal cellulare'})`;
+        toast.innerHTML = `<i class="fa-solid fa-cloud-arrow-down" style="color: #6ee7b7; font-size: 1.15rem;"></i> Sincronizzato con il file Excel del Desktop (${count} ${count === 1 ? 'modifica da casa/cellulare' : 'modifiche da casa/cellulare'})`;
         toast.style.opacity = '1';
         toast.style.transform = 'translateY(0)';
         clearTimeout(window._excelCloudSyncToastTimer);
@@ -1362,15 +1451,17 @@
             window.excelSyncProcessCloudQueue(false);
         }, 1200);
 
-        // 2. Listener real-time Firestore per aggiornamenti istantanei da cellulare
+        // 2. Listener real-time Firestore per aggiornamenti istantanei da cellulare / PC di casa
         try {
             firestore.collection('excel_sync_queue')
                 .where('status', '==', 'pending')
                 .onSnapshot(snap => {
-                    if (snap && !snap.empty) {
-                        console.log('[Excel Cloud Sync] Rilevate modifiche in coda dal cellulare:', snap.size);
-                        window.excelSyncProcessCloudQueue(false, snap.docs);
+                    if (!snap || snap.empty) {
+                        window.hideExcelCloudPendingBanner && window.hideExcelCloudPendingBanner();
+                        return;
                     }
+                    console.log('[Excel Cloud Sync] Rilevate modifiche in coda dal cloud (casa/cellulare):', snap.size);
+                    window.excelSyncProcessCloudQueue(false, snap.docs);
                 }, err => {
                     console.warn('[Excel Cloud Sync] Snapshot listener:', err);
                 });
@@ -1476,8 +1567,8 @@
         } else {
             statusBorder = '#e2e8f0';
             statusBg = '#f8fafc';
-            statusBadge = `<span style="background: #f1f5f9; color: #475569; font-size: 0.75rem; font-weight: 700; padding: 0.2rem 0.6rem; border-radius: 9999px; border: 1px solid #cbd5e1; display: inline-flex; align-items: center; gap: 0.35rem;"><i class="fa-solid fa-link-slash"></i> Non collegato su questo PC</span>`;
-            statusDesc = `Nessun file Excel collegato sul Desktop di questa postazione. Verrà collegato in automatico al primo salvataggio di una riparazione, oppure puoi collegarlo subito qui a fianco.`;
+            statusBadge = `<span style="background: #f1f5f9; color: #475569; font-size: 0.75rem; font-weight: 700; padding: 0.2rem 0.6rem; border-radius: 9999px; border: 1px solid #cbd5e1; display: inline-flex; align-items: center; gap: 0.35rem;"><i class="fa-solid fa-cloud"></i> Postazione Remota (Cloud Sync)</span>`;
+            statusDesc = `Nessun file Excel collegato localmente su questa postazione (es. PC di casa, portatile). Tutte le manutenzioni e richieste inserite qui vengono sincronizzate automaticamente via Cloud e scritte nel file Excel sul PC del lavoro non appena viene avviato.`;
         }
 
         box.innerHTML = `
@@ -1500,6 +1591,10 @@
                     ${pendingCount > 0 ? `
                     <button type="button" class="btn" onclick="excelSyncFlushManual()" style="background: #d97706; color: white; padding: 0.45rem 0.85rem; font-size: 0.82rem; border: none; border-radius: 0.4rem; cursor: pointer; display: flex; align-items: center; gap: 0.4rem; font-weight: 600;" title="Scrive le righe in coda nel foglio Excel">
                         <i class="fa-solid fa-rotate"></i> Scrivi ${pendingCount} in Coda
+                    </button>` : ''}
+                    ${handle ? `
+                    <button type="button" class="btn" onclick="excelSyncReconcileWithDatabase()" style="background: #2563eb; color: white; padding: 0.45rem 0.85rem; font-size: 0.82rem; border: none; border-radius: 0.4rem; cursor: pointer; display: flex; align-items: center; gap: 0.4rem; font-weight: 600;" title="Verifica tutto il database e aggiunge al foglio Excel qualsiasi manutenzione o richiesta mancante (es. inserita da casa)">
+                        <i class="fa-solid fa-arrows-rotate"></i> Allinea con Database
                     </button>` : ''}
                     <button type="button" class="btn" onclick="excelSyncConnectManual()" style="background: #059669; color: white; padding: 0.45rem 0.85rem; font-size: 0.82rem; border: none; border-radius: 0.4rem; cursor: pointer; display: flex; align-items: center; gap: 0.4rem; font-weight: 600;">
                         <i class="fa-solid fa-folder-open"></i> ${handle ? 'Cambia / Ricollega File' : 'Collega File Excel'}
@@ -1577,6 +1672,154 @@
         } catch (e) {
             console.error('Errore scollegamento Excel:', e);
             alert('Errore durante lo scollegamento: ' + e.message);
+        }
+    };
+
+    // ---------- Allineamento Completo Foglio Excel con Database (v3.7.4) ----------
+    window.excelSyncReconcileWithDatabase = async function () {
+        if (!window.excelSyncSupported()) {
+            alert('Questa funzione è utilizzabile solo su PC Desktop con il file Excel collegato.');
+            return;
+        }
+        let handle = await window.excelSyncEnsureHandle(true);
+        if (!handle) {
+            alert('Nessun file Excel collegato. Collega prima il file "ORGANIZZAZIONE RICHIESTE MEZZI.xlsx" sul Desktop.');
+            return;
+        }
+
+        let q = await handle.queryPermission({ mode: 'readwrite' });
+        if (q !== 'granted') {
+            q = await handle.requestPermission({ mode: 'readwrite' });
+            if (q !== 'granted') {
+                alert('Permesso di lettura/scrittura non concesso dal browser.');
+                return;
+            }
+        }
+
+        try {
+            const file = await handle.getFile();
+            const zip = await JSZip.loadAsync(await file.arrayBuffer());
+            const sheetPath = await resolveFirstSheetPath(zip);
+            let sheetXml = await zip.file(sheetPath).async('string');
+            const sharedStrings = await loadSharedStrings(zip);
+
+            // Carica tutti i veicoli dal database Firestore
+            let vehicles = [];
+            if (typeof store !== 'undefined' && store.getVehicles) {
+                vehicles = await store.getVehicles();
+            } else if (window.cachedVehicles && window.cachedVehicles.length > 0) {
+                vehicles = window.cachedVehicles;
+            }
+            const locList = window.cachedLocations || [];
+
+            // Analizza le righe già presenti nel foglio Excel
+            const doc = new DOMParser().parseFromString(sheetXml, 'application/xml');
+            const sheetData = doc.getElementsByTagNameNS(SHEET_NS, 'sheetData')[0];
+            const rows = Array.from(sheetData.getElementsByTagNameNS(SHEET_NS, 'row'));
+
+            const existingRows = [];
+            rows.forEach(r => {
+                const rIdx = parseInt(r.getAttribute('r'), 10);
+                if (isNaN(rIdx) || rIdx <= 2) return;
+                const cells = Array.from(r.getElementsByTagNameNS(SHEET_NS, 'c'));
+                const cellMap = {};
+                cells.forEach(c => {
+                    const col = (c.getAttribute('r') || '').replace(/\d+/g, '');
+                    cellMap[col] = getCellText(c, sharedStrings);
+                });
+                const s = shortSigla(cellMap['A'] || '');
+                const d = normalizeDateStr(cellMap['C'] || '');
+                const desc = (cellMap['B'] || '').toUpperCase().trim();
+                if (s || d || desc) {
+                    existingRows.push({ sigla: s, date: d, desc: desc, rIdx });
+                }
+            });
+
+            // Raccogli tutte le manutenzioni e richieste dal database
+            const toAdd = [];
+            vehicles.forEach(v => {
+                const sSigla = shortSigla(v.sigla || v.plate || '');
+
+                // 1. Manutenzioni / Interventi
+                if (v.interventions && Array.isArray(v.interventions)) {
+                    v.interventions.forEach(m => {
+                        const mDate = normalizeDateStr(m.request_date || m.date || '');
+                        const mDesc = (m.description || '').toUpperCase().trim();
+                        // Verifica se esiste già
+                        const exists = existingRows.some(er => {
+                            const siglaMatch = er.sigla === sSigla;
+                            const dateMatch = er.date === mDate;
+                            const descMatch = !mDesc || !er.desc || er.desc.includes(mDesc.slice(0, 12)) || mDesc.includes(er.desc.slice(0, 12));
+                            return siglaMatch && dateMatch && descMatch;
+                        });
+                        if (!exists) {
+                            const matchingLuogo = m.workshop || (window.findLocationInText ? findLocationInText(mDesc, locList) : '');
+                            toAdd.push([
+                                sSigla,
+                                mDesc,
+                                m.request_date ? excelDate(m.request_date) : (m.date ? excelDate(m.date) : ''),
+                                (matchingLuogo || '').toUpperCase(),
+                                m.date ? excelDate(m.date) : '',
+                                m.date_out ? excelDate(m.date_out) : '',
+                                ''
+                            ]);
+                        }
+                    });
+                }
+
+                // 2. Richieste di riparazione
+                if (v.repair_requests && Array.isArray(v.repair_requests)) {
+                    v.repair_requests.forEach(req => {
+                        const rDate = normalizeDateStr(req.date || '');
+                        let rDesc = (req.description || '').split(/\r?\n/).map(s => s.trim()).filter(Boolean).join(', ').toUpperCase();
+                        if (!rDesc) rDesc = (req.types || []).join(', ').toUpperCase();
+
+                        const exists = existingRows.some(er => {
+                            const siglaMatch = er.sigla === sSigla;
+                            const dateMatch = er.date === rDate;
+                            const descMatch = !rDesc || !er.desc || er.desc.includes(rDesc.slice(0, 12)) || rDesc.includes(er.desc.slice(0, 12));
+                            return siglaMatch && dateMatch && descMatch;
+                        });
+                        if (!exists) {
+                            const matchingLuogo = findLocationInText(rDesc, locList);
+                            toAdd.push([
+                                sSigla,
+                                rDesc,
+                                excelDate(req.date),
+                                matchingLuogo.toUpperCase(),
+                                '',
+                                '',
+                                ''
+                            ]);
+                        }
+                    });
+                }
+            });
+
+            if (toAdd.length === 0) {
+                alert(`Il foglio Excel è già perfettamente allineato con il Database!\nNessuna nuova manutenzione o richiesta mancante trovata.`);
+                return;
+            }
+
+            // Aggiungi le righe mancanti
+            sheetXml = appendRowsToSheetXml(sheetXml, toAdd);
+            zip.file(sheetPath, sheetXml);
+            const blob = await zip.generateAsync({
+                type: 'blob',
+                compression: 'DEFLATE',
+                mimeType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+            });
+
+            const writable = await handle.createWritable();
+            await writable.write(blob);
+            await writable.close();
+
+            alert(`Allineamento completato con successo!\n\nSono state aggiunte ${toAdd.length} manutenzioni/richieste mancanti nel file "${handle.name}".\n\nIl foglio sul Desktop è ora aggiornato con tutti i dati del database (incluse le modifiche fatte da casa)!`);
+            if (window.renderExcelSyncPanel) await window.renderExcelSyncPanel();
+        } catch (err) {
+            console.error('Errore durante allineamento Excel con Database:', err);
+            const isLocked = err && (err.name === 'NoModificationAllowedError' || err.name === 'InvalidStateError' || /lock|in use|utilizzo/i.test(err.message || ''));
+            alert(`Errore durante l'allineamento: ${isLocked ? 'il file è aperto in Microsoft Excel: chiudilo e riprova.' : (err.message || err)}`);
         }
     };
 
