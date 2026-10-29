@@ -1,4 +1,4 @@
-const APP_VERSION = "3.7.2";
+const APP_VERSION = "3.7.3";
 let isAdmin = false;
 let cachedVehicles = null;
 let cachedLocations = null;
@@ -2339,10 +2339,10 @@ window.openMaintenanceForm = function (vehicleId, vehicleSigla, record = null) {
 
     const reqDateEl = document.getElementById('maintenance-request-date');
     if (reqDateEl) {
-        reqDateEl.readOnly = true;
-        reqDateEl.style.backgroundColor = '#f1f5f9';
-        reqDateEl.style.cursor = 'not-allowed';
-        reqDateEl.style.pointerEvents = 'none';
+        reqDateEl.readOnly = false;
+        reqDateEl.style.backgroundColor = '';
+        reqDateEl.style.cursor = 'auto';
+        reqDateEl.style.pointerEvents = 'auto';
     }
     if (record) {
         // Edit Mode

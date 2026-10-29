@@ -1,16 +1,16 @@
-# Regole e Contesto del Progetto (v3.7.2)
+# Regole e Contesto del Progetto (v3.7.3)
 
-Questo file definisce le linee guida e lo stato di salvataggio del progetto per garantire la coerenza con la versione **3.7.2**.
+Questo file definisce le linee guida e lo stato di salvataggio del progetto per garantire la coerenza con la versione **3.7.3**.
 
-## Stato di Riferimento (v3.7.2)
+## Stato di Riferimento (v3.7.3)
 
 1. **Gestione Versioni**:
-   - La versione attuale di riferimento è **3.7.2**.
+   - La versione attuale di riferimento è **3.7.3**.
    - Qualsiasi modifica futura richiede l'avanzamento della versione (es. `3.7.2` o successive) in `app.js` (`const APP_VERSION = "X.Y.Z";`) e in `index.html` (header).
 
 2. **Bypass della Cache (Cache-Busting)**:
    - I file `app.js` e `style.css` sono importati in `index.html` con il parametro di versione `?v=X.Y.Z` per forzare il caricamento immediato degli aggiornamenti sui dispositivi client (specialmente mobili).
-   - Esempio: `<link rel="stylesheet" href="style.css?v=3.7.2">` e `<script src="app.js?v=3.7.2"></script>`.
+   - Esempio: `<link rel="stylesheet" href="style.css?v=3.7.3">` e `<script src="app.js?v=3.7.3"></script>`.
    - Ad ogni cambio di codice, aggiornare questa stringa con la nuova versione dell'applicazione.
 
 3. **Integrazione Git e GitHub**:
@@ -251,3 +251,8 @@ Questo file definisce le linee guida e lo stato di salvataggio del progetto per 
       - La corrispondenza della sigla include il matching flessibile `shortSigla` (es. `E1` / `ECHO 01`).
     - **Feedback Visivo di Sincronizzazione**:
       - L'avviso di conferma notifica all'utente l'esito puntuale della sincronizzazione Excel (es. riga aggiornata con numero di riga, nuova riga aggiunta, accodamento cloud o avviso file aperto in Microsoft Excel).
+
+29. **Modificabilità della Data Richiesta nella Manutenzione (v3.7.3)**:
+    - Il campo **Data Richiesta** (`maintenance-request-date`) nel modulo di inserimento e modifica manutenzione (`#maintenance-form-modal`) è ora completamente modificabile dall'utente (`readOnly = false`, interattivo e con selettore calendario nativo).
+    - All'apertura del modulo per l'inserimento di una nuova manutenzione viene preimpostata la data odierna come valore predefinito, consentendo all'utente di modificarla liberamente per registrare manutenzioni con data di richiesta antecedente o personalizzata.
+    - Il valore della Data Richiesta viene memorizzato sul database Firestore e sincronizzato con la colonna C del file Excel Desktop (`ORGANIZZAZIONE RICHIESTE MEZZI.xlsx`).
