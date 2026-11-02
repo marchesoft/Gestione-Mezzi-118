@@ -1,16 +1,16 @@
-# Regole e Contesto del Progetto (v3.7.4)
+# Regole e Contesto del Progetto (v3.7.5)
 
-Questo file definisce le linee guida e lo stato di salvataggio del progetto per garantire la coerenza con la versione **3.7.4**.
+Questo file definisce le linee guida e lo stato di salvataggio del progetto per garantire la coerenza con la versione **3.7.5**.
 
-## Stato di Riferimento (v3.7.4)
+## Stato di Riferimento (v3.7.5)
 
 1. **Gestione Versioni**:
-   - La versione attuale di riferimento è **3.7.4**.
+   - La versione attuale di riferimento è **3.7.5**.
    - Qualsiasi modifica futura richiede l'avanzamento della versione (es. `3.7.2` o successive) in `app.js` (`const APP_VERSION = "X.Y.Z";`) e in `index.html` (header).
 
 2. **Bypass della Cache (Cache-Busting)**:
    - I file `app.js` e `style.css` sono importati in `index.html` con il parametro di versione `?v=X.Y.Z` per forzare il caricamento immediato degli aggiornamenti sui dispositivi client (specialmente mobili).
-   - Esempio: `<link rel="stylesheet" href="style.css?v=3.7.4">` e `<script src="app.js?v=3.7.4"></script>`.
+   - Esempio: `<link rel="stylesheet" href="style.css?v=3.7.5">` e `<script src="app.js?v=3.7.5"></script>`.
    - Ad ogni cambio di codice, aggiornare questa stringa con la nuova versione dell'applicazione.
 
 3. **Integrazione Git e GitHub**:
@@ -264,3 +264,12 @@ Questo file definisce le linee guida e lo stato di salvataggio del progetto per 
       - Se il browser Chromium richiede l'autorizzazione di sicurezza, compare un banner in evidenza: `⚡ Rilevate modifiche inviate da casa / cellulare: [ Sincronizza Ora su Desktop ]`. Con un solo click l'utente autorizza la scrittura e sincronizza tutto.
     - **Funzione di Allineamento Completo con Database (`excelSyncReconcileWithDatabase`)**:
       - Introdotto nel pannello di sincronizzazione di Gestione Database il pulsante blu **Allinea con Database**. Scansiona l'intero archivio di manutenzioni e richieste salvate su Firestore, verifica le righe già presenti nel foglio Excel Desktop e accoda in automatico qualsiasi voce mancante (compresa quella già inserita da casa prima dell'aggiornamento).
+
+31. **Chiusura Immediata Modulo Manutenzione e Risoluzione Permanenza Finestra (v3.7.5)**:
+    - **Chiusura Immediata al Click di "Salva Record" (`saveMaintenanceRecord`)**:
+      - Alla pressione del tasto *Salva Record* (`#save-maintenance-btn`), la finestra modale `#maintenance-form-modal` e la scheda veicolo sottostante (`#vehicle-modal`) vengono chiuse istantaneamente all'inizio dell'azione (`classList.add('hidden')` e `closeVehicleModal()`), azzerando `currentOpenedVehicleId`.
+      - Questo impedisce alla finestra di rimanere visibile o bloccata a schermo durante i tempi asincroni di salvataggio su Firestore e di scrittura sul foglio Excel Desktop locale, prevenendo inoltre che le notifiche in tempo reale `onSnapshot` di Firestore possano riaprire la vista.
+    - **Protezione da Invii Multipli**: Il pulsante di invio viene disabilitato durante l'elaborazione del salvataggio e riattivato nel blocco `finally`.
+    - **Resilienza Permessi File Excel Locale (`excelSyncEnsureHandle`)**:
+      - In `excel_sync.js`, se l'handle del file `ORGANIZZAZIONE RICHIESTE MEZZI.xlsx` è già memorizzato su IndexedDB del PC ma in stato `prompt`, non viene azzerato e non viene scatenato indebitamente il selettore `showOpenFilePicker`.
+      - Le chiamate di sincronizzazione manutenzione (`excelSyncAppendMaintenance` e `excelSyncUpdateMaintenance`) operano in modalità sicura non bloccante (`interactive = false`), garantendo il completamento della scrittura sul Desktop o l'accodamento trasparente senza bloccare l'interfaccia utente.

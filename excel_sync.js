@@ -1,5 +1,5 @@
 // =====================================================================
-// Sincronizzazione Richieste di Riparazione -> file Excel locale (v3.7.4)
+// Sincronizzazione Richieste di Riparazione -> file Excel locale (v3.7.5)
 // File di destinazione: "ORGANIZZAZIONE RICHIESTE MEZZI.xlsx" (Desktop)
 //
 // Usa la File System Access API (Chrome / Edge desktop): al salvataggio
@@ -255,7 +255,7 @@
             return await window.excelSyncEnqueueCloud('append_maintenance', vehicle, payload);
         }
 
-        handle = await window.excelSyncEnsureHandle(true);
+        handle = await window.excelSyncEnsureHandle(false);
         if (!handle) {
             return await window.excelSyncEnqueueCloud('append_maintenance', vehicle, payload);
         }
@@ -322,16 +322,13 @@
                         }
                     }
                 } else {
-                    // Se il permesso non è stato accordato o l'handle è obsoleto/invalido,
-                    // consentiamo il fallback a showOpenFilePicker
+                    // Se il permesso è 'denied', rimuovi l'handle invalido
                     console.warn('Handle esistente non autorizzato (stato: ' + q + ')');
                     if (q === 'denied') {
                         try { await idbSet(HANDLE_KEY, null); } catch (e) {}
                         handle = null;
-                    } else if (interactive) {
-                        handle = null;
                     }
-                    // Se non siamo interattivi (background) e q è 'prompt', manteniamo l'handle per uso successivo
+                    // Se q è 'prompt', manteniamo l'handle salvato per usi successivi o autorizzazione utente
                 }
             } catch (err) {
                 console.warn('Errore verifica handle salvato:', err);
@@ -400,7 +397,7 @@
             return await window.excelSyncEnqueueCloud('append_request', vehicle, payload);
         }
 
-        handle = await window.excelSyncEnsureHandle(true);
+        handle = await window.excelSyncEnsureHandle(false);
         if (!handle) {
             return await window.excelSyncEnqueueCloud('append_request', vehicle, payload);
         }
@@ -418,7 +415,7 @@
         if (pending.length === 0) return { ok: true, written: 0 };
         let handle = handleOpt || (await window.excelSyncGetHandle());
         if (!handle) {
-            handle = await window.excelSyncEnsureHandle(true);
+            handle = await window.excelSyncEnsureHandle(false);
         }
         if (!handle) return { ok: false, notLinked: true, pending: pending.length };
 
@@ -699,7 +696,7 @@
         if (!handle) {
             return await window.excelSyncEnqueueCloud('delete_request', vehicle, req);
         }
-        handle = await window.excelSyncEnsureHandle(true);
+        handle = await window.excelSyncEnsureHandle(false);
         if (!handle) {
             return await window.excelSyncEnqueueCloud('delete_request', vehicle, req);
         }
@@ -988,7 +985,7 @@
         if (!handle) {
             return await window.excelSyncEnqueueCloud('update_maintenance', vehicle, recordData);
         }
-        handle = await window.excelSyncEnsureHandle(true);
+        handle = await window.excelSyncEnsureHandle(false);
         if (!handle) {
             return await window.excelSyncEnqueueCloud('update_maintenance', vehicle, recordData);
         }
@@ -1058,7 +1055,7 @@
         if (!handle) {
             return await window.excelSyncEnqueueCloud('delete_maintenance', vehicle, record);
         }
-        handle = await window.excelSyncEnsureHandle(true);
+        handle = await window.excelSyncEnsureHandle(false);
         if (!handle) {
             return await window.excelSyncEnqueueCloud('delete_maintenance', vehicle, record);
         }

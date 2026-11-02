@@ -1,4 +1,4 @@
-const APP_VERSION = "3.7.4";
+const APP_VERSION = "3.7.5";
 let isAdmin = false;
 let cachedVehicles = null;
 let cachedLocations = null;
@@ -2372,18 +2372,6 @@ window.openMaintenanceForm = function (vehicleId, vehicleSigla, record = null) {
 window.saveMaintenanceRecord = async function (e) {
     if (e && e.preventDefault) e.preventDefault(); // Handle form submit event
 
-    // 1. Riscaldamento / richiesta permessi Excel immediata nel contesto del click utente
-    if (window.excelSyncSupported && window.excelSyncSupported()) {
-        try {
-            const existingHandle = await window.excelSyncGetHandle();
-            if (existingHandle) {
-                await window.excelSyncEnsureHandle(true);
-            }
-        } catch (hErr) {
-            console.warn("Riscaldamento permessi Excel in saveMaintenanceRecord:", hErr);
-        }
-    }
-
     const vehicleId = document.getElementById('maintenance-vehicle-id').value;
     const id = document.getElementById('maintenance-id').value;
     const reqDateEl = document.getElementById('maintenance-request-date');
@@ -2392,24 +2380,52 @@ window.saveMaintenanceRecord = async function (e) {
     const date_out = document.getElementById('maintenance-date-out').value.trim();
     const workshop = document.getElementById('maintenance-workshop').value;
     const kmVal = document.getElementById('maintenance-km').value;
-    const description = document.getElementById('maintenance-description').value;
+    const description = (document.getElementById('maintenance-description').value || '').trim();
 
-    // Fetch vehicle to get sigla
-    const vehicle = await store.getVehicleById(vehicleId);
-    const vehicleSigla = vehicle ? (vehicle.sigla || vehicle.plate) : 'N/A';
+    if (!description) {
+        alert("Inserire la descrizione dell'intervento.");
+        const descEl = document.getElementById('maintenance-description');
+        if (descEl) descEl.focus();
+        return;
+    }
 
-    const record = {
-        request_date: requestDate || null,
-        date: date || null,
-        date_out: date_out || null,
-        workshop: upper(workshop),
-        km: kmVal ? parseInt(kmVal) : null,
-        description: upper(description),
-        type: 'Routine',
-        cost: 0
-    };
+    const submitBtn = document.querySelector('#maintenance-form button[type="submit"]') || document.getElementById('save-maintenance-btn');
+    if (submitBtn && submitBtn.disabled) return;
+    if (submitBtn) submitBtn.disabled = true;
+
+    // Chiudi immediatamente il form di manutenzione e la scheda dettagli veicolo
+    const maintModal = document.getElementById('maintenance-form-modal');
+    if (maintModal) maintModal.classList.add('hidden');
+    closeVehicleModal();
+
+    // 1. Riscaldamento permessi Excel immediato (non bloccante, evita popup showOpenFilePicker)
+    if (window.excelSyncSupported && window.excelSyncSupported()) {
+        try {
+            const existingHandle = await window.excelSyncGetHandle();
+            if (existingHandle) {
+                await window.excelSyncEnsureHandle(false);
+            }
+        } catch (hErr) {
+            console.warn("Riscaldamento permessi Excel in saveMaintenanceRecord:", hErr);
+        }
+    }
 
     try {
+        // Fetch vehicle to get sigla (cache in memoria o DB)
+        const vehicle = (cachedVehicles && cachedVehicles.find(v => v.id === vehicleId)) || (vehicleId ? await store.getVehicleById(vehicleId) : null);
+        const vehicleSigla = vehicle ? (vehicle.sigla || vehicle.plate) : 'N/A';
+
+        const record = {
+            request_date: requestDate || null,
+            date: date || null,
+            date_out: date_out || null,
+            workshop: upper(workshop),
+            km: kmVal ? parseInt(kmVal) : null,
+            description: upper(description),
+            type: 'Routine',
+            cost: 0
+        };
+
         if (id) {
             await store.updateIntervention(id, record);
         } else {
@@ -2456,12 +2472,12 @@ window.saveMaintenanceRecord = async function (e) {
             }
         }
 
-        // Chiudi immediatamente il form di manutenzione e la scheda dettagli veicolo
-        document.getElementById('maintenance-form-modal').classList.add('hidden');
+        // Assicura che le modali rimangano chiuse
+        if (maintModal) maintModal.classList.add('hidden');
         closeVehicleModal();
 
         // Refresh appropriate views
-        await renderDashboard();
+        await renderDashboard(true);
 
         // Refresh Data Management table if it's open
         const dataModal = document.getElementById('data-management-modal');
@@ -2491,15 +2507,13 @@ window.saveMaintenanceRecord = async function (e) {
         alert((id ? "Manutenzione modificata con successo!" : "Manutenzione salvata con successo!") + excelMsg);
         closeVehicleModal();
 
-        // If data management was used, re-open it to requested tab
-        // We can detect if it was likely open or just always refresh dashboard/lists
-        // Let's check a global flag or just rely on manual re-opening if needed, 
-        // but for better UX, let's try to detect.
-        // For now, let's just make sure switchDataTable is called if we want to be proactive.
-
     } catch (error) {
+        if (maintModal) maintModal.classList.add('hidden');
+        closeVehicleModal();
         console.error("Error saving record:", error);
         alert("Errore durante il salvataggio: " + error.message);
+    } finally {
+        if (submitBtn) submitBtn.disabled = false;
     }
 }
 
