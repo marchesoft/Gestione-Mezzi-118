@@ -273,3 +273,11 @@ Questo file definisce le linee guida e lo stato di salvataggio del progetto per 
     - **Resilienza Permessi File Excel Locale (`excelSyncEnsureHandle`)**:
       - In `excel_sync.js`, se l'handle del file `ORGANIZZAZIONE RICHIESTE MEZZI.xlsx` è già memorizzato su IndexedDB del PC ma in stato `prompt`, non viene azzerato e non viene scatenato indebitamente il selettore `showOpenFilePicker`.
       - Le chiamate di sincronizzazione manutenzione (`excelSyncAppendMaintenance` e `excelSyncUpdateMaintenance`) operano in modalità sicura non bloccante (`interactive = false`), garantendo il completamento della scrittura sul Desktop o l'accodamento trasparente senza bloccare l'interfaccia utente.
+
+32. **Controllo Automatico Allineamento Excel all'Avvio (v3.8.0)**:
+    - Ad ogni apertura del programma (PC di lavoro o PC di casa, solo dove il file Excel è collegato) `excelSyncReconcileWithDatabase(true)` viene eseguita circa 4 secondi dopo il caricamento, in modalità silenziosa.
+    - Confronta il database con le righe del foglio e accoda le voci mancanti (stessa logica del pulsante *Allinea con Database*); se è già allineato non scrive nulla.
+    - Non richiede permessi: se il browser non ha ancora l'autorizzazione del file, compare un banner *Allinea ora* con un click che concede il permesso.
+    - Non avvia la scrittura mentre la coda cloud (`_isProcessingExcelCloudQueue`) sta scrivendo: attende fino a 60 secondi, poi usa lo stesso lock condiviso per evitare sovrascritture.
+    - Esito tramite toast discreto (nessun alert in avvio). Su mobile non ha effetto (File System Access non supportato).
+    - **Nota**: una riga cancellata a mano dal foglio Excel viene riaggiunta al successivo avvio se è ancora presente nel database.

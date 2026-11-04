@@ -1673,25 +1673,73 @@
     };
 
     // ---------- Allineamento Completo Foglio Excel con Database (v3.7.4) ----------
-    window.excelSyncReconcileWithDatabase = async function () {
+    // Messaggi di esito: alert quando l'operazione è manuale, toast discreto quando è automatica all'avvio
+    function notifyReconcile(msg, silent) {
+        if (!silent) { alert(msg); return; }
+        console.log('[Excel Allineamento] ' + msg);
+        let t = document.getElementById('excel-reconcile-toast');
+        if (!t) {
+            t = document.createElement('div');
+            t.id = 'excel-reconcile-toast';
+            t.style.cssText = 'position:fixed;bottom:24px;right:24px;z-index:99999;background:#065f46;color:#fff;padding:0.75rem 1.25rem;border-radius:10px;box-shadow:0 6px 20px rgba(0,0,0,0.25);font-size:0.88rem;font-weight:600;max-width:90vw;transition:opacity 0.4s ease;pointer-events:none;';
+            document.body.appendChild(t);
+        }
+        t.textContent = msg;
+        t.style.opacity = '1';
+        clearTimeout(window._excelReconcileToastTimer);
+        window._excelReconcileToastTimer = setTimeout(() => { t.style.opacity = '0'; }, 5000);
+    }
+
+    // Banner che compare all'avvio se il file non è ancora autorizzato: il click dà il permesso al browser
+    function showExcelReconcileBanner() {
+        let b = document.getElementById('excel-reconcile-banner');
+        if (!b) {
+            b = document.createElement('div');
+            b.id = 'excel-reconcile-banner';
+            b.style.cssText = 'position:fixed;top:12px;left:50%;transform:translateX(-50%);z-index:99999;background:#0f172a;color:#fff;padding:0.6rem 1rem;border-radius:10px;box-shadow:0 6px 20px rgba(0,0,0,0.3);display:flex;align-items:center;gap:0.75rem;font-size:0.85rem;max-width:92vw;';
+            b.innerHTML = '<i class="fa-solid fa-file-excel" style="color:#fbbf24;"></i><span>Il file Excel sul Desktop non è allineato con il database.</span><button type="button" onclick="excelSyncReconcileWithDatabase()" style="background:#2563eb;color:#fff;border:none;border-radius:0.4rem;padding:0.35rem 0.7rem;font-weight:600;cursor:pointer;">Allinea ora</button>';
+            document.body.appendChild(b);
+        }
+        b.style.display = 'flex';
+    }
+    function hideExcelReconcileBanner() {
+        const b = document.getElementById('excel-reconcile-banner');
+        if (b) b.style.display = 'none';
+    }
+
+    // silent = true: avvio automatico dell'app. Non richiede permessi (serve un click) e non mostra alert.
+    window.excelSyncReconcileWithDatabase = async function (silent = false) {
         if (!window.excelSyncSupported()) {
-            alert('Questa funzione è utilizzabile solo su PC Desktop con il file Excel collegato.');
+            if (!silent) alert('Questa funzione è utilizzabile solo su PC Desktop con il file Excel collegato.');
             return;
         }
-        let handle = await window.excelSyncEnsureHandle(true);
+        if (window._excelReconcileRunning) return;
+
+        let handle = await window.excelSyncEnsureHandle(!silent);
         if (!handle) {
-            alert('Nessun file Excel collegato. Collega prima il file "ORGANIZZAZIONE RICHIESTE MEZZI.xlsx" sul Desktop.');
+            if (!silent) alert('Nessun file Excel collegato. Collega prima il file "ORGANIZZAZIONE RICHIESTE MEZZI.xlsx" sul Desktop.');
             return;
         }
 
         let q = await handle.queryPermission({ mode: 'readwrite' });
         if (q !== 'granted') {
+            if (silent) { showExcelReconcileBanner(); return; }
             q = await handle.requestPermission({ mode: 'readwrite' });
             if (q !== 'granted') {
                 alert('Permesso di lettura/scrittura non concesso dal browser.');
                 return;
             }
         }
+        if (silent) hideExcelReconcileBanner();
+
+        // Attende che la coda cloud (casa/cellulare) abbia finito di scrivere, per non sovrascrivere il file
+        const waitStart = Date.now();
+        while (window._isProcessingExcelCloudQueue && Date.now() - waitStart < 60000) {
+            await new Promise(r => setTimeout(r, 500));
+        }
+        if (window._isProcessingExcelCloudQueue) return;
+        window._isProcessingExcelCloudQueue = true;
+        window._excelReconcileRunning = true;
 
         try {
             const file = await handle.getFile();
@@ -1794,7 +1842,7 @@
             });
 
             if (toAdd.length === 0) {
-                alert(`Il foglio Excel è già perfettamente allineato con il Database!\nNessuna nuova manutenzione o richiesta mancante trovata.`);
+                notifyReconcile(silent ? 'Excel già allineato con il database' : `Il foglio Excel è già perfettamente allineato con il Database!\nNessuna nuova manutenzione o richiesta mancante trovata.`, silent);
                 return;
             }
 
@@ -1811,15 +1859,27 @@
             await writable.write(blob);
             await writable.close();
 
-            alert(`Allineamento completato con successo!\n\nSono state aggiunte ${toAdd.length} manutenzioni/richieste mancanti nel file "${handle.name}".\n\nIl foglio sul Desktop è ora aggiornato con tutti i dati del database (incluse le modifiche fatte da casa)!`);
+            notifyReconcile(silent
+                ? `Excel allineato con il database: aggiunte ${toAdd.length} voci mancanti`
+                : `Allineamento completato con successo!\n\nSono state aggiunte ${toAdd.length} manutenzioni/richieste mancanti nel file "${handle.name}".\n\nIl foglio sul Desktop è ora aggiornato con tutti i dati del database (incluse le modifiche fatte da casa)!`, silent);
             if (window.renderExcelSyncPanel) await window.renderExcelSyncPanel();
         } catch (err) {
             console.error('Errore durante allineamento Excel con Database:', err);
             const isLocked = err && (err.name === 'NoModificationAllowedError' || err.name === 'InvalidStateError' || /lock|in use|utilizzo/i.test(err.message || ''));
-            alert(`Errore durante l'allineamento: ${isLocked ? 'il file è aperto in Microsoft Excel: chiudilo e riprova.' : (err.message || err)}`);
+            notifyReconcile(`Errore durante l'allineamento: ${isLocked ? 'il file è aperto in Microsoft Excel: chiudilo e riprova.' : (err.message || err)}`, silent);
+        } finally {
+            window._excelReconcileRunning = false;
+            window._isProcessingExcelCloudQueue = false;
+            if (window._excelCloudQueuePendingRerun) {
+                window._excelCloudQueuePendingRerun = false;
+                setTimeout(() => window.excelSyncProcessCloudQueue(false), 150);
+            }
         }
     };
 
     // Avvia il listener di sincronizzazione cloud automatica (PC Desktop)
     initCloudQueueAutoSync();
+
+    // All'apertura del programma (PC di lavoro o di casa) controlla che il file Excel sia allineato con il database
+    setTimeout(() => window.excelSyncReconcileWithDatabase(true), 4000);
 })();
