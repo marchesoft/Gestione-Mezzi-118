@@ -1,16 +1,16 @@
-# Regole e Contesto del Progetto (v3.7.8)
+# Regole e Contesto del Progetto (v3.7.9)
 
-Questo file definisce le linee guida e lo stato di salvataggio del progetto per garantire la coerenza con la versione **3.7.8**.
+Questo file definisce le linee guida e lo stato di salvataggio del progetto per garantire la coerenza con la versione **3.7.9**.
 
-## Stato di Riferimento (v3.7.8)
+## Stato di Riferimento (v3.7.9)
 
 1. **Gestione Versioni**:
-   - La versione attuale di riferimento è **3.7.8**.
+   - La versione attuale di riferimento è **3.7.9**.
    - Qualsiasi modifica futura richiede l'avanzamento della versione (es. `3.7.2` o successive) in `app.js` (`const APP_VERSION = "X.Y.Z";`) e in `index.html` (header).
 
 2. **Bypass della Cache (Cache-Busting)**:
    - I file `app.js` e `style.css` sono importati in `index.html` con il parametro di versione `?v=X.Y.Z` per forzare il caricamento immediato degli aggiornamenti sui dispositivi client (specialmente mobili).
-   - Esempio: `<link rel="stylesheet" href="style.css?v=3.7.8">` e `<script src="app.js?v=3.7.8"></script>`.
+   - Esempio: `<link rel="stylesheet" href="style.css?v=3.7.9">` e `<script src="app.js?v=3.7.9"></script>`.
    - Ad ogni cambio di codice, aggiornare questa stringa con la nuova versione dell'applicazione.
 
 3. **Integrazione Git e GitHub**:
