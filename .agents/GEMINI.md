@@ -62,7 +62,7 @@ Questo file definisce le linee guida e lo stato di salvataggio del progetto per 
    - **Campi Compilabili e Precompilati Dinamici**:
      - *Dati Veicolo*: Veicolo (es. `AMBULANZA FF 837 RS ECHO 22`), Km rilevati, Data modulo (preimpostata alla data odierna), Officina convenzionata (*IP VIA CANAPA* di default, oppure *CAVAGION*).
      - *Tipologia di Intervento Fissa*: Impostata automaticamente su **LAVAGGIO ESTERNO E VANO GUIDA** con badge "Automatico" (v3.5.9: allineata la tipologia a *Lavaggio esterno e vano guida*).
-     - *Dati Richiedente / Consegna e Ritiro*: Nominativi incaricati (`MARSILI PAOLO – GAMBERONI FEDERICO – MARCHESINI LUCA`), Email istituzionale (`logistica118fe@ausl.fe.it`), Cellulare (`3209229345`).
+     - *Dati Richiedente / Consegna e Ritiro*: Nominativi incaricati (`Logistica 118 Ferrara`), Email istituzionale (`logistica118fe@ausl.fe.it`), Cellulare (`3209229345`).
    - **Invio Diretto alla Stampante (`printWashModule`)**:
      - Cliccando sul pulsante **Stampa** (`.btn-wash-request` con icona `fa-print`), il sistema genera ed invia direttamente alla stampante di sistema il layout A4 ufficiale Parts & Services (*Ricovero Veicolo per manutenzione - consegna/Ritiro*) indicando come intervento `LAVAGGIO ESTERNO E VANO GUIDA`.
      - Include l'intestazione grafica con logo Parts & Services estratto al volo dal template incorporato, spaziatura corretta, sezioni speculari di Consegna e Ritiro, data formattata e piè di pagina aziendale.

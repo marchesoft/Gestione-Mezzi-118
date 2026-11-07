@@ -13,7 +13,7 @@ Web app per la gestione della flotta (ambulanze/mezzi 118): dashboard con card d
 È la specifica funzionale completa (modello dati Firestore, comportamento di ogni modale, regole dei moduli Word/Alea, lavaggio, report). Leggerla prima di toccare una funzione: contiene decisioni prese apposta e bug già risolti (es. `syncHistoricalWashRequest` è disattivata di proposito). Se cambia il comportamento di una funzione, aggiornare anche quel file.
 
 ## Regole da rispettare
-1. **Versione**: ogni modifica fa salire la versione (ora 3.8.0) in `app.js` (`const APP_VERSION`), nell'header di `index.html` e nei parametri `?v=X.Y.Z` di `store.js`, `excel_sync.js`, `app.js`, `style.css` in `index.html`. Serve a bypassare la cache, soprattutto sui telefoni.
+1. **Versione**: ogni modifica fa salire la versione (ora 3.8.1) in `app.js` (`const APP_VERSION`), nell'header di `index.html` e nei parametri `?v=X.Y.Z` di `store.js`, `excel_sync.js`, `app.js`, `style.css` in `index.html`. Serve a bypassare la cache, soprattutto sui telefoni.
 2. **Git**: messaggio di commit nel formato `vX.Y.Z: descrizione` (come la cronologia esistente). Commit e push su `main` solo dopo che l'utente ha approvato la modifica, mai prima.
 3. **Segreti**: `nuovo token github.txt` e `info account app.txt` sono ignorati da git e non vanno mai letti, copiati o stampati. Non scrivere token nell'URL del remote.
 4. Le cartelle `_VERSIONE_*` e gli zip `_backup_*` sono copie locali di sicurezza (ignorate da git). Non modificarle.

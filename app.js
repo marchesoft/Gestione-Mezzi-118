@@ -1,4 +1,4 @@
-const APP_VERSION = "3.8.0";
+const APP_VERSION = "3.8.1";
 let isAdmin = false;
 let cachedVehicles = null;
 let cachedLocations = null;
@@ -4538,7 +4538,7 @@ window.openRepairRequestModal = async function (vehicleId) {
 
         // Contatti e richiedente di default
         document.getElementById('repair-dept').value = 'LOGISTICA 118';
-        document.getElementById('repair-driver').value = 'MARSILI PAOLO – GAMBERONI FEDERICO – MARCHESINI LUCA';
+        document.getElementById('repair-driver').value = 'Logistica 118 Ferrara';
         document.getElementById('repair-phone').value = '3209229345';
         document.getElementById('repair-email').value = 'logistica118fe@ausl.fe.it';
 
@@ -5724,7 +5724,7 @@ window.openWashModal = async function (vehicleId) {
         if (typeElem) typeElem.value = 'LAVAGGIO ESTERNO E VANO GUIDA';
 
         const driverElem = document.getElementById('wash-driver');
-        if (driverElem) driverElem.value = 'MARSILI PAOLO – GAMBERONI FEDERICO – MARCHESINI LUCA';
+        if (driverElem) driverElem.value = 'Logistica 118 Ferrara';
 
         const phoneElem = document.getElementById('wash-phone');
         if (phoneElem) phoneElem.value = '3209229345';
@@ -5787,7 +5787,7 @@ window.printWashModule = async function () {
         }
 
         const driverElem = document.getElementById('wash-driver');
-        const driver = (driverElem && driverElem.value ? driverElem.value.trim() : 'MARSILI PAOLO – GAMBERONI FEDERICO – MARCHESINI LUCA');
+        const driver = (driverElem && driverElem.value ? driverElem.value.trim() : 'Logistica 118 Ferrara');
 
         const phoneElem = document.getElementById('wash-phone');
         const phone = (phoneElem && phoneElem.value ? phoneElem.value.trim() : '3209229345');
