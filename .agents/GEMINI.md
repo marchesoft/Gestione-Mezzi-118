@@ -281,3 +281,9 @@ Questo file definisce le linee guida e lo stato di salvataggio del progetto per 
     - Non avvia la scrittura mentre la coda cloud (`_isProcessingExcelCloudQueue`) sta scrivendo: attende fino a 60 secondi, poi usa lo stesso lock condiviso per evitare sovrascritture.
     - Esito tramite toast discreto (nessun alert in avvio). Su mobile non ha effetto (File System Access non supportato).
     - **Nota**: una riga cancellata a mano dal foglio Excel viene riaggiunta al successivo avvio se è ancora presente nel database.
+
+33. **Salvataggio Manutenzione Robusto su PC (v3.8.2)**:
+    - `store.updateIntervention` non mostra più un proprio alert e **rilancia l'errore**: se Firestore rifiuta la scrittura, `saveMaintenanceRecord` mostra "la manutenzione NON è stata salvata" (con spiegazione specifica se l'account non è abilitato alla scrittura) invece del falso "Manutenzione modificata con successo!".
+    - Le operazioni sul file Excel in `saveMaintenanceRecord` (riscaldamento permessi 5 s, aggiornamento/aggiunta riga 20 s) hanno un tempo massimo: se il file non risponde il salvataggio si conclude comunque e l'avviso lo segnala.
+    - `openMaintenanceForm` riattiva sempre il tasto *Salva Record* (prima, se un salvataggio si bloccava, il tasto restava disattivato e i salvataggi successivi venivano ignorati senza messaggi).
+    - Se l'officina del record non è più nell'elenco luoghi, viene aggiunta come opzione nel menu, così non viene svuotata al salvataggio.

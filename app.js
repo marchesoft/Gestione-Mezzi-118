@@ -1,4 +1,4 @@
-const APP_VERSION = "3.8.1";
+const APP_VERSION = "3.8.2";
 let isAdmin = false;
 let cachedVehicles = null;
 let cachedLocations = null;
@@ -2337,6 +2337,18 @@ window.openMaintenanceForm = function (vehicleId, vehicleSigla, record = null) {
     workshopSelect.innerHTML = '<option value="">-- Seleziona Officina --</option>' +
         (cachedLocations || []).map(loc => `<option value="${loc.luogo}">${loc.luogo}</option>`).join('');
 
+    // Se l'officina del record non è (più) nell'elenco luoghi, la aggiunge: altrimenti verrebbe cancellata al salvataggio (v3.8.2)
+    if (record && record.workshop && !Array.from(workshopSelect.options).some(o => o.value === record.workshop)) {
+        const opt = document.createElement('option');
+        opt.value = record.workshop;
+        opt.textContent = record.workshop;
+        workshopSelect.appendChild(opt);
+    }
+
+    // Riattiva sempre il tasto Salva: se un salvataggio precedente si era bloccato, il tasto restava disattivato (v3.8.2)
+    const saveBtn = document.getElementById('save-maintenance-btn');
+    if (saveBtn) saveBtn.disabled = false;
+
     const reqDateEl = document.getElementById('maintenance-request-date');
     if (reqDateEl) {
         reqDateEl.readOnly = false;
@@ -2398,13 +2410,25 @@ window.saveMaintenanceRecord = async function (e) {
     if (maintModal) maintModal.classList.add('hidden');
     closeVehicleModal();
 
+    // Le operazioni sul file Excel (solo PC) non devono mai bloccare il salvataggio: tempo massimo, poi si prosegue (v3.8.2)
+    const excelWithTimeout = (promise, ms) => Promise.race([
+        promise,
+        new Promise(resolve => setTimeout(() => resolve({
+            ok: false,
+            timeout: true,
+            error: 'il file Excel non ha risposto in tempo (la modifica è comunque salvata nel database)'
+        }), ms))
+    ]);
+
     // 1. Riscaldamento permessi Excel immediato (non bloccante, evita popup showOpenFilePicker)
     if (window.excelSyncSupported && window.excelSyncSupported()) {
         try {
-            const existingHandle = await window.excelSyncGetHandle();
-            if (existingHandle) {
-                await window.excelSyncEnsureHandle(false);
-            }
+            await excelWithTimeout((async () => {
+                const existingHandle = await window.excelSyncGetHandle();
+                if (existingHandle) {
+                    await window.excelSyncEnsureHandle(false);
+                }
+            })(), 5000);
         } catch (hErr) {
             console.warn("Riscaldamento permessi Excel in saveMaintenanceRecord:", hErr);
         }
@@ -2454,7 +2478,7 @@ window.saveMaintenanceRecord = async function (e) {
             // Nuova manutenzione aggiunta: crea e accoda nuova riga nel foglio Excel Desktop
             if (window.excelSyncAppendMaintenance) {
                 try {
-                    excelRes = await window.excelSyncAppendMaintenance(vehicle, syncPayload);
+                    excelRes = await excelWithTimeout(window.excelSyncAppendMaintenance(vehicle, syncPayload), 20000);
                 } catch (syncErr) {
                     console.warn("Errore aggiunta manutenzione su Excel:", syncErr);
                     excelRes = { ok: false, error: syncErr.message };
@@ -2464,7 +2488,7 @@ window.saveMaintenanceRecord = async function (e) {
             // Manutenzione modificata: aggiorna la riga esistente nel foglio Excel Desktop
             if (window.excelSyncUpdateMaintenance) {
                 try {
-                    excelRes = await window.excelSyncUpdateMaintenance(vehicle, syncPayload);
+                    excelRes = await excelWithTimeout(window.excelSyncUpdateMaintenance(vehicle, syncPayload), 20000);
                 } catch (syncErr) {
                     console.warn("Errore aggiornamento manutenzione su Excel:", syncErr);
                     excelRes = { ok: false, error: syncErr.message };
@@ -2511,7 +2535,10 @@ window.saveMaintenanceRecord = async function (e) {
         if (maintModal) maintModal.classList.add('hidden');
         closeVehicleModal();
         console.error("Error saving record:", error);
-        alert("Errore durante il salvataggio: " + error.message);
+        const denied = error && (error.code === 'permission-denied' || /permission|insufficient/i.test(error.message || ''));
+        alert("Errore: la manutenzione NON è stata salvata.\n" + (denied
+            ? "Il database ha rifiutato la scrittura: l'account con cui sei entrato su questo dispositivo non è abilitato a modificare i dati. Esci e rientra con l'account amministratore."
+            : (error.message || error)));
     } finally {
         if (submitBtn) submitBtn.disabled = false;
     }

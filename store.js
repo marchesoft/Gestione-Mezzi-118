@@ -230,8 +230,9 @@ try {
             try {
                 await this.db.collection('interventions').doc(id).update(cleanIntervention);
             } catch (error) {
+                // Rilancia l'errore: chi chiama deve sapere che il salvataggio NON è avvenuto (v3.8.2)
                 console.error('Error updating intervention:', error);
-                alert("Errore aggiornamento intervento: " + error.message);
+                throw error;
             }
         }
 
