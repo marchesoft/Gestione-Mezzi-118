@@ -1,4 +1,4 @@
-const APP_VERSION = "3.8.3";
+const APP_VERSION = "3.8.4";
 let isAdmin = false;
 let cachedVehicles = null;
 let cachedLocations = null;

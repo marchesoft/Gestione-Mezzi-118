@@ -288,3 +288,8 @@ Questo file definisce le linee guida e lo stato di salvataggio del progetto per 
     - `openMaintenanceForm` riattiva sempre il tasto *Salva Record* (prima, se un salvataggio si bloccava, il tasto restava disattivato e i salvataggi successivi venivano ignorati senza messaggi).
     - Se l'officina del record non è più nell'elenco luoghi, viene aggiunta come opzione nel menu, così non viene svuotata al salvataggio.
     - **Diagnostica (v3.8.3)**: `excelSyncUpdateMaintenance` registra in `window._excelSyncStep` il passaggio in corso (verifica permesso, attesa permesso del browser, lettura, ricerca riga, preparazione, scrittura, chiusura). Se scatta il tempo massimo, l'avviso indica "Fermo su: <passaggio>".
+
+34. **Controllo Automatico Excel all'Avvio Disattivato (v3.8.4)**:
+    - L'esecuzione automatica di `excelSyncReconcileWithDatabase(true)` all'apertura (punto 32) è **disattivata**: il confronto sigla + data richiesta + descrizione non riconosce le righe scritte a mano nel foglio e ha aggiunto in fondo al file del PC di lavoro molte righe doppie (richieste di riparazione senza date di entrata/uscita).
+    - Resta il pulsante manuale *Allinea con Database*, con lo stesso limite: non usarlo finché il confronto non viene rifatto.
+    - Nota tecnica: il database tiene le manutenzioni nella collezione `interventions` (in memoria `vehicle.maintenanceHistory`), non in `vehicle.interventions`: l'allineamento quindi oggi confronta solo le richieste di riparazione.

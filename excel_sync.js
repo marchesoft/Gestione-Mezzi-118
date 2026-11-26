@@ -1890,6 +1890,7 @@
     // Avvia il listener di sincronizzazione cloud automatica (PC Desktop)
     initCloudQueueAutoSync();
 
-    // All'apertura del programma (PC di lavoro o di casa) controlla che il file Excel sia allineato con il database
-    setTimeout(() => window.excelSyncReconcileWithDatabase(true), 4000);
+    // v3.8.4: controllo automatico all'avvio DISATTIVATO. Il confronto tra foglio e database non riconosce
+    // le righe scritte a mano nel foglio e aggiungeva in fondo molte righe doppie. Resta solo il pulsante manuale.
+    // setTimeout(() => window.excelSyncReconcileWithDatabase(true), 4000);
 })();
