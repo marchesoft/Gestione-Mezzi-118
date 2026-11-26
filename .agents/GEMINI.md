@@ -293,3 +293,10 @@ Questo file definisce le linee guida e lo stato di salvataggio del progetto per 
     - L'esecuzione automatica di `excelSyncReconcileWithDatabase(true)` all'apertura (punto 32) è **disattivata**: il confronto sigla + data richiesta + descrizione non riconosce le righe scritte a mano nel foglio e ha aggiunto in fondo al file del PC di lavoro molte righe doppie (richieste di riparazione senza date di entrata/uscita).
     - Resta il pulsante manuale *Allinea con Database*, con lo stesso limite: non usarlo finché il confronto non viene rifatto.
     - Nota tecnica: il database tiene le manutenzioni nella collezione `interventions` (in memoria `vehicle.maintenanceHistory`), non in `vehicle.interventions`: l'allineamento quindi oggi confronta solo le richieste di riparazione.
+
+35. **Allinea con Database: tutte le manutenzioni nel foglio attuale (v3.8.5)**:
+    - Il pulsante manuale *Allinea con Database* ora legge le manutenzioni dalla collezione `interventions` (`vehicle.maintenanceHistory`) tramite `computeMissingMaintenanceRows` e aggiunge in fondo al foglio quelle che mancano. Le richieste di riparazione non vengono più confrontate (causavano i doppioni del punto 34).
+    - Ogni manutenzione del database deve avere la sua riga. È già nel foglio se c'è una riga con la stessa sigla, la stessa data (DATA RICHIESTA in C uguale alla sua data richiesta o data entrata, oppure DATA ENTRATA in E uguale alla sua data entrata) e una descrizione simile (almeno una parola significativa in comune, `maintDescSimilar`).
+    - Le manutenzioni mancanti vengono aggiunte una per riga, in ordine di data, con sigla, descrizione, data richiesta (o entrata), officina, data entrata e data uscita. Le righe già presenti non vengono modificate.
+    - Prima di scrivere chiede conferma indicando quante righe verranno aggiunte. Un secondo allineamento subito dopo non aggiunge nulla.
+    - Resta disattivato l'allineamento automatico all'avvio (punto 34).

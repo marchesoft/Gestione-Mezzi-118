@@ -1498,7 +1498,7 @@
     }
 
     // ---------- UI ----------
-    window._excelSyncInternals = { appendRowsToSheetXml, removeRowFromSheetXml, resolveFirstSheetPath, loadSharedStrings };
+    window._excelSyncInternals = { appendRowsToSheetXml, removeRowFromSheetXml, resolveFirstSheetPath, loadSharedStrings, computeMissingMaintenanceRows };
 
     window.excelSyncRefreshButton = async function () {
         const btn = document.getElementById('repair-excel-sync-btn');
@@ -1683,6 +1683,70 @@
     };
 
     // ---------- Allineamento Completo Foglio Excel con Database (v3.7.4) ----------
+    // v3.8.5: calcola le righe da aggiungere al foglio perché ogni manutenzione del database abbia la sua riga.
+    // Una manutenzione è già nel foglio se esiste una riga con la stessa sigla, la stessa data (DATA RICHIESTA in C
+    // uguale alla sua data richiesta o data entrata, oppure DATA ENTRATA in E uguale alla sua data entrata)
+    // e una descrizione simile (almeno una parola significativa in comune). Altrimenti viene aggiunta una riga.
+    function maintDescWords(text) {
+        return (text || '').toString().toUpperCase().replace(/[^A-Z0-9À-Ü]+/g, ' ').split(' ')
+            .filter(w => w.length >= 4 && !['CONTROLLO', 'DELLA', 'DELLE', 'DEGLI', 'SOSTITUZIONE'].includes(w));
+    }
+    function maintDescSimilar(a, b) {
+        const A = (a || '').toString().toUpperCase().trim();
+        const B = (b || '').toString().toUpperCase().trim();
+        if (!A || !B) return true;
+        if (A.includes(B) || B.includes(A)) return true;
+        const wb = maintDescWords(B);
+        return maintDescWords(A).some(w => wb.includes(w));
+    }
+    function computeMissingMaintenanceRows(sheetXml, sharedStrings, vehicles) {
+        const doc = new DOMParser().parseFromString(sheetXml, 'application/xml');
+        const sheetData = doc.getElementsByTagNameNS(SHEET_NS, 'sheetData')[0];
+        const rows = sheetData ? Array.from(sheetData.getElementsByTagNameNS(SHEET_NS, 'row')) : [];
+        const index = new Map(); // chiave sigla|C|data o sigla|E|data -> descrizioni delle righe
+        const addKey = (k, desc) => { if (!index.has(k)) index.set(k, []); index.get(k).push(desc); };
+        rows.forEach(r => {
+            const rIdx = parseInt(r.getAttribute('r'), 10);
+            if (isNaN(rIdx) || rIdx <= 2) return;
+            const cellMap = {};
+            Array.from(r.getElementsByTagNameNS(SHEET_NS, 'c')).forEach(c => {
+                cellMap[(c.getAttribute('r') || '').replace(/\d+/g, '')] = getCellText(c, sharedStrings);
+            });
+            const s = shortSigla(cellMap['A'] || '');
+            if (!s) return;
+            const desc = cellMap['B'] || '';
+            const c = normalizeDateStr(cellMap['C'] || '');
+            const e = normalizeDateStr(cellMap['E'] || '');
+            if (c) addKey(s + '|C|' + c, desc);
+            if (e) addKey(s + '|E|' + e, desc);
+        });
+
+        const out = [];
+        (vehicles || []).forEach(v => {
+            const sSigla = shortSigla(v.sigla || v.plate || '');
+            if (!sSigla) return;
+            (v.maintenanceHistory || v.interventions || []).forEach(m => {
+                const req = normalizeDateStr(m.request_date || '');
+                const din = normalizeDateStr(m.date || '');
+                if (!req && !din) return;
+                const desc = (m.description || '').toString().toUpperCase().trim();
+                const candidates = [].concat(
+                    req ? (index.get(sSigla + '|C|' + req) || []) : [],
+                    din ? (index.get(sSigla + '|C|' + din) || []) : [],
+                    din ? (index.get(sSigla + '|E|' + din) || []) : []
+                );
+                if (candidates.some(rd => maintDescSimilar(desc, rd))) return;
+                const row = [sSigla, desc, excelDate(m.request_date || m.date), (m.workshop || '').toString().toUpperCase().trim(),
+                    m.date ? excelDate(m.date) : '', m.date_out ? excelDate(m.date_out) : '', ''];
+                out.push({ sort: String(m.request_date || m.date), row });
+                // conta anche le righe appena preparate, per non aggiungere due volte la stessa manutenzione
+                const key = sSigla + '|C|' + normalizeDateStr(row[2]);
+                addKey(key, desc);
+                if (din) addKey(sSigla + '|E|' + din, desc);
+            });
+        });
+        return out.sort((x, y) => x.sort.localeCompare(y.sort)).map(o => o.row);
+    }
     // Messaggi di esito: alert quando l'operazione è manuale, toast discreto quando è automatica all'avvio
     function notifyReconcile(msg, silent) {
         if (!silent) { alert(msg); return; }
@@ -1767,92 +1831,14 @@
             }
             const locList = window.cachedLocations || [];
 
-            // Analizza le righe già presenti nel foglio Excel
-            const doc = new DOMParser().parseFromString(sheetXml, 'application/xml');
-            const sheetData = doc.getElementsByTagNameNS(SHEET_NS, 'sheetData')[0];
-            const rows = Array.from(sheetData.getElementsByTagNameNS(SHEET_NS, 'row'));
-
-            const existingRows = [];
-            rows.forEach(r => {
-                const rIdx = parseInt(r.getAttribute('r'), 10);
-                if (isNaN(rIdx) || rIdx <= 2) return;
-                const cells = Array.from(r.getElementsByTagNameNS(SHEET_NS, 'c'));
-                const cellMap = {};
-                cells.forEach(c => {
-                    const col = (c.getAttribute('r') || '').replace(/\d+/g, '');
-                    cellMap[col] = getCellText(c, sharedStrings);
-                });
-                const s = shortSigla(cellMap['A'] || '');
-                const d = normalizeDateStr(cellMap['C'] || '');
-                const desc = (cellMap['B'] || '').toUpperCase().trim();
-                if (s || d || desc) {
-                    existingRows.push({ sigla: s, date: d, desc: desc, rIdx });
-                }
-            });
-
-            // Raccogli tutte le manutenzioni e richieste dal database
-            const toAdd = [];
-            vehicles.forEach(v => {
-                const sSigla = shortSigla(v.sigla || v.plate || '');
-
-                // 1. Manutenzioni / Interventi
-                if (v.interventions && Array.isArray(v.interventions)) {
-                    v.interventions.forEach(m => {
-                        const mDate = normalizeDateStr(m.request_date || m.date || '');
-                        const mDesc = (m.description || '').toUpperCase().trim();
-                        // Verifica se esiste già
-                        const exists = existingRows.some(er => {
-                            const siglaMatch = er.sigla === sSigla;
-                            const dateMatch = er.date === mDate;
-                            const descMatch = !mDesc || !er.desc || er.desc.includes(mDesc.slice(0, 12)) || mDesc.includes(er.desc.slice(0, 12));
-                            return siglaMatch && dateMatch && descMatch;
-                        });
-                        if (!exists) {
-                            const matchingLuogo = m.workshop || (window.findLocationInText ? findLocationInText(mDesc, locList) : '');
-                            toAdd.push([
-                                sSigla,
-                                mDesc,
-                                m.request_date ? excelDate(m.request_date) : (m.date ? excelDate(m.date) : ''),
-                                (matchingLuogo || '').toUpperCase(),
-                                m.date ? excelDate(m.date) : '',
-                                m.date_out ? excelDate(m.date_out) : '',
-                                ''
-                            ]);
-                        }
-                    });
-                }
-
-                // 2. Richieste di riparazione
-                if (v.repair_requests && Array.isArray(v.repair_requests)) {
-                    v.repair_requests.forEach(req => {
-                        const rDate = normalizeDateStr(req.date || '');
-                        let rDesc = (req.description || '').split(/\r?\n/).map(s => s.trim()).filter(Boolean).join(', ').toUpperCase();
-                        if (!rDesc) rDesc = (req.types || []).join(', ').toUpperCase();
-
-                        const exists = existingRows.some(er => {
-                            const siglaMatch = er.sigla === sSigla;
-                            const dateMatch = er.date === rDate;
-                            const descMatch = !rDesc || !er.desc || er.desc.includes(rDesc.slice(0, 12)) || rDesc.includes(er.desc.slice(0, 12));
-                            return siglaMatch && dateMatch && descMatch;
-                        });
-                        if (!exists) {
-                            const matchingLuogo = findLocationInText(rDesc, locList);
-                            toAdd.push([
-                                sSigla,
-                                rDesc,
-                                excelDate(req.date),
-                                matchingLuogo.toUpperCase(),
-                                '',
-                                '',
-                                ''
-                            ]);
-                        }
-                    });
-                }
-            });
+            // v3.8.5: tutte le manutenzioni del database (collezione interventions) che non hanno ancora una riga nel foglio
+            const toAdd = computeMissingMaintenanceRows(sheetXml, sharedStrings, vehicles);
+            if (toAdd.length > 0 && !silent && !confirm(`Verranno aggiunte ${toAdd.length} righe in fondo al foglio "${handle.name}" con le manutenzioni del database che non risultano nel foglio.\n\nLe righe già presenti non vengono modificate. Procedere?`)) {
+                return;
+            }
 
             if (toAdd.length === 0) {
-                notifyReconcile(silent ? 'Excel già allineato con il database' : `Il foglio Excel è già perfettamente allineato con il Database!\nNessuna nuova manutenzione o richiesta mancante trovata.`, silent);
+                notifyReconcile(silent ? 'Excel già allineato con il database' : `Il foglio Excel contiene già tutte le manutenzioni del database.`, silent);
                 return;
             }
 
@@ -1871,7 +1857,7 @@
 
             notifyReconcile(silent
                 ? `Excel allineato con il database: aggiunte ${toAdd.length} voci mancanti`
-                : `Allineamento completato con successo!\n\nSono state aggiunte ${toAdd.length} manutenzioni/richieste mancanti nel file "${handle.name}".\n\nIl foglio sul Desktop è ora aggiornato con tutti i dati del database (incluse le modifiche fatte da casa)!`, silent);
+                : `Allineamento completato con successo!\n\nSono state aggiunte ${toAdd.length} righe con le manutenzioni mancanti nel file "${handle.name}".\n\nIl foglio sul Desktop è ora aggiornato con tutti i dati del database (incluse le modifiche fatte da casa)!`, silent);
             if (window.renderExcelSyncPanel) await window.renderExcelSyncPanel();
         } catch (err) {
             console.error('Errore durante allineamento Excel con Database:', err);
