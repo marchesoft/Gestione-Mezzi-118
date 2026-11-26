@@ -287,3 +287,4 @@ Questo file definisce le linee guida e lo stato di salvataggio del progetto per 
     - Le operazioni sul file Excel in `saveMaintenanceRecord` (riscaldamento permessi 5 s, aggiornamento/aggiunta riga 20 s) hanno un tempo massimo: se il file non risponde il salvataggio si conclude comunque e l'avviso lo segnala.
     - `openMaintenanceForm` riattiva sempre il tasto *Salva Record* (prima, se un salvataggio si bloccava, il tasto restava disattivato e i salvataggi successivi venivano ignorati senza messaggi).
     - Se l'officina del record non è più nell'elenco luoghi, viene aggiunta come opzione nel menu, così non viene svuotata al salvataggio.
+    - **Diagnostica (v3.8.3)**: `excelSyncUpdateMaintenance` registra in `window._excelSyncStep` il passaggio in corso (verifica permesso, attesa permesso del browser, lettura, ricerca riga, preparazione, scrittura, chiusura). Se scatta il tempo massimo, l'avviso indica "Fermo su: <passaggio>".

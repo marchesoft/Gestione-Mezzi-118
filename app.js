@@ -1,4 +1,4 @@
-const APP_VERSION = "3.8.2";
+const APP_VERSION = "3.8.3";
 let isAdmin = false;
 let cachedVehicles = null;
 let cachedLocations = null;
@@ -2411,12 +2411,14 @@ window.saveMaintenanceRecord = async function (e) {
     closeVehicleModal();
 
     // Le operazioni sul file Excel (solo PC) non devono mai bloccare il salvataggio: tempo massimo, poi si prosegue (v3.8.2)
+    window._excelSyncStep = '';
     const excelWithTimeout = (promise, ms) => Promise.race([
         promise,
         new Promise(resolve => setTimeout(() => resolve({
             ok: false,
             timeout: true,
-            error: 'il file Excel non ha risposto in tempo (la modifica è comunque salvata nel database)'
+            // v3.8.3: indica il passaggio su cui il file si è fermato, per capire la causa
+            error: 'il file Excel non ha risposto in tempo (la modifica è comunque salvata nel database). Fermo su: ' + (window._excelSyncStep || 'collegamento al file')
         }), ms))
     ]);
 

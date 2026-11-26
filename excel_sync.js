@@ -1003,23 +1003,30 @@
             workshop: recordData.workshop || ''
         };
 
+        // Diagnostica (v3.8.3): passaggio in corso, mostrato nell'avviso se il file non risponde in tempo
+        const step = (s) => { window._excelSyncStep = s; console.log('[Excel aggiorna manutenzione] ' + s); };
         try {
+            step('verifica permesso');
             let q = await handle.queryPermission({ mode: 'readwrite' });
             if (q !== 'granted') {
+                step('attesa permesso del browser (stato: ' + q + ')');
                 q = await handle.requestPermission({ mode: 'readwrite' });
                 if (q !== 'granted') {
                     throw new Error('permesso di lettura/scrittura non autorizzato dal browser');
                 }
             }
 
+            step('lettura del file');
             const file = await handle.getFile();
             const zip = await JSZip.loadAsync(await file.arrayBuffer());
             const sheetPath = await resolveFirstSheetPath(zip);
             const sheetXml = await zip.file(sheetPath).async('string');
             const sharedStrings = await loadSharedStrings(zip);
 
+            step('ricerca della riga nel foglio');
             const updateRes = updateRowMaintenanceInSheetXml(sheetXml, targetData, sharedStrings);
 
+            step('preparazione del file');
             zip.file(sheetPath, updateRes.newXml);
             const blob = await zip.generateAsync({
                 type: 'blob',
@@ -1027,9 +1034,12 @@
                 mimeType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
             });
 
+            step('scrittura del file');
             const writable = await handle.createWritable();
             await writable.write(blob);
+            step('chiusura del file');
             await writable.close();
+            step('completato');
             if (updateRes.found) {
                 console.log(`Excel: aggiornata riga ${updateRes.rowNumber} (${targetData.sigla}) -> Entrata: ${targetData.date_in}, Uscita: ${targetData.date_out}`);
                 return { ok: true, updated: true, rowNumber: updateRes.rowNumber, fileName: handle.name };
